@@ -3707,8 +3707,8 @@ diff -ruN a/src/system.c b/src/system.c
      int raw;
      if (PAD_DetectFold()) {
 diff -ruN a/src/unk_02013534.c b/src/unk_02013534.c
---- a/src/unk_02013534.c	2026-09-14 18:29:01
-+++ b/src/unk_02013534.c	2026-09-12 21:19:15
+--- a/src/unk_02013534.c
++++ b/src/unk_02013534.c
 @@ -7,13 +7,9 @@
  #include "gf_gfx_loader.h"
  #include "obj_char_transfer.h"
@@ -3771,6 +3771,18 @@ diff -ruN a/src/unk_02013534.c b/src/unk_02013534.c
          state.unk_24 = state.unk_00 + spriteH;
          state.unk_30 = state.unk_0c - spriteH;
          state.unk_0c = spriteH;
+@@ -712,9 +708,9 @@
+     NNSG2dImageProxy *proxy;
+ 
+     if (vramType == NNS_G2D_VRAM_TYPE_2DMAIN) {
+-        vramMode = (GXOBJVRamModeChar)(*(vu32 *)0x04000000 & 0x00300010);
++        vramMode = (GXOBJVRamModeChar)(reg_GX_DISPCNT & 0x00300010) /* PSP port: the DS I/O address is not readable here; use the SDK register */;
+     } else {
+-        vramMode = (GXOBJVRamModeChar)(*(vu32 *)0x04001000 & 0x00300010);
++        vramMode = (GXOBJVRamModeChar)(reg_GXS_DB_DISPCNT & 0x00300010) /* PSP port: see above */;
+     }
+     blockSize = ObjCharTransfer_GetBlockSizeFromMode(vramMode);
+     node = list->unk_0c;
 @@ -738,8 +734,8 @@
      void *tmpBuf;
      GXOBJVRamModeChar mode2;
@@ -3782,6 +3794,32 @@ diff -ruN a/src/unk_02013534.c b/src/unk_02013534.c
      area = shapeW * shapeH;
      if (area < blockSize) {
          area = blockSize;
+@@ -751,11 +747,11 @@
+     if (vramType == NNS_G2D_VRAM_TYPE_2DMAIN) {
+         GX_LoadOBJ(tmpBuf, vramOffset, (u32)area);
+         imgProxy->vramLocation.baseAddrOfVram[NNS_G2D_VRAM_TYPE_2DMAIN] = vramOffset;
+-        mode2 = (GXOBJVRamModeChar)(*(vu32 *)0x04000000 & 0x00300010);
++        mode2 = (GXOBJVRamModeChar)(reg_GX_DISPCNT & 0x00300010) /* PSP port: the DS I/O address is not readable here; use the SDK register */;
+     } else {
+         GXS_LoadOBJ(tmpBuf, vramOffset, (u32)area);
+         imgProxy->vramLocation.baseAddrOfVram[NNS_G2D_VRAM_TYPE_2DSUB] = vramOffset;
+-        mode2 = (GXOBJVRamModeChar)(*(vu32 *)0x04001000 & 0x00300010);
++        mode2 = (GXOBJVRamModeChar)(reg_GXS_DB_DISPCNT & 0x00300010) /* PSP port: see above */;
+     }
+     imgProxy->attr.mappingType = mode2;
+     imgProxy->attr.sizeS = (GXTexSizeS)0x0000FFFF;
+@@ -860,9 +856,9 @@
+     u32 bufOffset;
+ 
+     if (vramType == NNS_G2D_VRAM_TYPE_2DMAIN) {
+-        vramMode = (GXOBJVRamModeChar)(*(vu32 *)0x04000000 & 0x00300010);
++        vramMode = (GXOBJVRamModeChar)(reg_GX_DISPCNT & 0x00300010) /* PSP port: the DS I/O address is not readable here; use the SDK register */;
+     } else {
+-        vramMode = (GXOBJVRamModeChar)(*(vu32 *)0x04001000 & 0x00300010);
++        vramMode = (GXOBJVRamModeChar)(reg_GXS_DB_DISPCNT & 0x00300010) /* PSP port: see above */;
+     }
+     blockSize = ObjCharTransfer_GetBlockSizeFromMode(vramMode);
+     node = list->unk_0c;
 @@ -881,8 +877,8 @@
      int shapeH;
      int area;
@@ -3793,6 +3831,18 @@ diff -ruN a/src/unk_02013534.c b/src/unk_02013534.c
      area = shapeW * shapeH;
      if (area < blockSize) {
          area = blockSize;
+@@ -898,9 +894,9 @@
+     u32 total;
+ 
+     if (vramType == NNS_G2D_VRAM_TYPE_2DMAIN) {
+-        vramMode = (GXOBJVRamModeChar)(*(vu32 *)0x04000000 & 0x00300010);
++        vramMode = (GXOBJVRamModeChar)(reg_GX_DISPCNT & 0x00300010) /* PSP port: the DS I/O address is not readable here; use the SDK register */;
+     } else {
+-        vramMode = (GXOBJVRamModeChar)(*(vu32 *)0x04001000 & 0x00300010);
++        vramMode = (GXOBJVRamModeChar)(reg_GXS_DB_DISPCNT & 0x00300010) /* PSP port: see above */;
+     }
+     blockSize = ObjCharTransfer_GetBlockSizeFromMode(vramMode);
+     node = list->unk_0c;
 @@ -908,8 +904,8 @@
      while (node != (FontOAMNode *)list) {
          int shapeType = node->unk_08;

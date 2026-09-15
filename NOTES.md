@@ -74,7 +74,13 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     DS-ABI twins (`g2_asm_abi.c`).
 11. **DS anti-piracy checks (`DSProt_*`)** live in an encrypted overlay: `dsprot_native.c` returns the genuine-cartridge
     answers.
-12. **Text and the sound heap:** `SDK_PORT` sound-heap blocks carry a larger header than on DS, so SoulSilver's
+12. **Literal DS I/O register reads in C.** `unk_02013534.c` (text drawn as sprites) read DISPCNT through
+    `*(vu32 *)0x04000000` / `0x04001000` to pick the sprite VRAM mapping mode. On the PSP that address is the GE's
+    video memory, so the "mode" came from framebuffer pixels: battle move names were garbled until the pixels at that
+    address happened to change (which is why the bug "fixed itself" after menu clicks). Use the SDK port's register
+    variables (`reg_GX_DISPCNT`, `reg_GXS_DB_DISPCNT`). Sweep any decompilation for `0x0400xxxx` pointer casts, not
+    just the VRAM range.
+13. **Text and the sound heap:** `SDK_PORT` sound-heap blocks carry a larger header than on DS, so SoulSilver's
     DS-sized `heap_buf` runs out (Pokéathlon intro music never loads). Give it a bigger heap, same layout.
 
 ## 4. Rendering
