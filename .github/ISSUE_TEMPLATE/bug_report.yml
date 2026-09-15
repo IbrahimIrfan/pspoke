@@ -1,0 +1,53 @@
+name: Bug report
+description: Something broke while building or playing
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing pspoke. Please never attach or link ROMs, other people's saves or prebuilt EBOOTs.
+  - type: dropdown
+    id: game
+    attributes:
+      label: Game
+      options: [Platinum, SoulSilver, Both / the build itself]
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did it happen?
+      options: [Building on my computer, Playing on the PSP, Playing in an emulator]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did right before, what you expected, what you saw. Does it happen again if you retry?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: pspoke version
+      description: Output of `git log -1 --oneline` in your pspoke folder.
+      placeholder: 0203888 SoulSilver: fix garbled battle move names
+    validations:
+      required: true
+  - type: input
+    id: psp
+    attributes:
+      label: PSP model and firmware
+      placeholder: PSP-3001, 6.61 ARK-4
+  - type: input
+    id: host
+    attributes:
+      label: Computer OS (for build problems)
+      placeholder: macOS 15.6 Apple Silicon / Ubuntu 24.04
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: For PSP problems, paste `native-memlog.txt` from the game's folder on the memory stick (a `--dev` build logs more). For build problems, paste the failing step's log from `.work/tree/logs/`.
+      render: text

@@ -13,6 +13,11 @@ Pokémon Platinum and SoulSilver running **natively on a PSP**. The game is comp
 > pspoke is an unaffiliated fan project, not associated with or endorsed by Nintendo, Game Freak, Creatures or
 > The Pokémon Company. Please don't ask for, or post links to, ROMs or prebuilt builds in issues.
 
+> **No warranty.** pspoke is provided as is, without warranty of any kind. Use it at your own risk: the author is not
+> liable for anything that happens to your PSP, memory stick, saves or computer, and building it yourself is your
+> responsibility. It is your responsibility to comply with the laws that apply to you, including only using a dump
+> of a game you own. See the [LICENSE](LICENSE) (GPL-3.0, sections 15 and 16).
+
 ## Status
 
 | Game | ROM the build accepts (SHA1) | State |
