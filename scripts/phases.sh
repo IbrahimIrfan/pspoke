@@ -27,11 +27,11 @@ phase_generated(){
   step genheaders   bash -c "cd '$N' && python3 genheaders.py"
   step source-meta  bash -c "cd '$N' && python3 gen-source-metadata.py"
   step game-tables  bash -c "cd '$N' && python3 gen-game-tables.py"
-  step nitrogfx     make -C "$P/tools/nitrogfx"
   mkdir -p "$G/nitro/fx" "$G/res/fonts" "$G/res/graphics/battle/healthbox" "$G/res/words"
   step fx-const     python3 "$T/native-graphics/libntr/gen/nitro/fx/gen_fx_const.py" "$T/native-graphics/libntr/gen/nitro/fx/fx_const.csv" "$G/nitro/fx/fx_const.h"
-  step embed-cursor bash -c "cd '$G/res/fonts' && '$P/tools/nitrogfx/nitrogfx' '$P/res/fonts/arrow_cursor.png' arrow_cursor.4bpp -embed sArrowCursorBitmap"
-  step embed-health bash -c "cd '$G/res/graphics/battle/healthbox' && '$P/tools/nitrogfx/nitrogfx' '$P/res/graphics/battle/healthbox/healthbox_parts.png' healthbox_parts.4bpp -embed sHealthBoxPartsBitmap"
+  # Two small bitmaps embedded as C arrays (same output as the decompilation's nitrogfx tool, without libpng).
+  step embed-cursor python3 "$ROOT/scripts/png_embed.py" "$P/res/fonts/arrow_cursor.png" "$G/res/fonts/arrow_cursor.4bpp" sArrowCursorBitmap
+  step embed-health python3 "$ROOT/scripts/png_embed.py" "$P/res/graphics/battle/healthbox/healthbox_parts.png" "$G/res/graphics/battle/healthbox/healthbox_parts.4bpp" sHealthBoxPartsBitmap
   printf '#define word_bank_o 0\n' > "$G/res/words/word_bank.naix"
   mark generated
 }

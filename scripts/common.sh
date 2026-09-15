@@ -2,7 +2,9 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CACHE="${PSPPOKE_CACHE:-$ROOT/.cache}"
-export PSPDEV="${PSPDEV:-$HOME/pspdev}"
+# PSP toolchain: your own install if PSPDEV is set, otherwise the pinned copy scripts/toolchain.sh downloads.
+if [ -n "${PSPDEV:-}" ]; then PSPPOKE_OWN_TOOLCHAIN=1; else PSPPOKE_OWN_TOOLCHAIN=0; PSPDEV="$CACHE/pspdev"; fi
+export PSPDEV PSPPOKE_OWN_TOOLCHAIN
 export PATH="$PSPDEV/bin:$PATH"
 log(){ printf '\033[1m==> %s\033[0m\n' "$*"; }
 die(){ printf 'error: %s\n' "$*" >&2; exit 1; }

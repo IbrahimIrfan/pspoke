@@ -24,24 +24,48 @@ quality-of-life changes (trade evolutions without trading, instant text option, 
 
 - A PSP running custom firmware that can launch homebrew (tested: PSP-3001 on ARK-4).
 - Your own ROM dump of the game (the build checks the SHA1 above).
-- macOS or Linux with: `git`, `python3` (3.9+), `make`, `patch`, `rsync`, `pkg-config` and `libpng`
-  - macOS: `xcode-select --install` then `brew install pkg-config libpng`
-  - Debian/Ubuntu: `sudo apt install git python3 make patch rsync pkg-config libpng-dev build-essential`
-- The PSP toolchain [PSPDEV](https://pspdev.github.io/installation.html) (installed to `~/pspdev`, or set `PSPDEV`).
-- About 3 GB of free disk space and an internet connection (the build downloads the pinned decompilation sources).
+- A Mac or a Linux PC with about 3 GB of free disk space and an internet connection.
 
-## Build
+You don't need to install the PSP toolchain or any libraries yourself: the build downloads a pinned copy of the
+PSP compiler ([PSPDEV](https://github.com/pspdev/pspdev), about 150 MB) into the project folder the first time.
+
+## Getting started (step by step)
+
+**1. Open a terminal.**
+- Mac: press ⌘ Space, type `Terminal`, press Enter.
+- Linux: open your Terminal app.
+
+**2. Install the basic tools (one time).**
+- Mac: run `xcode-select --install` and click **Install** in the window that appears (Apple's free command line
+  tools; if you skip this step, the build opens the same window for you).
+- Ubuntu/Debian: `sudo apt install git python3 make patch rsync curl build-essential`
+- Fedora: `sudo dnf install git python3 make patch rsync curl gcc`
+
+**3. Download pspoke.**
 
 ```sh
-git clone https://github.com/IbrahimIrfan/pspoke.git && cd pspoke
-./build.sh platinum   --rom "/path/to/your/Pokemon Platinum.nds"
-./build.sh soulsilver --rom "/path/to/your/Pokemon SoulSilver.nds"
+git clone https://github.com/IbrahimIrfan/pspoke.git
+cd pspoke
 ```
 
-The first build takes roughly 5-15 minutes per game. Results: `dist/platinum/NativePlatinum/EBOOT.PBP` and
-`dist/soulsilver/NativeSoulSilver/EBOOT.PBP`. SoulSilver reuses the NitroSDK libraries from the Platinum
-decompilation, so its build downloads both decompilations (you do not need a Platinum ROM to build SoulSilver).
-Rebuilding after a change only redoes the parts that are needed; `./build.sh clean` starts over.
+**4. Build.** Type the command below, then drag your ROM file from Finder (or your file manager) into the terminal
+window to fill in its path, and press Enter:
+
+```sh
+./build.sh platinum --rom 
+```
+
+For SoulSilver use `./build.sh soulsilver --rom ` the same way.
+
+The first build downloads the toolchain and the decompilation sources (about 1 GB) and takes roughly 10-20 minutes.
+Later builds are much faster. When it finishes you get `dist/platinum/NativePlatinum/EBOOT.PBP` (or
+`dist/soulsilver/NativeSoulSilver/EBOOT.PBP`). You don't need a Platinum ROM to build SoulSilver.
+
+Useful extras:
+- `./build.sh setup` checks the requirements and downloads the toolchain without building anything.
+- `./build.sh clean` removes the build output and starts over (downloads are kept).
+- Already have your own PSPDEV install? Set `PSPDEV=/path/to/pspdev` and the build uses it instead.
+- Windows: not tested. It may work inside WSL (Ubuntu) by following the Linux steps.
 
 ## Install on the PSP
 

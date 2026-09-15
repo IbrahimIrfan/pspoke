@@ -20,6 +20,6 @@ for p in (b/'include').rglob('*.naix'):
  if verified.exists():shutil.copyfile(verified,p)
 # Item header directory differs from NARC basename.
 p=b/'include/itemtool/itemdata/item_data.naix';p.parent.mkdir(parents=True,exist_ok=True)
-p.write_text('#pragma once\n'+''.join(f'#define {s} {int(re.search(r"NARC_item_data_(\d+)_bin",s)[1])}\n' for s in sorted(set(re.findall(r'NARC_item_data_\d+_bin',text)))))
+p.write_text('#pragma once\n'+''.join(f'#define {s} {int(s.rsplit("_",2)[1])}\n' for s in sorted(set(re.findall(r'NARC_item_data_\d+_bin',text)))))
 # This public source includes the header with an unusual relative source-root path.
 p=b/'crossprobe.py';s=p.read_text().replace("base/'game-include/library'", "base/'game-include/library',base/'src'");p.write_text(s)
