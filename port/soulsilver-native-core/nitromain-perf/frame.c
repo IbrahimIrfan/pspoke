@@ -54,7 +54,7 @@ void PSPNativeFrameComplete(void){
  if(frames%10==0){struct mallinfo mi=mallinfo();if((unsigned)mi.uordblks>perf.heapHigh)perf.heapHigh=mi.uordblks;}
  if(frames%30==0){unsigned long long us=sceKernelGetSystemTimeWide()-start;
 #ifdef PSP_NATIVE_DEV
-  {static unsigned long long lastUs;unsigned long long win=us-lastUs;lastUs=us;snprintf(PSPNativeOverlayText,128,"NATIVE %5.1f fps  game %2llu audio %2llu render %2llu ms",win?30000000.0/win:0.0,gameUs/30000,audioUs/30000,renderUs/30000);}
+  {static unsigned long long lastUs;unsigned long long win=us-lastUs;lastUs=us;snprintf(PSPNativeOverlayText,128,"%4.1f fps",win?30000000.0/win:0.0);}
 #endif
 
 #ifdef PSP_NATIVE_DEV

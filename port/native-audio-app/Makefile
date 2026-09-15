@@ -35,6 +35,9 @@ LDFLAGS += -Wl,--wrap=ApplicationManager_Exec,--wrap=CommSys_Update,--wrap=SysTa
 LDFLAGS += -Wl,--wrap=malloc,--wrap=free,--wrap=memalign,--wrap=realloc,--wrap=calloc
 endif
 PSPSDK = $(shell psp-config --pspsdk-path)
+# Own game ID in PARAM.SFO (PSPSDK defaults to UCJS10041, shared with lots of homebrew; custom firmware
+# applies per-game settings by this ID).
+SFOFLAGS += -s DISC_ID=NATP00001
 include $(PSPSDK)/lib/build.mak
 romfs.o: services/romfs.c
 	$(CC) $(CFLAGS) -c $< -o $@

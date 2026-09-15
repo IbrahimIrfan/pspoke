@@ -3,6 +3,9 @@
 Pokémon Platinum and SoulSilver running **natively on a PSP**. The game is compiled into a real PSP program
 (it is not an emulator), so it runs at close to full speed on real hardware (tested on a PSP-3001).
 
+> **Beta.** pspoke is still in beta: expect bugs, and keep backups of your saves. Bug reports and contributions are
+> very welcome, see [Bug reports and contributing](#bug-reports-and-contributing).
+
 > **Bring your own ROM.** This repository contains **no** game code, graphics, music, text, ROMs, saves or prebuilt
 > EBOOTs. It is a set of build scripts, PSP platform code and patches. You build the EBOOT yourself, on your own
 > computer, from the community decompilation projects and **your own legally dumped cartridge**.
@@ -17,8 +20,22 @@ Pokémon Platinum and SoulSilver running **natively on a PSP**. The game is comp
 | Pokémon Platinum (US, Rev 1) | `0862ec35b24de5c7e2dcb88c9eea0873110d755c` | Playable. ~26-30 fps in the heaviest city on a PSP-3001, 30 fps elsewhere. |
 | Pokémon SoulSilver (US) | `f8dc38ea20c17541a43b58c5e6d18c1732c7e582` | Playable. ~29-30 fps in towns on a PSP-3001. |
 
-Not supported: Wi-Fi/online features, DS wireless, the microphone. Sound works. Both games include a few optional
-quality-of-life changes (trade evolutions without trading, instant text option, repel re-use prompt).
+Sound works. Both games include a few optional quality-of-life changes (trade evolutions without trading, instant
+text option, repel re-use prompt).
+
+## Not supported yet
+
+- **Wi-Fi and online features:** GTS, Wi-Fi Plaza, online trades and battles, Mystery Gift over the internet.
+- **DS wireless:** local trades and battles with another DS, Union Room, DS Download Play.
+- **Microphone** features.
+- **Pokéwalker** (SoulSilver): the PSP has no infrared port.
+- **Pal Park migration** (Platinum): there is no GBA cartridge slot.
+- **Other versions and regions:** only the two US ROMs listed above build (no HeartGold, Diamond/Pearl or
+  non-English releases).
+- **Touch screen:** there is no real touchscreen, so touch input uses the on-screen cursor (see Controls).
+- **Performance:** SoulSilver can dip below 30 fps in busy areas.
+- **Tested hardware and computers:** only a PSP-3001 on ARK-4 has been tested. Building works on macOS and Linux;
+  Windows (WSL) has not been tested.
 
 ## What you need
 
@@ -113,6 +130,27 @@ cartridge dump by renaming it (it must be exactly 524,288 bytes). Back it up bef
 `--dev` builds `dist/platinum-dev/` with an on-screen FPS/timing counter and detailed performance lines written to
 `native-memlog.txt` next to the EBOOT (frame timing, 3D renderer profile, game-thread profile, GPU sync stats).
 Normal builds have no on-screen counter and only log errors. See [docs/DEVELOPING.md](docs/DEVELOPING.md).
+
+## Bug reports and contributing
+
+pspoke is a beta, so reports and help are very welcome.
+
+**Found a bug?** Open an issue at [github.com/IbrahimIrfan/pspoke/issues](https://github.com/IbrahimIrfan/pspoke/issues) with:
+- the game and what happened (what you did right before, and whether it happens again),
+- your PSP model and firmware, and your computer's OS if the build failed,
+- the pspoke version (`git log -1 --oneline`),
+- if you can, `native-memlog.txt` from the game's folder on the memory stick (a `--dev` build logs more detail).
+
+Please never attach or link ROMs, saves from someone else's game, or prebuilt EBOOTs.
+
+**Want to contribute?** Pull requests are welcome, especially for:
+- **Windows support** (building natively or confirming WSL works),
+- **other games:** Diamond/Pearl, HeartGold, and other regions or languages of Platinum/SoulSilver,
+- anything under [Not supported yet](#not-supported-yet), and performance (SoulSilver's busy areas in particular),
+- testing on other PSP models and firmware.
+
+[docs/DEVELOPING.md](docs/DEVELOPING.md) explains how the build and the code are laid out. Keep the same rules as the
+project: no ROM data, game assets or prebuilt EBOOTs in commits (changes to the decompilations go in `patches/`).
 
 ## How it works (short version)
 

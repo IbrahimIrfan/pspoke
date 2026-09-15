@@ -74,6 +74,9 @@ PSP_LARGE_MEMORY = 1
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = SoulSilver (pspoke)
 PSPSDK = $(shell psp-config --pspsdk-path)
+# Own game ID in PARAM.SFO (PSPSDK defaults to UCJS10041, shared with lots of homebrew; custom firmware
+# applies per-game settings by this ID).
+SFOFLAGS += -s DISC_ID=NATS00001
 include $(PSPSDK)/lib/build.mak
 
 LDFLAGS := $(subst $(PSPSDK)/lib/linkfile.prx,linkfile.prx,$(LDFLAGS))

@@ -48,7 +48,8 @@ static volatile u32 s_snapW, s_snapR;
 static u64 s_dsTime;
 static int s_ready;
 static SceSasCore s_core __attribute__((aligned(64)));
-static short s_grain[SAS_GRAIN * 4] __attribute__((aligned(64)));
+static short s_grainBuf[2][SAS_GRAIN * 4] __attribute__((aligned(64)));   /* two buffers: the audio hardware may still read the previous one */
+static u32 st_coreErr;
 static SceUID s_thread = -1;
 static int s_audioCh = -1;
 
@@ -213,6 +214,9 @@ static SasSample *GetSample(int type, const SasChan *c)
             else          { lfsr >>= 1; out[j] = 0x7FFF; }
         }
     }
+    /* sceSasCore mixes on the Media Engine, which reads this buffer straight from RAM: flush the CPU data cache
+       first, or it can read stale bytes (static or silence on hardware, fine in emulators). */
+    sceKernelDcacheWritebackRange(out, outCount * sizeof(short));
     slot->used = 1; slot->type = (u8)type; slot->duty = (u8)duty; slot->shiftDown = shiftDown; slot->minPeriod = minPeriod;
     slot->src = c->sad; slot->srcLen = total; slot->hash = hash;
     slot->data = out; slot->count = outCount; slot->loop = loop >= 0 ? (int)(loop >> shiftDown) : -1;
@@ -342,7 +346,10 @@ static int SasThread(SceSize args, void *argp)
                 if (playTime > s_snaps[newest].time + 174592u) { playTime = s_snaps[newest].time + 174592u; st_underfeed++; }
             }
         }
-        __sceSasCore(&s_core, s_grain);
+        static int gi; short *s_grain = s_grainBuf[gi ^= 1];
+        sceKernelDcacheInvalidateRange(s_grain, SAS_GRAIN * 2 * sizeof(short));
+        { int rc = __sceSasCore(&s_core, s_grain); if (rc) st_coreErr++; }
+        sceKernelDcacheWritebackInvalidateRange(s_grain, SAS_GRAIN * 2 * sizeof(short));
         { static u32 g; int pk = 0; for (int i = 0; i < SAS_GRAIN * 2; i++) { int a = s_grain[i] < 0 ? -s_grain[i] : s_grain[i]; if (a > pk) pk = a; }
           if (pk > st_peak) st_peak = pk;
           if ((++g % 344) == 0) { int h[32]; __sceSasGetAllEnvelopeHeights(&s_core, h); int keyed = 0; for (int v = 0; v < 16; v++) keyed += s_cur[v].keyed;
@@ -394,9 +401,9 @@ void PSPNativeSasSnapshot(u32 cycles)
 void PSPNativeSasStatsLine(char *buf, unsigned len)
 {
     u32 fill = (s_snapW - s_snapR) & SNAP_MASK;
-    snprintf(buf, len, "[AUDIO-SAS] ready=%d fill=%u keyons=%u hits=%u miss=%u conv_kb=%u cache_kb=%u evict=%u halved=%u pitchclamp=%u skipped=%u dropsnap=%u underfeed=%u thread_us_per_grain=%u",
+    snprintf(buf, len, "[AUDIO-SAS] ready=%d fill=%u keyons=%u hits=%u miss=%u conv_kb=%u cache_kb=%u evict=%u halved=%u pitchclamp=%u skipped=%u dropsnap=%u underfeed=%u thread_us_per_grain=%u coreerr=%u",
              s_ready, fill, st_keyOns, st_cacheHits, st_cacheMiss, st_convBytes >> 10, s_cacheBytes >> 10, st_evict, st_decimated, st_pitchClamp, st_skipped, st_dropSnaps, st_underfeed,
-             st_grains ? st_threadUs / st_grains : 0);
+             st_grains ? st_threadUs / st_grains : 0, st_coreErr);
 }
 
 static int s_muted;

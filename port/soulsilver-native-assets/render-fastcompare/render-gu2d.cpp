@@ -51,10 +51,10 @@ static inline void GuFinishCounted(){sceGuFinish();}
 static inline void GeSyncTimed(unsigned&acc){unsigned t=sceKernelGetSystemTimeLow();sceGuSync(0,0);acc+=sceKernelGetSystemTimeLow()-t;}
 #endif
 
-// On-screen placement of the two DS panels (ported from the Platinum renderer, user request):
-// main at exactly 4/3 scale (341x256, crisp nearest, nothing cropped), touch panel in the
-// remaining 139 px. Stylus mode swaps which panel gets the big slot.
-enum{MAIN_X=0,MAIN_Y=8,MAIN_W=341,MAIN_H=256,SUB_X=341,SUB_Y=84,SUB_W=139,SUB_H=104};
+// On-screen placement of the two DS panels (same as the Platinum renderer): main fills the full height
+// (363x272, ~1.42x nearest, no black bars), touch panel 117x88 centred in the remaining width. Stylus mode
+// swaps which panel gets the big slot. The bottom-right corner is left free for the DEV fps counter.
+enum{MAIN_X=0,MAIN_Y=0,MAIN_W=363,MAIN_H=272,SUB_X=363,SUB_Y=92,SUB_W=117,SUB_H=88};
 static unsigned statFallback[2],statGe[2];
 #include "native_window_rows.h"
 extern "C" int SSNativeCaptureWindowRows(SSNativeWindowRow rows[2][192]) __attribute__((weak));
@@ -554,7 +554,7 @@ static void GeFinishCallback(int){geFinishDone++;if(flipEvt>=0)sceKernelSetEvent
 static void DrawOverlayText(unsigned offset,const char*text){
  if(!text[0])return;
  if(!overlayInit){pspDebugScreenInitEx((void*)0x44000000,PSP_DISPLAY_PIXEL_FORMAT_8888,0);overlayInit=true;}
- pspDebugScreenSetOffset(offset);pspDebugScreenSetXY(0,0);pspDebugScreenSetTextColor(0xFF00FF00);pspDebugScreenSetBackColor(0xFF000000);pspDebugScreenPrintf("%s",text);
+ pspDebugScreenSetOffset(offset);pspDebugScreenSetXY(67-(int)strlen(text),33);pspDebugScreenSetTextColor(0xFF00FF00);pspDebugScreenSetBackColor(0xFF000000);pspDebugScreenPrintf("%s",text);
 }
 // Caller holds flipLock and has established that the GE finished pend's list.
 static void DoFlipLocked(bool byThread){
@@ -698,7 +698,7 @@ static int Present(bool waitForVblank){
  GuFinishCounted();GeSyncTimed(geSyncUs);
  if(PSPNativeOverlayText[0]){
   if(!overlayInit){pspDebugScreenInitEx((void*)0x44000000,PSP_DISPLAY_PIXEL_FORMAT_8888,0);overlayInit=true;}
-  pspDebugScreenSetOffset(displayOffset);pspDebugScreenSetXY(0,0);pspDebugScreenSetTextColor(0xFF00FF00);pspDebugScreenSetBackColor(0xFF000000);pspDebugScreenPrintf("%s",PSPNativeOverlayText);
+  pspDebugScreenSetOffset(displayOffset);pspDebugScreenSetXY(67-(int)strlen(PSPNativeOverlayText),33);pspDebugScreenSetTextColor(0xFF00FF00);pspDebugScreenSetBackColor(0xFF000000);pspDebugScreenPrintf("%s",PSPNativeOverlayText);
  }
  convertUs=sceKernelGetSystemTimeLow()-t2;last2DUs=sceKernelGetSystemTimeLow()-t0;lastReadbackUs=0;
  /* PSP on-screen keyboard (naming screen substitute), ported from the Platinum renderer:
