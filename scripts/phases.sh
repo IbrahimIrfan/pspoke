@@ -66,3 +66,8 @@ phase_libraries(){
 # stage_rom VAR PATH : fill a ROM placeholder in the staged tree (the ROM is only read, never copied into the repo).
 fill_rom(){ { grep -rlI "@$1@" "$T" 2>/dev/null || true; } | while read -r f; do sed -i.bak "s#@$1@#$2#g" "$f" && rm -f "$f.bak"; done; }
 dist_dir(){ local s=""; [ "$2" = 1 ] && s=-dev; echo "$ROOT/dist/$1$s/$3"; }
+# art_args GAME APPDIR : optional XMB art from art/GAME/ICON0.PNG (144x80) and PIC1.PNG (480x272), copied next to the
+# app under fixed names (so paths with spaces are fine) and passed to make; prints nothing when there is no art.
+art_args(){ local a="$ROOT/art/$1"; rm -f "$2/ICON0.PNG" "$2/PIC1.PNG"
+  [ -f "$a/ICON0.PNG" ] && cp -f "$a/ICON0.PNG" "$2/ICON0.PNG" && printf "PSP_EBOOT_ICON=ICON0.PNG "
+  [ -f "$a/PIC1.PNG" ] && cp -f "$a/PIC1.PNG" "$2/PIC1.PNG" && printf "PSP_EBOOT_PIC1=PIC1.PNG "; return 0; }

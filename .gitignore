@@ -13,3 +13,6 @@ dist/
 __pycache__/
 .DS_Store
 _old/
+# Your own XMB icon/background art (see art/README.md); not committed.
+art/*
+!art/README.md

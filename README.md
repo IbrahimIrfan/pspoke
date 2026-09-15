@@ -62,6 +62,8 @@ Later builds are much faster. When it finishes you get `dist/platinum/NativePlat
 `dist/soulsilver/NativeSoulSilver/EBOOT.PBP`). You don't need a Platinum ROM to build SoulSilver.
 
 Useful extras:
+- Menu icon and background: put `ICON0.PNG` (144x80) and `PIC1.PNG` (480x272) in `art/platinum/` or
+  `art/soulsilver/` before building (see [art/README.md](art/README.md)).
 - `./build.sh setup` checks the requirements and downloads the toolchain without building anything.
 - `./build.sh clean` removes the build output and starts over (downloads are kept).
 - Already have your own PSPDEV install? Set `PSPDEV=/path/to/pspdev` and the build uses it instead.

@@ -54,7 +54,7 @@ rm -f "$F"/{render-gu2d,g3_backend,frontend,g3_handler,window_adapter}.o "$F/lib
 step ss-renderer     bash -c "cd '$F' && make DEV='$DEV' libnative-render-gu2d.a window_adapter.o"
 cp -f "$F/libnative-render-gu2d.a" "$P/libss-render.a"; cp -f "$F/window_adapter.o" "$P/window_adapter.o"
 rm -f "$P"/{frame,main,osk}.o "$P"/diag_*.o "$P/ss-native-main.elf" "$P/ss-native-main.prx" "$P/EBOOT.PBP" "$P/PARAM.SFO"
-step ss-app          make -C "$P" PSP_NATIVE_PROBE_FRAMES=0 PSP_NATIVE_PLAY=1 DEV="$DEV"
+step ss-app          make -C "$P" PSP_NATIVE_PROBE_FRAMES=0 PSP_NATIVE_PLAY=1 DEV="$DEV" $(art_args soulsilver "$P")
 OUT=$(dist_dir soulsilver "$DEV" NativeSoulSilver); mkdir -p "$OUT"; cp -f "$P/EBOOT.PBP" "$OUT/EBOOT.PBP"
 python3 "$ROOT/scripts/check_native_pbp.py" "$OUT/EBOOT.PBP" > "$LOGS/audit-soulsilver.json" || die "EBOOT failed the PSP loader check (see $LOGS/audit-soulsilver.json)"
 log "Done: $OUT/EBOOT.PBP"
