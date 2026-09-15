@@ -13,12 +13,13 @@ if ! done_ soulsilver-prepare; then
   fill_rom SOULSILVER_ROM "$ROM"
   step ss-member-maps  bash -c "cd '$T/soulsilver-native-assets' && python3 audit_members.py"
   step ss-prepare      bash -c "cd '$C' && python3 prepare.py && python3 finish_headers.py && python3 final_compat.py"
-  step ss-patch        bash -c "cd '$C' && for d in src include game-include; do patch -p1 -s < '$ROOT/patches/soulsilver/'\$d.patch; done"
+  step ss-patch        bash -c "cd '$C' && for d in src include game-include qol; do patch -p1 -s < '$ROOT/patches/soulsilver/'\$d.patch; done"
   mark soulsilver-prepare
 fi
 
 if ! done_ soulsilver-game; then
   log "Compiling SoulSilver (529 game files + translated code; this takes a few minutes)"
+  qol_header
   step ss-core         bash -c "cd '$C' && python3 crossprobe.py && python3 archive.py"
   # GCC's strict-aliasing optimisation deletes the cut-in clamps in this file (Waterfall/field-move cut-ins never end).
   step ss-aliasing-fix bash -c "cd '$C' && python3 -c \"import json,subprocess;subprocess.run(json.load(open('compile-command.json'))+['-fno-strict-aliasing','-c','src/overlay_02_02248728.c','-o','objects/overlay_02_02248728.o'],check=True)\" && psp-ar r libsoulsilver-c.a objects/overlay_02_02248728.o"
@@ -47,6 +48,9 @@ if ! done_ soulsilver-game; then
   mark soulsilver-game
 fi
 
+# Quality-of-life switches: rebuild the five game files they touch every time (see build.sh --no-* flags).
+qol_header
+step ss-qol          bash -c "cd '$C' && for f in 'src/text.c text.o none' 'src/item.c item.o none' 'src/pokemon.c pokemon.o none' 'src/script_manager.c script_manager.o none' 'src/field/scrcmd_message.c field__scrcmd_message.o 1'; do bash rebuild_game_object.sh \$f || exit 1; done"
 log "Linking SoulSilver EBOOT (DEV=$DEV)"
 F="$T/soulsilver-native-assets/render-fastcompare"
 cp -f "$T/native-render-opt/native_gpu.o" "$T/native-render-opt/GPU2D_Soft.o" "$F/"

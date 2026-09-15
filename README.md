@@ -20,8 +20,8 @@ Pokémon Platinum and SoulSilver running **natively on a PSP**. The game is comp
 | Pokémon Platinum (US, Rev 1) | `0862ec35b24de5c7e2dcb88c9eea0873110d755c` | Playable. ~26-30 fps in the heaviest city on a PSP-3001, 30 fps elsewhere. |
 | Pokémon SoulSilver (US) | `f8dc38ea20c17541a43b58c5e6d18c1732c7e582` | Playable. ~29-30 fps in towns on a PSP-3001. |
 
-Sound works. Both games include a few optional quality-of-life changes (trade evolutions without trading, instant
-text option, repel re-use prompt).
+Sound works. Both games include a few [quality-of-life changes](#quality-of-life-changes); each can be turned off at
+build time.
 
 ## Not supported yet
 
@@ -86,6 +86,20 @@ Useful extras:
 - Already have your own PSPDEV install? Set `PSPDEV=/path/to/pspdev` and the build uses it instead.
 - Windows: not tested. It may work inside WSL (Ubuntu) by following the Linux steps.
 
+## Quality of Life changes
+
+pspoke makes a few small changes to both games. They are all **on by default** and each one can be left out with a
+build flag (`./build.sh platinum --rom ... --no-trade-evos`, for example). They change how the game behaves in RAM
+only; your ROM and the save format are untouched, so a save moves between builds with different switches.
+
+| Change | Flag to turn it off | Platinum | SoulSilver |
+|---|---|---|---|
+| **Instant text.** Dialogue prints a whole page at once at every text-speed setting; button prompts, scrolling and timed pauses still wait as before. | `--no-instant-text` | yes | yes |
+| **Trade evolutions without trading.** Kadabra, Machoke, Graveler and Haunter evolve at level 36. Pokémon that need a held item and a trade (Onix, Scyther, Seadra, Slowpoke, Poliwhirl, Porygon, Porygon2, Rhydon, Electabuzz, Magmar, Dusclops, Clamperl) evolve by using that item from the Bag like an evolution stone. Budew, Chingling and Riolu evolve from happiness at any time of day. Platinum also gives the baby Pokémon (Pichu, Cleffa, Igglybuff, Togepi, Azurill, Budew, Chingling, Happiny) a base happiness of 180 and lets Eevee evolve with the Sun, Moon and Leaf Stones. Based on Drayano's Renegade Platinum / Sacred Gold changes. | `--no-trade-evos` | yes | yes |
+| **Repel re-use prompt.** When a Repel wears off and you have another of the same kind, the game asks "Use another?" (as later games do). | `--no-repel-prompt` | yes | yes |
+
+Changing a flag only rebuilds the handful of files it touches, so switching is quick.
+
 ## Install on the PSP
 
 Connect the memory stick (USB mode) and run:
@@ -149,7 +163,8 @@ Please never attach or link ROMs, saves from someone else's game, or prebuilt EB
 - anything under [Not supported yet](#not-supported-yet), and performance (SoulSilver's busy areas in particular),
 - testing on other PSP models and firmware.
 
-[docs/DEVELOPING.md](docs/DEVELOPING.md) explains how the build and the code are laid out. Keep the same rules as the
+[docs/DEVELOPING.md](docs/DEVELOPING.md) explains how the build and the code are laid out, and [NOTES.md](NOTES.md)
+collects the hardware, porting and testing lessons learned so far (read it before debugging on a real PSP). Keep the same rules as the
 project: no ROM data, game assets or prebuilt EBOOTs in commits (changes to the decompilations go in `patches/`).
 
 ## How it works (short version)

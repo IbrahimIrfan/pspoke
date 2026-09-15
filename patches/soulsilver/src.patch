@@ -282,27 +282,6 @@ diff -ruN a/src/choose_starter_app.c b/src/choose_starter_app.c
      NNS_G3dDraw(&render->obj);
  }
  
-diff -ruN a/src/data/fieldmap/script_cmd_table.h b/src/data/fieldmap/script_cmd_table.h
---- a/src/data/fieldmap/script_cmd_table.h	2026-09-14 18:06:26
-+++ b/src/data/fieldmap/script_cmd_table.h	2026-09-13 22:51:24
-@@ -1,5 +1,8 @@
- #include "script.h"
- 
-+BOOL ScrCmd_SSRepelAsk(ScriptContext *ctx);
-+BOOL ScrCmd_SSRepelUse(ScriptContext *ctx);
-+
- #ifdef _IN_SCRCMD_C
- 
- const ScrCmdFunc gScriptCmdTable[] = {
-@@ -856,6 +859,8 @@
-     ScrCmd_BufferSealNamePlural,
-     ScrCmd_Capitalize,
-     ScrCmd_BufferDeptStoreFloorNo,
-+    ScrCmd_SSRepelAsk, // 853 SS QoL repel re-use prompt
-+    ScrCmd_SSRepelUse, // 854
- };
- const u32 sNumScriptCmds = NELEMS(gScriptCmdTable);
- 
 diff -ruN a/src/field/field_control.c b/src/field/field_control.c
 --- a/src/field/field_control.c	2026-09-14 18:29:01
 +++ b/src/field/field_control.c	2026-09-13 09:38:12
@@ -438,91 +417,6 @@ diff -ruN a/src/field/overlay_01_02204004.c b/src/field/overlay_01_02204004.c
  }
  
  static void ov01_022046A4(NNSFndAllocator *pAllocator, NNSG3dAnmObj **pAlloc, void *res) {
-diff -ruN a/src/field/scrcmd_message.c b/src/field/scrcmd_message.c
---- a/src/field/scrcmd_message.c	2026-09-14 18:29:01
-+++ b/src/field/scrcmd_message.c	2026-09-13 22:51:24
-@@ -14,6 +14,14 @@
- #include "script.h"
- #include "script_manager.h"
- #include "text.h"
-+#include "bag.h"
-+#include "item.h"
-+#include "roamer.h"
-+#include "unk_02005D10.h"
-+#include "constants/items.h"
-+#include "constants/sndseq.h"
-+#include "constants/vars.h"
-+#include <stdio.h>
- 
- typedef struct MessageBox {
-     String *message;
-@@ -306,4 +314,66 @@
- 
- static void ovFieldMain_AddTextPrinterParameterized(MessageBox *messageBox, FontID fontId) {
-     *(messageBox->textPrinterNumPtr) = AddTextPrinterParameterized(messageBox->window, fontId, messageBox->message, 0, 0, 0, NULL);
-+}
-+
-+// SS QoL repel re-use prompt (script bytecode in script_manager.c, commands 853/854 in script_cmd_table.h).
-+static u16 sSSRepelItem = ITEM_NONE;
-+
-+BOOL ScrCmd_SSRepelAsk(ScriptContext *ctx) {
-+    // "Use another " in the game charset; the item name and "?" are appended below.
-+    static const u16 sUseAnother[] = { 0x013F, 0x0157, 0x0149, 0x01DE, 0x0145, 0x0152, 0x0153, 0x0158, 0x014C, 0x0149, 0x0156, 0x01DE, 0xFFFF };
-+    static const u16 sQuestion[] = { 0x01AC, 0xFFFF };
-+    FieldSystem *fieldSystem = ctx->fieldSystem;
-+    RoamerSaveData *roamerSave = Save_Roamers_Get(fieldSystem->saveData);
-+    u16 *result = GetVarPointer(fieldSystem, VAR_SPECIAL_RESULT);
-+    u8 fullSteps = roamerSave->unk_66;
-+    roamerSave->unk_66 = 0;
-+    if (fullSteps > 200) {
-+        sSSRepelItem = ITEM_MAX_REPEL;
-+    } else if (fullSteps > 100) {
-+        sSSRepelItem = ITEM_SUPER_REPEL;
-+    } else {
-+        sSSRepelItem = ITEM_REPEL;
-+    }
-+    if (!Bag_HasItem(Save_Bag_Get(fieldSystem->saveData), sSSRepelItem, 1, HEAP_ID_FIELD3)) {
-+        printf("[SS-QOL] repel wore off: steps %u, no item %u in bag, no prompt\n", fullSteps, sSSRepelItem);
-+        sSSRepelItem = ITEM_NONE;
-+        *result = 1;
-+        ctx->script_ptr += 4; // skip YesNo VAR_SPECIAL_RESULT
-+        return FALSE;
-+    }
-+    MessageBox messageBox;
-+    ovFieldMain_GetMsgBoxParameters(fieldSystem, &messageBox);
-+    ovFieldMain_CreateMessageBox(fieldSystem, &messageBox);
-+    String *itemName = String_New(64, HEAP_ID_FIELD3);
-+    String *question = String_New(4, HEAP_ID_FIELD3);
-+    GetItemNameIntoString(itemName, sSSRepelItem, HEAP_ID_FIELD3);
-+    CopyU16ArrayToString(question, sQuestion);
-+    CopyU16ArrayToString(messageBox.message, sUseAnother);
-+    String_Cat(messageBox.message, itemName);
-+    String_Cat(messageBox.message, question);
-+    String_Delete(question);
-+    String_Delete(itemName);
-+    ov01_021EF758(&messageBox, 1, ovFieldMain_GetTextFrameDelay(ctx), TRUE, 0);
-+    printf("[SS-QOL] repel wore off: steps %u, offering item %u\n", fullSteps, sSSRepelItem);
-+    SetupNativeScript(ctx, ov01_021EF348);
-+    return TRUE;
-+}
-+
-+BOOL ScrCmd_SSRepelUse(ScriptContext *ctx) {
-+    FieldSystem *fieldSystem = ctx->fieldSystem;
-+    u16 *result = GetVarPointer(fieldSystem, VAR_SPECIAL_RESULT);
-+    if (sSSRepelItem != ITEM_NONE && *result == 0) {
-+        Bag *bag = Save_Bag_Get(fieldSystem->saveData);
-+        if (Bag_TakeItem(bag, sSSRepelItem, 1, HEAP_ID_FIELD3)) {
-+            u8 steps = (u8)GetItemAttr(sSSRepelItem, ITEMATTR_HOLD_EFFECT_PARAM, HEAP_ID_FIELD3);
-+            *RoamerSave_GetRepelAddr(Save_Roamers_Get(fieldSystem->saveData)) = steps;
-+            PlaySE(SEQ_SE_DP_CARD2);
-+            printf("[SS-QOL] repel reuse YES: item %u used, steps %u, another left %d\n", sSSRepelItem, steps, Bag_HasItem(bag, sSSRepelItem, 1, HEAP_ID_FIELD3));
-+        }
-+    } else if (sSSRepelItem != ITEM_NONE) {
-+        printf("[SS-QOL] repel reuse NO: item %u kept\n", sSSRepelItem);
-+    }
-+    sSSRepelItem = ITEM_NONE;
-+    return FALSE;
- }
 diff -ruN a/src/filesystem.c b/src/filesystem.c
 --- a/src/filesystem.c	2026-09-14 18:29:01
 +++ b/src/filesystem.c	2026-09-13 14:47:50
@@ -536,44 +430,6 @@ diff -ruN a/src/filesystem.c b/src/filesystem.c
      return chunk_size;
  }
  
-diff -ruN a/src/item.c b/src/item.c
---- a/src/item.c	2026-09-14 18:29:01
-+++ b/src/item.c	2026-09-13 22:50:46
-@@ -761,8 +761,32 @@
-         itemId = ITEM_NONE;
-     }
-     switch (attrno) {
--    case ITEMNARC_PARAM:
--        return AllocAndReadWholeNarcMemberByIdPair(NARC_itemtool_itemdata_item_data, sItemNarcIds[itemId][ITEMNARC_PARAM], heapID);
-+    case ITEMNARC_PARAM: {
-+        ItemData *itemData = AllocAndReadWholeNarcMemberByIdPair(NARC_itemtool_itemdata_item_data, sItemNarcIds[itemId][ITEMNARC_PARAM], heapID);
-+        // SS QoL (Sacred Gold/Storm Silver evolution changes): trade-with-item evolutions are done by
-+        // "Use"-ing the item from the Bag like an evolution stone. Patch the in-RAM copy only (ROM untouched):
-+        // field-use function 20 = evolution stone, party use + evolve flag like the stones' item data.
-+        if (itemData != NULL) {
-+            switch (itemId) {
-+            case ITEM_KINGS_ROCK:
-+            case ITEM_METAL_COAT:
-+            case ITEM_DRAGON_SCALE:
-+            case ITEM_UPGRADE:
-+            case ITEM_DUBIOUS_DISC:
-+            case ITEM_PROTECTOR:
-+            case ITEM_ELECTIRIZER:
-+            case ITEM_MAGMARIZER:
-+            case ITEM_REAPER_CLOTH:
-+            case ITEM_DEEPSEATOOTH:
-+            case ITEM_DEEPSEASCALE:
-+                itemData->fieldUseFunc = 20;
-+                itemData->partyUse = 1;
-+                itemData->partyUseParam.evolve = 1;
-+                break;
-+            }
-+        }
-+        return itemData;
-+    }
-     case ITEMNARC_NCGR:
-         return AllocAndReadWholeNarcMemberByIdPair(NARC_itemtool_itemdata_item_icon, sItemNarcIds[itemId][ITEMNARC_NCGR], heapID);
-     case ITEMNARC_NCLR:
 diff -ruN a/src/main.c b/src/main.c
 --- a/src/main.c	2026-09-14 18:29:01
 +++ b/src/main.c	2026-09-12 07:36:37
@@ -3778,55 +3634,6 @@ diff -ruN a/src/overlay_02_02248728.c b/src/overlay_02_02248728.c
  // clang-format on
  #endif
  
-diff -ruN a/src/pokemon.c b/src/pokemon.c
---- a/src/pokemon.c	2026-09-14 18:29:01
-+++ b/src/pokemon.c	2026-09-13 22:51:38
-@@ -2827,13 +2827,15 @@
-                 }
-                 break;
-             case EVO_FRIENDSHIP_DAY:
--                if (IsNighttime() == 0 && friendship >= 220) {
-+                // SS QoL (Drayano, Renegade Platinum evolution changes): timed friendship evolutions
-+                // (Budew, Riolu, Chingling) only need happiness. Eevee keeps day=Espeon / night=Umbreon.
-+                if ((species != SPECIES_EEVEE || IsNighttime() == 0) && friendship >= 220) {
-                     target = evoTable[i].target;
-                     *method_ret = EVO_FRIENDSHIP_DAY;
-                 }
-                 break;
-             case EVO_FRIENDSHIP_NIGHT:
--                if (IsNighttime() == 1 && friendship >= 220) {
-+                if ((species != SPECIES_EEVEE || IsNighttime() == 1) && friendship >= 220) {
-                     target = evoTable[i].target;
-                     *method_ret = EVO_FRIENDSHIP_NIGHT;
-                 }
-@@ -2845,6 +2847,12 @@
-                 }
-                 break;
-             case EVO_TRADE:
-+                // SS QoL: Kadabra/Machoke/Graveler/Haunter evolve at Lv. 36 (Drayano's Renegade Platinum
-+                // value; Sacred Gold/Storm Silver use a custom "Covenant Orb" item that the ROM lacks).
-+                if (level >= 36) {
-+                    target = evoTable[i].target;
-+                    *method_ret = EVO_LEVEL;
-+                }
-                 break;
-             case EVO_TRADE_ITEM:
-                 break;
-@@ -2981,6 +2989,14 @@
-     case EVOCTX_ITEM_CHECK:
-     case EVOCTX_ITEM_USE:
-         for (i = 0; i < 7; i++) {
-+            // SS QoL (Sacred Gold/Storm Silver): use the trade item from the Bag like an evolution stone
-+            // (Poliwhirl, Slowpoke, Onix, Rhydon, Seadra, Scyther, Electabuzz, Magmar, Porygon, Porygon2,
-+            // Dusclops, Clamperl). The party menu consumes the item exactly as for a stone.
-+            if (evoTable[i].method == EVO_TRADE_ITEM && usedItem != ITEM_NONE && usedItem == evoTable[i].param) {
-+                target = evoTable[i].target;
-+                *method_ret = 0;
-+                break;
-+            }
-             if (evoTable[i].method == EVO_STONE && usedItem == evoTable[i].param) {
-                 target = evoTable[i].target;
-                 *method_ret = 0;
 diff -ruN a/src/save.c b/src/save.c
 --- a/src/save.c	2026-09-14 18:29:01
 +++ b/src/save.c	2026-09-12 07:19:02
@@ -3860,43 +3667,6 @@ diff -ruN a/src/scrcmd_battle.c b/src/scrcmd_battle.c
          sub_020645AC(*r5);
          *r5 = 0;
          *var1 = 1;
-diff -ruN a/src/script_manager.c b/src/script_manager.c
---- a/src/script_manager.c	2026-09-14 18:29:01
-+++ b/src/script_manager.c	2026-09-13 22:51:13
-@@ -180,6 +180,22 @@
-     return ctx;
- }
- 
-+// SS QoL repel re-use prompt. Same as scr_seq_0003_022 (PlaySE SEQ_SE_DP_SELECT, LockAll, NPCMsg 65
-+// "Repel's effect wore off...", WaitABPress) plus: SSRepelAsk (853: "Use another <item>?" when the Bag has
-+// one, else skips the next command), YesNo VAR_SPECIAL_RESULT, SSRepelUse (854), CloseMsg, ReleaseAll, End.
-+static const u8 sSSRepelWoreOffScript[] = {
-+    73, 0, 0xDC, 0x05,
-+    96, 0,
-+    45, 0, 65,
-+    49, 0,
-+    0x55, 0x03,
-+    63, 0, 0x0C, 0x80,
-+    0x56, 0x03,
-+    53, 0,
-+    97, 0,
-+    2, 0,
-+};
-+
- void SetUpScriptContextForMap(FieldSystem *fieldSystem, ScriptContext *ctx, u16 scriptId, u32 unused_r3) {
- #pragma unused(unused_r3)
-     u16 r6;
-@@ -188,6 +204,10 @@
-     r6 = LoadScriptsAndMessagesByMapId(fieldSystem, ctx, scriptId);
-     SetupBytecodeScript(ctx, ctx->mapScripts);
-     ScriptRunByIndex(ctx, r6);
-+    if (scriptId == std_repel_wore_off) {
-+        // SS QoL: run the repel re-use prompt instead of the ROM's script (message bank msg_0040 stays loaded).
-+        SetupBytecodeScript(ctx, sSSRepelWoreOffScript);
-+    }
-     sub_0203FD68(ctx, fieldSystem->taskman);
- }
- 
 diff -ruN a/src/sound.c b/src/sound.c
 --- a/src/sound.c	2026-09-14 18:29:01
 +++ b/src/sound.c	2026-09-14 05:35:40
@@ -3936,58 +3706,6 @@ diff -ruN a/src/system.c b/src/system.c
      TPData rawTpData, calibTpData;
      int raw;
      if (PAD_DetectFold()) {
-diff -ruN a/src/text.c b/src/text.c
---- a/src/text.c	2026-09-14 18:29:01
-+++ b/src/text.c	2026-09-13 22:50:54
-@@ -208,19 +208,39 @@
- 
-         GenerateFontHalfRowLookupTable(printer->template.fgColor, printer->template.bgColor, printer->template.shadowColor);
- 
--        switch (RenderFont(printer)) {
--        case RENDER_PRINT:
--            CopyWindowToVram(printer->template.window);
--            // fallthrough
--        case RENDER_UPDATE:
-+        // SS QoL instant text: render every glyph of the current page in one frame, at every text speed.
-+        // Stops at anything that is not a plain glyph (button waits, scrolls, timed 0x201 pauses, callbacks
-+        // asking to pause), so input waits and scripted timing behave exactly as before.
-+        BOOL printed = FALSE;
-+        for (int n = 0; n < 0x400; n++) {
-+            if (printer->state == 0) {
-+                printer->delayCounter = 0;
-+            }
-+            RenderResult result = RenderFont(printer);
-+            if (result == RENDER_FINISH) {
-+                if (printed) {
-+                    CopyWindowToVram(printer->template.window);
-+                }
-+                DestroyTextPrinterSysTask(printer->id);
-+                return;
-+            }
-+            if (result == RENDER_PRINT) {
-+                printed = TRUE;
-+            }
-             if (printer->callback != NULL) {
-                 printer->unk2D = printer->callback(&printer->template, printer->unk2E);
-+                if (printer->unk2D != 0) {
-+                    break;
-+                }
-             }
--            return;
--        case RENDER_FINISH:
--            DestroyTextPrinterSysTask(printer->id);
--            return;
-+            if (result != RENDER_PRINT || printer->state != 0) {
-+                break;
-+            }
-         }
-+        if (printed) {
-+            CopyWindowToVram(printer->template.window);
-+        }
-+        return;
-     } else {
-         printer->unk2D = printer->callback(&printer->template, printer->unk2E);
-     }
 diff -ruN a/src/unk_02013534.c b/src/unk_02013534.c
 --- a/src/unk_02013534.c	2026-09-14 18:29:01
 +++ b/src/unk_02013534.c	2026-09-12 21:19:15
@@ -4715,3 +4433,4 @@ diff -ruN a/src/voltorb_flip/voltorb_flip.c b/src/voltorb_flip/voltorb_flip.c
  
      header.listMenuItems = work->menuItems[whichList];
      header.bgConfig = work->bgConfig;
+

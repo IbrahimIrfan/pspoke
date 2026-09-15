@@ -10,6 +10,7 @@ if ! done_ platinum-game; then
   step ov-generate  bash -c "cd '$O' && python3 generate.py"
   step ov-build     bash -c "cd '$O' && python3 build.py"
   step qol-patch    bash -c "cd '$O/source' && patch -p1 -s < '$ROOT/patches/platinum/qol-overlay-sources.patch'"
+  qol_header
   step qol-rebuild  bash -c "cd '$O' && python3 rebuild_obj.py text.c applications/bag/main.c game_options.c item.c overlay006/repel_step_update.c pokemon.c"
   step ov-internal  bash -c "cd '$O' && python3 internal.py && cp -f libplatinum-overlays.a libplatinum-overlays.a.base"
   step ov-link      bash -c "cd '$O' && python3 gen-link.py"
@@ -18,6 +19,10 @@ if ! done_ platinum-game; then
   mark platinum-game
 fi
 
+# The quality-of-life switches only touch these six game files: rebuild them every time so a changed
+# --no-* flag takes effect without a clean build.
+qol_header
+step qol-rebuild  bash -c "cd '$T/native-audio-app/overlays' && python3 rebuild_obj.py text.c applications/bag/main.c game_options.c item.c overlay006/repel_step_update.c pokemon.c"
 log "Linking Platinum EBOOT (DEV=$DEV)"
 R="$T/native-stack-render"; A="$T/native-audio-app"
 cp -f "$T/native-render-opt/native_gpu.o" "$T/native-render-opt/GPU2D_Soft.o" "$R/"

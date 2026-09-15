@@ -1,10 +1,15 @@
 --- a/text.c
 +++ b/text.c
-@@ -237,7 +237,43 @@
+@@ -1,3 +1,4 @@
++#include "pspoke_qol.h"
+ #include "text.h"
+ 
+ #include <nitro.h>
+@@ -237,7 +238,47 @@
          printer->callbackParam = 0;
          Text_GenerateFontHalfRowLookupTable(printer->template.fgColor, printer->template.bgColor, printer->template.shadowColor);
  
--        switch (TextPrinter_Render(printer)) {
++#if PSPOKE_QOL_INSTANT_TEXT
 +        enum RenderResult result = TextPrinter_Render(printer);
 +
 +        /* PSP QoL instant text: a printer created with TEXT_SPEED_FAST (Options text
@@ -42,58 +47,74 @@
 +        }
 +
 +        switch (result) {
++#else
+         switch (TextPrinter_Render(printer)) {
++#endif
          case RENDER_PRINT:
              Window_CopyToVRAM(printer->template.window);
              // fall-through
 --- a/applications__bag__main.c
 +++ b/applications__bag__main.c
-@@ -2313,6 +2313,10 @@
+@@ -1,3 +1,4 @@
++#include "pspoke_qol.h"
+ #include "applications/bag/main.h"
+ 
+ #include <nitro.h>
+@@ -2313,6 +2314,12 @@
  
      u32 stepCount = Item_LoadParam(item, ITEM_PARAM_EFFECT_PARAM, HEAP_ID_BAG);
      SetRepelSteps(controller, stepCount);
++#if PSPOKE_QOL_REPEL_PROMPT
 +    {
 +        extern u16 gPSPQoLLastRepel; /* PSP QoL: Repel re-use prompt */
 +        gPSPQoLLastRepel = item;
 +    }
++#endif
      controller->selectedItemCount = 1;
      Sound_PlayEffect(SEQ_SE_DP_CARD2_sseq);
  
 --- a/game_options.c
 +++ b/game_options.c
-@@ -66,15 +66,12 @@
+@@ -1,3 +1,4 @@
++#include "pspoke_qol.h"
+ #include "game_options.h"
+ 
+ #include <nitro.h>
+@@ -66,6 +67,14 @@
  
  u8 Options_TextFrameDelay(const Options *options)
  {
--    int speed = Options_TextSpeed(options);
--
--    if (speed == OPTIONS_TEXT_SPEED_SLOW) {
--        return TEXT_SPEED_SLOW;
--    } else if (speed == OPTIONS_TEXT_SPEED_NORMAL) {
--        return TEXT_SPEED_NORMAL;
--    } else {
--        return TEXT_SPEED_FAST;
--    }
++#if PSPOKE_QOL_INSTANT_TEXT
 +    /* PSP QoL instant text: every Options text speed (SLOW, MID, FAST) prints dialogue a whole
 +       page per frame. TEXT_SPEED_FAST printers take the burst path in text.c
 +       SysTask_RunTextPrinter, which still stops at A/B waits, scrolls and timed pauses. The
 +       saved setting is kept unchanged in the save file. */
 +    (void)options;
 +    return TEXT_SPEED_FAST;
++#else
+     int speed = Options_TextSpeed(options);
+ 
+     if (speed == OPTIONS_TEXT_SPEED_SLOW) {
+@@ -75,6 +84,7 @@
+     } else {
+         return TEXT_SPEED_FAST;
+     }
++#endif
  }
  
  int Options_SoundMode(const Options *options)
 --- a/item.c
 +++ b/item.c
-@@ -105,6 +105,36 @@
- u16 Item_IconNANRFile(void)
- {
+@@ -1,3 +1,4 @@
++#include "pspoke_qol.h"
+ #include "item.h"
+ 
+ #include <nitro.h>
+@@ -107,6 +108,34 @@
      return generic_anim_NANR;
-+}
-+
-+/* PSP QoL: last Repel kind used from the bag (RAM only, not saved). Lives in a main
-+   object because overlay BSS is reset on every overlay load. */
-+u16 gPSPQoLLastRepel = ITEM_NONE;
-+
+ }
+ 
++#if PSPOKE_QOL_TRADE_EVOS
 +/* PSP QoL (Renegade Platinum): former trade items are used exactly like an evolution
 +   stone. Patches the in-RAM copy of the item record only. */
 +static void PSPQoL_PatchItemData(u16 item, ItemData *data)
@@ -118,33 +139,51 @@
 +        }
 +        break;
 +    }
- }
- 
++}
++
++#endif
  void *Item_Load(u16 item, enum ItemFileType type, enum HeapID heapID)
-@@ -115,7 +145,11 @@
+ {
+     if (item > NUM_ITEMS) {
+@@ -115,7 +144,15 @@
  
      switch (type) {
      case ITEM_FILE_TYPE_DATA:
--        return NARC_AllocAndReadWholeMemberByIndexPair(NARC_INDEX_ITEMTOOL__ITEMDATA__PL_ITEM_DATA, sItemArchiveIDs[item].dataID, heapID);
++#if PSPOKE_QOL_TRADE_EVOS
 +        {
 +            ItemData *data = NARC_AllocAndReadWholeMemberByIndexPair(NARC_INDEX_ITEMTOOL__ITEMDATA__PL_ITEM_DATA, sItemArchiveIDs[item].dataID, heapID);
 +            PSPQoL_PatchItemData(item, data);
 +            return data;
 +        }
++#else
+         return NARC_AllocAndReadWholeMemberByIndexPair(NARC_INDEX_ITEMTOOL__ITEMDATA__PL_ITEM_DATA, sItemArchiveIDs[item].dataID, heapID);
++#endif
      case ITEM_FILE_TYPE_ICON:
          return NARC_AllocAndReadWholeMemberByIndexPair(NARC_INDEX_ITEMTOOL__ITEMDATA__ITEM_ICON, sItemArchiveIDs[item].iconID, heapID);
      case ITEM_FILE_TYPE_PALETTE:
+@@ -401,3 +438,7 @@
+ {
+     return (ItemData *)((u8 *)itemTable + index * sizeof(ItemData));
+ }
++
++/* PSP QoL: last Repel kind used from the bag (RAM only, not saved). Lives in a main
++   object because overlay BSS is reset on every overlay load. */
++u16 gPSPQoLLastRepel = ITEM_NONE;
 --- a/overlay006__repel_step_update.c
 +++ b/overlay006__repel_step_update.c
-@@ -3,12 +3,222 @@
+@@ -1,13 +1,226 @@
++#include "pspoke_qol.h"
+ #include "overlay006/repel_step_update.h"
+ 
  #include <nitro.h>
  #include <string.h>
  
 -#include "field/field_system_decl.h"
+-
 +#include "constants/field/window.h"
 +#include "constants/heap.h"
 +#include "generated/items.h"
- 
++
 +#include "field/field_system.h"
 +
 +#include "bag.h"
@@ -162,10 +201,11 @@
  #include "script_manager.h"
 +#include "sound_playback.h"
  #include "special_encounter.h"
++#if PSPOKE_QOL_REPEL_PROMPT
 +#include "string_gf.h"
 +#include "string_template.h"
 +#include "system.h"
- 
++
 +#include "res/text/bank/bag.h"
 +#include "res/text/bank/common_strings.h"
 +
@@ -356,14 +396,15 @@
 +
 +    return FALSE;
 +}
-+
++#endif
+ 
  BOOL Repel_UpdateSteps(SaveData *saveData, FieldSystem *fieldSystem)
  {
-     u8 *repelSteps = SpecialEncounter_GetRepelSteps(SaveData_GetSpecialEncounters(saveData));
-@@ -17,6 +227,17 @@
+@@ -17,6 +230,19 @@
          (*repelSteps)--;
  
          if (*repelSteps == 0) {
++#if PSPOKE_QOL_REPEL_PROMPT
 +            u16 item = FindRepelToReuse(SaveData_GetBag(saveData));
 +
 +            if (item != ITEM_NONE) {
@@ -375,15 +416,22 @@
 +                return TRUE;
 +            }
 +
++#endif
              ScriptManager_Set(fieldSystem, SCRIPT_ID(COMMON_SCRIPTS, 32), NULL);
              return TRUE;
          }
 --- a/pokemon.c
 +++ b/pokemon.c
-@@ -433,6 +433,20 @@
+@@ -1,3 +1,4 @@
++#include "pspoke_qol.h"
+ #include "pokemon.h"
+ 
+ #include <nitro.h>
+@@ -433,6 +434,22 @@
      BoxPokemon_SetValue(boxMon, MON_DATA_EXPERIENCE, &v1);
  
      v1 = SpeciesData_GetSpeciesValue(monSpecies, SPECIES_DATA_BASE_FRIENDSHIP);
++#if PSPOKE_QOL_TRADE_EVOS
 +
 +    /* PSP QoL: Renegade Platinum base happiness 180 for the friendship babies. */
 +    switch (monSpecies) {
@@ -398,13 +446,15 @@
 +        v1 = 180;
 +        break;
 +    }
++#endif
      BoxPokemon_SetValue(boxMon, MON_DATA_FRIENDSHIP, &v1);
  
      BoxPokemon_SetValue(boxMon, MON_DATA_MET_LEVEL, &monLevel);
-@@ -3525,6 +3539,48 @@
+@@ -3525,6 +3542,50 @@
      return FALSE;
  }
  
++#if PSPOKE_QOL_TRADE_EVOS
 +/* PSP QoL (2026-09-13): evolution changes copied from Drayano's Renegade Platinum
 +   documentation ("Evolution Changes"). Applied to the evolution table in RAM after it is
 +   read from the user's ROM; the ROM and the save format are untouched.
@@ -447,14 +497,17 @@
 +    }
 +}
 +
++#endif
  u16 Pokemon_GetEvolutionTargetSpecies(Party *party, Pokemon *mon, u8 evoClass, u16 evoParam, int *evoTypeResult)
  {
      u16 targetSpecies = SPECIES_NONE;
-@@ -3553,6 +3609,7 @@
+@@ -3553,6 +3614,9 @@
  
      SpeciesEvolution *speciesEvolutions = Heap_Alloc(HEAP_ID_SYSTEM, sizeof(SpeciesEvolution) * MAX_EVOLUTIONS);
      LoadSpeciesEvolutions(monSpecies, speciesEvolutions);
++#if PSPOKE_QOL_TRADE_EVOS
 +    PSPQoL_ApplyRenegadeEvolutions(monSpecies, speciesEvolutions);
++#endif
  
      switch (evoClass) {
      case EVO_CLASS_BY_LEVEL: {
