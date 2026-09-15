@@ -1,0 +1,11 @@
+# pspoke pinned third-party sources. Fetched at build time into .cache/upstream; never committed.
+# name            url                                                  commit                                    license
+libntr            https://github.com/cybervisi0n/libntr.git            b221889911a7d1c16adf14dff24868da836ff057  MIT
+libntrsystem      https://github.com/cybervisi0n/libntrsystem.git      cd778c9d5e45869f8ecb8245b316ac20ea576958  none-published
+libntrdwc         https://github.com/cybervisi0n/libntrdwc.git         16246ba7b4269e6686f3e4da068e3c996a103739  none-published
+libntrwifi        https://github.com/cybervisi0n/libntrwifi.git        067dabb137dfaf80b8ceeb3b3c4a7256bfabc3e0  none-published
+libvct            https://github.com/cybervisi0n/libvct.git            a34ad47fc0d7d964483c287759b704b3b1f3b967  none-published
+metang            https://github.com/lhearachel/metang.git             d616519ce37bc9ceef556969a1ca2dc64bf88390  see repo
+pokeplatinum      https://github.com/cybervisi0n/pokeplatinum.git      47c28d531ce409ad40748ef50fcc59ae22226227  none-published
+pokeheartgold-slop https://github.com/antonsynd/pokeheartgold-slop.git 808283ee256ca702d4fcf1407697b5d55f784a34  none-published
+pokeheartgold     https://github.com/pret/pokeheartgold.git            0985e8718df4f25e64d6507d89c0c97c0d288981  none-published (asset member-order audit for SoulSilver)

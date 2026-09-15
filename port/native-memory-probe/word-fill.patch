@@ -1,0 +1,22 @@
+--- a/libraries/mi/src/mi_memory.c
++++ b/libraries/mi/src/mi_memory.c
+@@ -94,7 +94,7 @@
+ void MIi_CpuClear32( u32 data, void *destp, u32 size )
+ {
+     SIM_assert_msg(size < HW_MAIN_MEM_MAIN_SIZE, "Attempt to call MIi_CpuClear32 with a size of %d bytes, which is larger than the DS memory.", size);
+-    memset( destp, data, size );
++    for (u32 i = 0; i < size / 4; i++) ((u32 *)destp)[i] = data;
+ }
+ 
+ void MIi_CpuCopy32( const void *srcp, void *destp, u32 size )
+--- a/libraries/mi/src/mi_dma.c
++++ b/libraries/mi/src/mi_dma.c
+@@ -120,7 +120,7 @@
+ 
+     #ifdef SDK_PORT
+     SIM_assert_msg(size < HW_MAIN_MEM_MAIN_SIZE, "Attempt to call MI_DmaFill32 with a size of %d bytes, which is larger than the DS memory.", size);
+-    memset(dest, data, size);
++    for (u32 i = 0; i < size / 4; i++) ((u32 *)dest)[i] = data;
+     #else
+     MIi_Wait_BeforeDMA(dmaCntp, dmaNo);
+     MIi_DmaSetParams_wait_src32(dmaNo, data, (u32)dest, MI_CNT_CLEAR32(size));

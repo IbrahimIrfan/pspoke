@@ -1,0 +1,4717 @@
+diff -ruN a/src/application/main_menu/main_menu.c b/src/application/main_menu/main_menu.c
+--- a/src/application/main_menu/main_menu.c	2026-09-14 18:29:01
++++ b/src/application/main_menu/main_menu.c	2026-09-12 08:35:58
+@@ -565,9 +565,15 @@
+         data->unk13C = 11;
+         break;
+     case 11:
++#ifdef PSP_NATIVE_OFFLINE
++        // Native PSP offline build does not run DS wireless gift discovery.
++        data->unk140 = 0;
++        data->unk13C = 12;
++#else
+         sub_02038D28(data->saveData);
+         data->unk140 = 120;
+         data->unk13C = 13;
++#endif
+         data->unk40 = 0;
+         if (SaveMysteryGift_TestFlagx7FF(data->mysteryGift) == TRUE) {
+             data->unk40 |= (1 << 0);
+@@ -615,7 +621,9 @@
+         break;
+     }
+     case 14:
++#ifndef PSP_NATIVE_OFFLINE
+         sub_02038D64();
++#endif
+         data->unk13C = 12;
+         break;
+     }
+diff -ruN a/src/application/pokedex/ov18_021E8BF4.c b/src/application/pokedex/ov18_021E8BF4.c
+--- a/src/application/pokedex/ov18_021E8BF4.c	2026-09-14 18:29:01
++++ b/src/application/pokedex/ov18_021E8BF4.c	2026-09-12 07:09:04
+@@ -2132,7 +2132,7 @@
+     return POKEDEXAPP_MAINSEQ_57;
+ }
+ 
+-PokedexApp_MainSeq_62(PokedexAppData *pokedexApp) {
++int PokedexApp_MainSeq_62(PokedexAppData *pokedexApp) {
+     switch (pokedexApp->unk_0868.state_10.unk_0) {
+     case 0: {
+         u16 r1 = ov18_021F8838(pokedexApp);
+diff -ruN a/src/application/pokegear/map/overlay_101_021E9270.c b/src/application/pokegear/map/overlay_101_021E9270.c
+--- a/src/application/pokegear/map/overlay_101_021E9270.c	2026-09-14 18:29:01
++++ b/src/application/pokegear/map/overlay_101_021E9270.c	2026-09-12 07:03:24
+@@ -21,7 +21,7 @@
+ static void PokegearMap_PrintMarkingECWord(PokegearMapAppData *mapApp, u8 a1, u16 a2);
+ static void PokegearMap_GetLandmarkNameFromMapID(u16 mapno, enum HeapID heapID, String *dest);
+ 
+-const TouchscreenListMenuTemplate sListMenuTemplate = {
++const TouchscreenListMenuTemplate gear_sListMenuTemplate = {
+     .wrapAround = TRUE,
+     .centered = TRUE,
+     .xOffset = 0,
+@@ -1085,7 +1085,7 @@
+ 
+     MI_CpuClear8(&header, sizeof(TouchscreenListMenuHeader));
+ 
+-    header.template = sListMenuTemplate;
++    header.template = gear_sListMenuTemplate;
+     header.listMenuItems = mapApp->listMenuItems;
+     header.bgConfig = mapApp->pokegear->bgConfig;
+     header.numWindows = 2;
+diff -ruN a/src/battle/battle_controller_player.c b/src/battle/battle_controller_player.c
+--- a/src/battle/battle_controller_player.c	2026-09-14 18:29:01
++++ b/src/battle/battle_controller_player.c	2026-09-13 09:38:15
+@@ -1,3 +1,4 @@
++#define ov12_022639B8 ov12_022639B8_headerdecl
+ #include "battle/battle_controller_player.h"
+ 
+ #include "global.h"
+@@ -21,6 +22,15 @@
+ #include "screen_fade.h"
+ #include "sound.h"
+ #include "unk_02035900.h"
++#undef ov12_022639B8
++/* PSP port: psp-gcc passes this 36-byte struct by reference (a2 = pointer) while the translated
++ * ARM routine expects its words in r2,r3 and seven incoming stack slots (stack-args.json).
++ * Hand the words over explicitly (playbook 37/38). */
++extern u32 ov12_022639B8(u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
++static void SS_SendBattleMessage(BattleSystem *bs, int battlerId, const BattleMessage *m) {
++    const u32 *w = (const u32 *)m;
++    ov12_022639B8((u32)(uintptr_t)bs, (u32)battlerId, w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8]);
++}
+ 
+ static void BattleControllerPlayer_GetBattleMon(BattleSystem *battleSystem, BattleContext *ctx);
+ static void BattleControllerPlayer_StartEncounter(BattleSystem *battleSystem, BattleContext *ctx);
+@@ -408,7 +418,7 @@
+                         } else if (BattleSystem_GetBattleType(battleSystem) & (BATTLE_TYPE_LINK | BATTLE_TYPE_FRONTIER)) {
+                             msg.id = msg_0197_00593; // Items can't be used here
+                             msg.tag = TAG_NONE;
+-                            ov12_022639B8(battleSystem, battlerId, msg);
++                            SS_SendBattleMessage(battleSystem, battlerId, &msg);
+                             ctx->unk_0[battlerId] = SSI_STATE_15;
+                             ctx->unk_4[battlerId] = SSI_STATE_SELECT_COMMAND_INIT;
+                         } else {
+@@ -456,7 +466,7 @@
+                         ov12_0223BFFC(battleSystem, 1);
+                         BattleController_TryEmitExitRecording(battleSystem, BattleSystem_GetBattleContext(battleSystem));
+                     } else {
+-                        ov12_022639B8(battleSystem, battlerId, msg);
++                        SS_SendBattleMessage(battleSystem, battlerId, &msg);
+                         ctx->unk_0[battlerId] = SSI_STATE_15;
+                         ctx->unk_4[battlerId] = SSI_STATE_3;
+                     }
+@@ -544,7 +554,7 @@
+                 } else {
+                     msg.tag = TAG_NONE;
+                     msg.id = msg_0197_00793; // There's no running from a Trainer battle!
+-                    ov12_022639B8(battleSystem, battlerId, msg);
++                    SS_SendBattleMessage(battleSystem, battlerId, &msg);
+                     ctx->unk_0[battlerId] = SSI_STATE_15;
+                     ctx->unk_4[battlerId] = SSI_STATE_SELECT_COMMAND_INIT;
+                 }
+@@ -553,7 +563,7 @@
+                     ov12_0223BFFC(battleSystem, 1);
+                     BattleController_TryEmitExitRecording(battleSystem, BattleSystem_GetBattleContext(battleSystem));
+                 } else {
+-                    ov12_022639B8(battleSystem, battlerId, msg);
++                    SS_SendBattleMessage(battleSystem, battlerId, &msg);
+                     ctx->unk_0[battlerId] = SSI_STATE_15;
+                     ctx->unk_4[battlerId] = SSI_STATE_SELECT_COMMAND_INIT;
+                 }
+@@ -607,7 +617,7 @@
+             msg.tag = TAG_NICKNAME;
+             msg.id = msg_0197_00608; // Spheal has no moves left!
+             msg.param[0] = CreateNicknameTag(ctx, battlerId);
+-            ov12_022639B8(battleSystem, battlerId, msg);
++            SS_SendBattleMessage(battleSystem, battlerId, &msg);
+             ctx->unk_0[battlerId] = SSI_STATE_15;
+             ctx->unk_4[battlerId] = SSI_STATE_13;
+             break;
+diff -ruN a/src/battle/battle_system.c b/src/battle/battle_system.c
+--- a/src/battle/battle_system.c	2026-09-14 18:29:01
++++ b/src/battle/battle_system.c	2026-09-13 09:38:12
+@@ -1,6 +1,7 @@
+ #include "battle/battle_system.h"
+ 
+ #include "global.h"
++#include <stdint.h>
+ 
+ #include "constants/game_stats.h"
+ #include "constants/message_tags.h"
+@@ -851,12 +852,13 @@
+     battleSystem->unk220 = Heap_Alloc(HEAP_ID_BATTLE, 0x10000);
+     battleSystem->unk224 = Heap_Alloc(HEAP_ID_BATTLE, 0x200);
+ 
+-    MIi_CpuCopy32((void *)0x6010000, (u32 *)battleSystem->unk220, 0x10000);
++    /* PSP port: DS VRAM lives in the SDK port arrays (HW_BG_VRAM/HW_OBJ_VRAM), never at the DS address. */
++    MIi_CpuCopy32((void *)(uintptr_t)(HW_BG_VRAM + 0x10000), (u32 *)battleSystem->unk220, 0x10000);
+     dst = (u32 *)battleSystem->unk224;
+     src = (u32 *)PaletteData_GetUnfadedBuf(battleSystem->palette, PLTTBUF_MAIN_BG);
+     MIi_CpuCopy32(src, dst, 0x200);
+ 
+-    vram = (u8 *)0x6400000;
++    vram = (u8 *)(uintptr_t)HW_OBJ_VRAM;
+     image = Sprite_GetImageProxy(battleSystem->unk17C[1].unk0->sprite);
+     vram += image->vramLocation.baseAddrOfVram[NNS_G2D_VRAM_TYPE_2DMAIN];
+ 
+@@ -883,7 +885,7 @@
+         }
+     }
+ 
+-    vram = (u8 *)0x6400000;
++    vram = (u8 *)(uintptr_t)HW_OBJ_VRAM;
+     image = Sprite_GetImageProxy(battleSystem->unk17C[0].unk0->sprite);
+     vram += image->vramLocation.baseAddrOfVram[NNS_G2D_VRAM_TYPE_2DMAIN];
+ 
+diff -ruN a/src/berry_pots_app_tasks.c b/src/berry_pots_app_tasks.c
+--- a/src/berry_pots_app_tasks.c	2026-09-14 18:29:06
++++ b/src/berry_pots_app_tasks.c	2026-09-12 07:09:48
+@@ -5,6 +5,7 @@
+ #include "berry_pots_app.h"
+ #include "berry_pots_app_internal.h"
+ #include "system.h"
++void ov17_02203928(BerryPotsAppData *data);
+ #include "touchscreen.h"
+ #include "unk_02005D10.h"
+ 
+@@ -199,7 +200,7 @@
+ 
+ static void ov17_022039A0(SysTask *task, SysTaskArgs_ov17_022039A0 *args);
+ 
+-static void ov17_02203928(BerryPotsAppData *data) {
++void ov17_02203928(BerryPotsAppData *data) {
+     for (int i = 0; i < MAX_BERRY_POT; i++) {
+         BerryPotsAppData_UnkSub20 *sub = &data->unk20[i];
+ 
+@@ -270,7 +271,7 @@
+     return ret;
+ }
+ 
+-static u32 ov17_02203A74(BerryPotsAppData *data, u32 a1) {
++u32 ov17_02203A74(BerryPotsAppData *data, u32 a1) {
+     switch (a1) {
+     case 0:
+     case 1:
+@@ -297,7 +298,7 @@
+     return 2;
+ }
+ 
+-static u32 ov17_02203AD4(BerryPotsAppData *data) {
++u32 ov17_02203AD4(BerryPotsAppData *data) {
+     BOOL flag = FALSE;
+ 
+     if (gSystem.newKeys & (PAD_BUTTON_Y | PAD_BUTTON_X | PAD_KEY_DOWN | PAD_KEY_UP | PAD_KEY_LEFT | PAD_KEY_RIGHT | PAD_BUTTON_B | PAD_BUTTON_A)) {
+@@ -329,7 +330,7 @@
+     }
+ }
+ 
+-static u32 ov17_02203B68(BerryPotsAppData *data, BOOL *a1) {
++u32 ov17_02203B68(BerryPotsAppData *data, BOOL *a1) {
+     int unk = ov17_02203CC8(data);
+     if (unk < 0) {
+         return 2;
+@@ -340,7 +341,7 @@
+     return ov17_02203A74(data, unk);
+ }
+ 
+-static BOOL ov17_02203B88(BerryPotsAppData *data) {
++BOOL ov17_02203B88(BerryPotsAppData *data) {
+     BOOL unk = FALSE;
+ 
+     if (data->unk81 != 0xFF) {
+@@ -369,7 +370,7 @@
+     return FALSE;
+ }
+ 
+-static BOOL ov17_02203C20(BerryPotsAppData *data, BOOL *a1) {
++BOOL ov17_02203C20(BerryPotsAppData *data, BOOL *a1) {
+     if (data->unk81 != 0xFF) {
+         return FALSE;
+     }
+@@ -389,7 +390,7 @@
+     return TRUE;
+ }
+ 
+-static int ov17_02203C78(BerryPotsAppData *data) {
++int ov17_02203C78(BerryPotsAppData *data) {
+     TouchscreenHitbox touchHitbox;
+ 
+     for (int i = 0, xOffsetMaybe = 16; i < MAX_BERRY_POT; xOffsetMaybe += 28, i++) {
+@@ -410,7 +411,7 @@
+     return -1;
+ }
+ 
+-static int ov17_02203CC8(BerryPotsAppData *data) {
++int ov17_02203CC8(BerryPotsAppData *data) {
+     if (TouchscreenHitbox_TouchNewIsIn(&ov17_02203FC0)) {
+         return 5;
+     }
+@@ -425,7 +426,7 @@
+     return -1;
+ }
+ 
+-static u32 ov17_02203D00(BerryPotsAppData *data) {
++u32 ov17_02203D00(BerryPotsAppData *data) {
+     BerryPotsAppData_UnkSub20 *unk = &data->unk20[data->unk7C];
+     switch (unk->growthStage) {
+     case BERRY_POT_GROWTH_STAGE_NONE:
+diff -ruN a/src/choose_starter_app.c b/src/choose_starter_app.c
+--- a/src/choose_starter_app.c	2026-09-14 18:29:01
++++ b/src/choose_starter_app.c	2026-09-12 22:45:38
+@@ -804,7 +804,10 @@
+     loadAnmFromNarc(NARC_choose_starter_main_res_06_ball_rock_NSBCA, work->heapID, &work->allocator, &work->_3dObjRes[CS_3DRES_BALLS], &work->_3dObjAnm[CS_ANIM_BALL3_ROCK]);
+     loadAnmFromNarc(NARC_choose_starter_main_res_05_tt_ball_NSBCA, work->heapID, &work->allocator, &work->_3dObjRes[CS_3DRES_BALLS], &work->_3dObjAnm[CS_ANIM_BALL_OPEN]);
+     loadAnmFromNarc(NARC_choose_starter_main_res_04_tt_ball_ef_NSBCA, work->heapID, &work->allocator, &work->_3dObjRes[CS_3DRES_BALL_EF], &work->_3dObjAnm[CS_ANIM_TT_BALL_EF]);
++    #ifndef SS_DEBUG_NO_TT_ANM
+     addAnmObjToRenderObj(&work->_3dObjRender[CS_MODEL_TURNTABLE], &work->_3dObjAnm[CS_ANIM_TURNTABLE]);
++    #else
++    #endif
+     addAnmObjToRenderObj(&work->_3dObjRender[CS_MODEL_BALL1], &work->_3dObjAnm[CS_ANIM_BALL1_ROCK]);
+     addAnmObjToRenderObj(&work->_3dObjRender[CS_MODEL_BALL2], &work->_3dObjAnm[CS_ANIM_BALL2_ROCK]);
+     addAnmObjToRenderObj(&work->_3dObjRender[CS_MODEL_BALL3], &work->_3dObjAnm[CS_ANIM_BALL3_ROCK]);
+@@ -953,7 +956,10 @@
+ static void updateModelPositionAndRotation(struct ChooseStarterRnd *render) {
+     MtxFx43 mtx;
+     calculateModelPositionAndRotation(render, &mtx);
++#ifndef SS_DEBUG_NO_MULTMTX
+     NNS_G3dGeMultMtx43(&mtx);
++#else
++#endif
+     NNS_G3dDraw(&render->obj);
+ }
+ 
+diff -ruN a/src/data/fieldmap/script_cmd_table.h b/src/data/fieldmap/script_cmd_table.h
+--- a/src/data/fieldmap/script_cmd_table.h	2026-09-14 18:06:26
++++ b/src/data/fieldmap/script_cmd_table.h	2026-09-13 22:51:24
+@@ -1,5 +1,8 @@
+ #include "script.h"
+ 
++BOOL ScrCmd_SSRepelAsk(ScriptContext *ctx);
++BOOL ScrCmd_SSRepelUse(ScriptContext *ctx);
++
+ #ifdef _IN_SCRCMD_C
+ 
+ const ScrCmdFunc gScriptCmdTable[] = {
+@@ -856,6 +859,8 @@
+     ScrCmd_BufferSealNamePlural,
+     ScrCmd_Capitalize,
+     ScrCmd_BufferDeptStoreFloorNo,
++    ScrCmd_SSRepelAsk, // 853 SS QoL repel re-use prompt
++    ScrCmd_SSRepelUse, // 854
+ };
+ const u32 sNumScriptCmds = NELEMS(gScriptCmdTable);
+ 
+diff -ruN a/src/field/field_control.c b/src/field/field_control.c
+--- a/src/field/field_control.c	2026-09-14 18:29:01
++++ b/src/field/field_control.c	2026-09-13 09:38:12
+@@ -1,6 +1,7 @@
+ #include "field/field_control.h"
+ 
+ #include "global.h"
++#include <stdio.h>
+ 
+ #include "constants/badge.h"
+ #include "constants/field_poison.h"
+@@ -131,6 +132,8 @@
+ 
+     fieldInput->newKeys = newKeys;
+     fieldInput->heldKeys = heldKeys;
++    { static u32 lastX = 0xFFFFFFFF, lastZ = 0xFFFFFFFF; u32 px = PlayerAvatar_GetXCoord(fieldSystem->playerAvatar), pz = PlayerAvatar_GetZCoord(fieldSystem->playerAvatar);
++      if (px != lastX || pz != lastZ) { lastX = px; lastZ = pz; printf("[SS-DBG] fieldinput held=%04x new=%04x facing=%u x=%u z=%u\n", (unsigned)heldKeys, (unsigned)newKeys, (unsigned)PlayerAvatar_GetFacingDirection(fieldSystem->playerAvatar), px, pz); } } /* replay position trail: prints only on a tile change */
+ 
+     BOOL shouldDrawBagIcon = FieldSystem_ShouldDrawStartMenuIcon(fieldSystem, START_MENU_ICON_BAG);
+ 
+diff -ruN a/src/field/fieldmap.c b/src/field/fieldmap.c
+--- a/src/field/fieldmap.c	2026-09-14 18:29:01
++++ b/src/field/fieldmap.c	2026-09-12 15:25:40
+@@ -55,7 +55,6 @@
+ #include "screen_fade.h"
+ #include "sound_02004A44.h"
+ #include "sys_flags.h"
+-#include "system.h"
+ #include "task.h"
+ #include "terrain_attributes.h"
+ #include "unk_0200B150.h"
+diff -ruN a/src/field/overlay_01_021FD1B8.c b/src/field/overlay_01_021FD1B8.c
+--- a/src/field/overlay_01_021FD1B8.c	2026-09-14 18:29:01
++++ b/src/field/overlay_01_021FD1B8.c	2026-09-12 15:02:45
+@@ -199,6 +199,7 @@
+ }
+ 
+ static BOOL ov01_021FD378(void *a0, UnkOv01_021FD1B8_Work *work) {
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static void ov01_021FD37C(void *a0, UnkOv01_021FD1B8_Work *work) {
+diff -ruN a/src/field/overlay_01_021FD41C.c b/src/field/overlay_01_021FD41C.c
+--- a/src/field/overlay_01_021FD41C.c	2026-09-14 18:29:01
++++ b/src/field/overlay_01_021FD41C.c	2026-09-12 15:02:45
+@@ -262,6 +262,7 @@
+ }
+ 
+ static BOOL ov01_021FD714(void *param0, UnkOv01_021FD41C_InstanceWork *work) {
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static void ov01_021FD718(void *param0, UnkOv01_021FD41C_InstanceWork *work) {
+diff -ruN a/src/field/overlay_01_021FE780.c b/src/field/overlay_01_021FE780.c
+--- a/src/field/overlay_01_021FE780.c	2026-09-14 18:29:01
++++ b/src/field/overlay_01_021FE780.c	2026-09-12 15:02:45
+@@ -143,6 +143,7 @@
+     LocalMapObject *mapObject = work->data.unkC;
+     VecFx32 vec = { 0, 0, 0 };
+     sub_0205F9A0(mapObject, &vec);
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static void ov01_021FE8C8(void *param0, UnkOv01_021FE780_Work *work) {
+diff -ruN a/src/field/overlay_01_021FEA0C.c b/src/field/overlay_01_021FEA0C.c
+--- a/src/field/overlay_01_021FEA0C.c	2026-09-14 18:29:01
++++ b/src/field/overlay_01_021FEA0C.c	2026-09-12 15:02:45
+@@ -168,6 +168,7 @@
+ static BOOL ov01_021FEB78(void *param0, UnkOv01_021FEA0C_Work *work) {
+     ov01_021FEA38(work->data.manager);
+     ov01_021FEAA0(work->data.manager);
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static void ov01_021FEB8C(void *param0, UnkOv01_021FEA0C_Work *work) {
+diff -ruN a/src/field/overlay_01_021FEC38.c b/src/field/overlay_01_021FEC38.c
+--- a/src/field/overlay_01_021FEC38.c	2026-09-14 18:29:01
++++ b/src/field/overlay_01_021FEC38.c	2026-09-12 15:02:45
+@@ -122,6 +122,7 @@
+ 
+ static BOOL ov01_021FED4C(void *param0, UnkOv01_021FEC38_Work *work) {
+     sub_020698D0(&work->unk0);
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static void ov01_021FED58(void *param0, UnkOv01_021FEC38_Work *work) {
+diff -ruN a/src/field/overlay_01_021FED9C.c b/src/field/overlay_01_021FED9C.c
+--- a/src/field/overlay_01_021FED9C.c	2026-09-14 18:29:01
++++ b/src/field/overlay_01_021FED9C.c	2026-09-12 15:02:45
+@@ -119,6 +119,7 @@
+ 
+ static BOOL ov01_021FEE9C(void *param0, UnkOv01_021FED9C_Work *work) {
+     sub_020698D0(&work->unk0);
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static void ov01_021FEEA8(void *param0, UnkOv01_021FED9C_Work *work) {
+diff -ruN a/src/field/overlay_01_022001E4.c b/src/field/overlay_01_022001E4.c
+--- a/src/field/overlay_01_022001E4.c	2026-09-14 18:29:01
++++ b/src/field/overlay_01_022001E4.c	2026-09-12 15:02:45
+@@ -316,6 +316,7 @@
+     sub_02023DA4(work->unk40);
+     ov01_0220024C(work->unk30.unk8, work->unk30.unk0);
+     ov01_022003B0(work->unk30.unk8, work->unk30.unk0);
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static void ov01_02200508(void *param0, UnkWork_022001E4 *work) {
+diff -ruN a/src/field/overlay_01_02204004.c b/src/field/overlay_01_02204004.c
+--- a/src/field/overlay_01_02204004.c	2026-09-14 18:29:01
++++ b/src/field/overlay_01_02204004.c	2026-09-12 22:46:03
+@@ -108,6 +108,7 @@
+     unkC8->unk0 = 0;
+     unkC8->unk4 = 0;
+     unkC8->unk8 = 0;
++    return unkC8; /* PSP port: decomp omitted the return and relied on r0; GCC returned a0. */
+ }
+ 
+ FieldSystemUnkSubCC_Sub0 *ov01_022041D8(FieldSystemUnkSubC8 *unkC8, enum HeapID heapID, u16 count) {
+@@ -396,8 +397,13 @@
+     MapPropAnimation_RemoveFromRenderObj(renderObj, unkCC->mapPropAnimation);
+ }
+ 
+-void ov01_02204698(FieldSystemUnkSubCC *unkCC) {
+-    ov01_0220434C(unkCC->unk0);
++/* PSP port: the original returns the loaded-animation count in r0 through a tail
++ * call, and assembly callers (ov01_021F4C6C, ov01_021F6620) branch on it before
++ * touching unkCC->mapPropAnimation. Declared void in the decomp, GCC compiled it
++ * to an empty function and the callers tested leftover garbage: taken branch,
++ * unset pointer, fault. Return the value the hardware always returned. */
++u16 ov01_02204698(FieldSystemUnkSubCC *unkCC) {
++    return ov01_0220434C(unkCC->unk0);
+ }
+ 
+ static void ov01_022046A4(NNSFndAllocator *pAllocator, NNSG3dAnmObj **pAlloc, void *res) {
+diff -ruN a/src/field/scrcmd_message.c b/src/field/scrcmd_message.c
+--- a/src/field/scrcmd_message.c	2026-09-14 18:29:01
++++ b/src/field/scrcmd_message.c	2026-09-13 22:51:24
+@@ -14,6 +14,14 @@
+ #include "script.h"
+ #include "script_manager.h"
+ #include "text.h"
++#include "bag.h"
++#include "item.h"
++#include "roamer.h"
++#include "unk_02005D10.h"
++#include "constants/items.h"
++#include "constants/sndseq.h"
++#include "constants/vars.h"
++#include <stdio.h>
+ 
+ typedef struct MessageBox {
+     String *message;
+@@ -306,4 +314,66 @@
+ 
+ static void ovFieldMain_AddTextPrinterParameterized(MessageBox *messageBox, FontID fontId) {
+     *(messageBox->textPrinterNumPtr) = AddTextPrinterParameterized(messageBox->window, fontId, messageBox->message, 0, 0, 0, NULL);
++}
++
++// SS QoL repel re-use prompt (script bytecode in script_manager.c, commands 853/854 in script_cmd_table.h).
++static u16 sSSRepelItem = ITEM_NONE;
++
++BOOL ScrCmd_SSRepelAsk(ScriptContext *ctx) {
++    // "Use another " in the game charset; the item name and "?" are appended below.
++    static const u16 sUseAnother[] = { 0x013F, 0x0157, 0x0149, 0x01DE, 0x0145, 0x0152, 0x0153, 0x0158, 0x014C, 0x0149, 0x0156, 0x01DE, 0xFFFF };
++    static const u16 sQuestion[] = { 0x01AC, 0xFFFF };
++    FieldSystem *fieldSystem = ctx->fieldSystem;
++    RoamerSaveData *roamerSave = Save_Roamers_Get(fieldSystem->saveData);
++    u16 *result = GetVarPointer(fieldSystem, VAR_SPECIAL_RESULT);
++    u8 fullSteps = roamerSave->unk_66;
++    roamerSave->unk_66 = 0;
++    if (fullSteps > 200) {
++        sSSRepelItem = ITEM_MAX_REPEL;
++    } else if (fullSteps > 100) {
++        sSSRepelItem = ITEM_SUPER_REPEL;
++    } else {
++        sSSRepelItem = ITEM_REPEL;
++    }
++    if (!Bag_HasItem(Save_Bag_Get(fieldSystem->saveData), sSSRepelItem, 1, HEAP_ID_FIELD3)) {
++        printf("[SS-QOL] repel wore off: steps %u, no item %u in bag, no prompt\n", fullSteps, sSSRepelItem);
++        sSSRepelItem = ITEM_NONE;
++        *result = 1;
++        ctx->script_ptr += 4; // skip YesNo VAR_SPECIAL_RESULT
++        return FALSE;
++    }
++    MessageBox messageBox;
++    ovFieldMain_GetMsgBoxParameters(fieldSystem, &messageBox);
++    ovFieldMain_CreateMessageBox(fieldSystem, &messageBox);
++    String *itemName = String_New(64, HEAP_ID_FIELD3);
++    String *question = String_New(4, HEAP_ID_FIELD3);
++    GetItemNameIntoString(itemName, sSSRepelItem, HEAP_ID_FIELD3);
++    CopyU16ArrayToString(question, sQuestion);
++    CopyU16ArrayToString(messageBox.message, sUseAnother);
++    String_Cat(messageBox.message, itemName);
++    String_Cat(messageBox.message, question);
++    String_Delete(question);
++    String_Delete(itemName);
++    ov01_021EF758(&messageBox, 1, ovFieldMain_GetTextFrameDelay(ctx), TRUE, 0);
++    printf("[SS-QOL] repel wore off: steps %u, offering item %u\n", fullSteps, sSSRepelItem);
++    SetupNativeScript(ctx, ov01_021EF348);
++    return TRUE;
++}
++
++BOOL ScrCmd_SSRepelUse(ScriptContext *ctx) {
++    FieldSystem *fieldSystem = ctx->fieldSystem;
++    u16 *result = GetVarPointer(fieldSystem, VAR_SPECIAL_RESULT);
++    if (sSSRepelItem != ITEM_NONE && *result == 0) {
++        Bag *bag = Save_Bag_Get(fieldSystem->saveData);
++        if (Bag_TakeItem(bag, sSSRepelItem, 1, HEAP_ID_FIELD3)) {
++            u8 steps = (u8)GetItemAttr(sSSRepelItem, ITEMATTR_HOLD_EFFECT_PARAM, HEAP_ID_FIELD3);
++            *RoamerSave_GetRepelAddr(Save_Roamers_Get(fieldSystem->saveData)) = steps;
++            PlaySE(SEQ_SE_DP_CARD2);
++            printf("[SS-QOL] repel reuse YES: item %u used, steps %u, another left %d\n", sSSRepelItem, steps, Bag_HasItem(bag, sSSRepelItem, 1, HEAP_ID_FIELD3));
++        }
++    } else if (sSSRepelItem != ITEM_NONE) {
++        printf("[SS-QOL] repel reuse NO: item %u kept\n", sSSRepelItem);
++    }
++    sSSRepelItem = ITEM_NONE;
++    return FALSE;
+ }
+diff -ruN a/src/filesystem.c b/src/filesystem.c
+--- a/src/filesystem.c	2026-09-14 18:29:01
++++ b/src/filesystem.c	2026-09-13 14:47:50
+@@ -144,7 +144,8 @@
+     FS_SeekFile(&file, (s32)(gmif_start + 8 + file_start + 0), FS_SEEK_SET);
+     chunk_size = file_end - file_start;
+     GF_ASSERT(chunk_size != 0);
+-    // Bug: File is never closed
++    // Native FSFile owns a host descriptor; release it after the size query.
++    FS_CloseFile(&file);
+     return chunk_size;
+ }
+ 
+diff -ruN a/src/item.c b/src/item.c
+--- a/src/item.c	2026-09-14 18:29:01
++++ b/src/item.c	2026-09-13 22:50:46
+@@ -761,8 +761,32 @@
+         itemId = ITEM_NONE;
+     }
+     switch (attrno) {
+-    case ITEMNARC_PARAM:
+-        return AllocAndReadWholeNarcMemberByIdPair(NARC_itemtool_itemdata_item_data, sItemNarcIds[itemId][ITEMNARC_PARAM], heapID);
++    case ITEMNARC_PARAM: {
++        ItemData *itemData = AllocAndReadWholeNarcMemberByIdPair(NARC_itemtool_itemdata_item_data, sItemNarcIds[itemId][ITEMNARC_PARAM], heapID);
++        // SS QoL (Sacred Gold/Storm Silver evolution changes): trade-with-item evolutions are done by
++        // "Use"-ing the item from the Bag like an evolution stone. Patch the in-RAM copy only (ROM untouched):
++        // field-use function 20 = evolution stone, party use + evolve flag like the stones' item data.
++        if (itemData != NULL) {
++            switch (itemId) {
++            case ITEM_KINGS_ROCK:
++            case ITEM_METAL_COAT:
++            case ITEM_DRAGON_SCALE:
++            case ITEM_UPGRADE:
++            case ITEM_DUBIOUS_DISC:
++            case ITEM_PROTECTOR:
++            case ITEM_ELECTIRIZER:
++            case ITEM_MAGMARIZER:
++            case ITEM_REAPER_CLOTH:
++            case ITEM_DEEPSEATOOTH:
++            case ITEM_DEEPSEASCALE:
++                itemData->fieldUseFunc = 20;
++                itemData->partyUse = 1;
++                itemData->partyUseParam.evolve = 1;
++                break;
++            }
++        }
++        return itemData;
++    }
+     case ITEMNARC_NCGR:
+         return AllocAndReadWholeNarcMemberByIdPair(NARC_itemtool_itemdata_item_icon, sItemNarcIds[itemId][ITEMNARC_NCGR], heapID);
+     case ITEMNARC_NCLR:
+diff -ruN a/src/main.c b/src/main.c
+--- a/src/main.c	2026-09-14 18:29:01
++++ b/src/main.c	2026-09-12 07:36:37
+@@ -63,9 +63,11 @@
+     sub_02005D00();
+     InitSoundData(Save_Chatot_Get(_02111868.unk_10.saveData), Save_PlayerData_GetOptionsAddr(_02111868.unk_10.saveData));
+     Init_Timer3();
++#ifndef PSP_NATIVE_OFFLINE
+     if (sub_02039FFC(3) == 3) {
+         ShowWFCUserInfoWarning(HEAP_ID_3, 0);
+     }
++#endif
+     if (!Save_FlashChipIsDetected(_02111868.unk_10.saveData)) {
+         ShowSaveDataReadError(HEAP_ID_DEFAULT);
+     } else {
+diff -ruN a/src/math_util.c b/src/math_util.c
+--- a/src/math_util.c	2026-09-14 18:29:01
++++ b/src/math_util.c	2026-09-12 07:30:28
+@@ -163,5 +163,5 @@
+ void GF_CRC16Init(enum HeapID heapID) {
+     GF_ASSERT(sCRC16TablePtr == NULL);
+     sCRC16TablePtr = Heap_Alloc(heapID, sizeof(MATHCRC16Table));
+-    MATH_CRC16InitTable(sCRC16TablePtr);
++    MATH_CRC16CCITTInitTable(sCRC16TablePtr);
+ }
+diff -ruN a/src/options_app.c b/src/options_app.c
+--- a/src/options_app.c	2026-09-14 18:29:01
++++ b/src/options_app.c	2026-09-13 21:19:49
+@@ -516,6 +516,9 @@
+ static BOOL ov54_021E5DBC(OptionsApp_Data *data) {
+     switch (data->setupAndFreeState) {
+     case 0:
++        // PSP port: stop OptionsApp_OnVBlank before freeing the BgConfig it uses. The DS left the freed block intact for
++        // one frame; the PSP allocator hands it straight to ClearMainOAM, whose 0x2C0 fill then reached DoScheduledBgGpuUpdates.
++        Main_SetVBlankIntrCB(NULL, NULL);
+         GF_DestroyVramTransferManager();
+         OptionsApp_FreeWindows(data);
+ 
+diff -ruN a/src/overlay_01_021EAF00.c b/src/overlay_01_021EAF00.c
+--- a/src/overlay_01_021EAF00.c	2026-09-14 18:29:01
++++ b/src/overlay_01_021EAF00.c	2026-09-12 15:02:45
+@@ -67,9 +67,11 @@
+ }
+ 
+ static BOOL ov01_021EAF8C(FieldSystem *fieldSystem) {
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static BOOL ov01_021EAF90(FieldSystem *fieldSystem) {
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static BOOL ov01_021EAF94(FieldSystem *fieldSystem) {
+@@ -79,12 +81,14 @@
+ static BOOL ov01_021EAF98(FieldSystem *fieldSystem) {
+     HandleLoadOverlay(FS_OVERLAY_ID(OVY_19), OVY_LOAD_ASYNC);
+     fieldSystem->unk_D8 = FieldSystem_CreateViewPhotoTask(fieldSystem);
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static BOOL ov01_021EAFB4(FieldSystem *fieldSystem) {
+     FieldSystem_DestroyViewPhotoTask(fieldSystem);
+     fieldSystem->unk_D8 = NULL;
+     UnloadOverlayByID(FS_OVERLAY_ID(OVY_19));
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static BOOL ov01_021EAFD0(FieldSystem *fieldSystem) {
+diff -ruN a/src/overlay_01_021FE200.c b/src/overlay_01_021FE200.c
+--- a/src/overlay_01_021FE200.c	2026-09-14 18:29:01
++++ b/src/overlay_01_021FE200.c	2026-09-12 15:02:45
+@@ -244,6 +244,7 @@
+ }
+ 
+ static BOOL ov01_021FE524(void *param0, UnkOv01_021FE200_Work *work) {
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static void ov01_021FE528(void *param0, UnkOv01_021FE200_Work *work) {
+diff -ruN a/src/overlay_01_021FE590.c b/src/overlay_01_021FE590.c
+--- a/src/overlay_01_021FE590.c	2026-09-14 18:29:01
++++ b/src/overlay_01_021FE590.c	2026-09-12 15:02:45
+@@ -161,6 +161,7 @@
+     sub_02023DA4(work->unk18);
+     ov01_021FE5BC(work->unkc.unk4);
+     ov01_021FE65C(work->unkc.unk4);
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ #ifdef NONMATCHING
+diff -ruN a/src/overlay_01_02200858.c b/src/overlay_01_02200858.c
+--- a/src/overlay_01_02200858.c	2026-09-14 18:29:01
++++ b/src/overlay_01_02200858.c	2026-09-12 15:02:45
+@@ -138,6 +138,7 @@
+ }
+ 
+ static BOOL ov01_02200938(void *param0, UnkOv01_02200858_Work *work) {
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static void ov01_0220093C(void *param0, UnkOv01_02200858_Work *work) {
+diff -ruN a/src/overlay_01_02203E40.c b/src/overlay_01_02203E40.c
+--- a/src/overlay_01_02203E40.c	2026-09-14 18:29:01
++++ b/src/overlay_01_02203E40.c	2026-09-12 15:02:45
+@@ -137,6 +137,7 @@
+ }
+ 
+ static BOOL ov01_02203F68(void *work, UnkOv01_02203E40_Work *a1) {
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static void ov01_02203F6C(void *work, UnkOv01_02203E40_Work *a1) {
+diff -ruN a/src/overlay_02_02248728.c b/src/overlay_02_02248728.c
+--- a/src/overlay_02_02248728.c	2026-09-14 18:29:01
++++ b/src/overlay_02_02248728.c	2026-09-13 22:51:13
+@@ -1024,167 +1024,8 @@
+ 
+ // ov02_02248728
+ // clang-format off
+-asm void ov02_02248728(void *mgr, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9) {
+-    push {r3, r4, r5, r6, r7, lr}
+-    add r5, r0, #0
+-    add r6, r2, #0
+-    ldr r0, [sp, #0x1c]
+-    add r7, r3, #0
+-    strb r6, [r5, #0]
+-    ldr r4, [sp, #0x18]
+-    strb r7, [r5, #1]
+-    strb r4, [r5, #2]
+-    str r0, [sp, #0x1c]
+-    strb r0, [r5, #3]
+-    ldr r0, [sp, #0x20]
+-    mov r2, #4
+-    strb r0, [r5, #4]
+-    ldr r0, [sp, #0x24]
+-    strb r0, [r5, #5]
+-    ldr r0, [sp, #0x28]
+-    strb r0, [r5, #6]
+-    ldr r0, [sp, #0x2c]
+-    strb r0, [r5, #7]
+-    add r0, r1, #0
+-    add r1, r5, #0
+-    add r1, #0xc
+-    bl G2dRenderer_Init
+-    str r0, [r5, #8]
+-    add r0, r5, #0
+-    mov r2, #2
+-    add r0, #0xc
+-    mov r1, #0
+-    lsl r2, r2, #0x14
+-    bl G2dRenderer_SetSubSurfaceCoords
+-    add r0, r6, #0
+-    mov r1, #0
+-    mov r2, #4
+-    bl Create2DGfxResObjMan
+-    mov r1, #0x4d
+-    lsl r1, r1, #2
+-    str r0, [r5, r1]
+-    add r0, r7, #0
+-    mov r1, #1
+-    mov r2, #4
+-    bl Create2DGfxResObjMan
+-    mov r1, #0x4e
+-    lsl r1, r1, #2
+-    str r0, [r5, r1]
+-    add r0, r4, #0
+-    mov r1, #2
+-    mov r2, #4
+-    bl Create2DGfxResObjMan
+-    mov r1, #0x4f
+-    lsl r1, r1, #2
+-    str r0, [r5, r1]
+-    ldr r0, [sp, #0x1c]
+-    mov r1, #3
+-    mov r2, #4
+-    bl Create2DGfxResObjMan
+-    mov r1, #5
+-    lsl r1, r1, #6
+-    str r0, [r5, r1]
+-    mov r0, #4
+-    lsl r1, r6, #3
+-    bl ov02_0224B690
+-    mov r1, #0x51
+-    lsl r1, r1, #2
+-    str r0, [r5, r1]
+-    mov r0, #4
+-    lsl r1, r7, #3
+-    bl ov02_0224B690
+-    mov r1, #0x52
+-    lsl r1, r1, #2
+-    str r0, [r5, r1]
+-    mov r0, #4
+-    lsl r1, r4, #3
+-    bl ov02_0224B690
+-    mov r1, #0x53
+-    lsl r1, r1, #2
+-    str r0, [r5, r1]
+-    ldr r1, [sp, #0x1c]
+-    mov r0, #4
+-    lsl r1, r1, #3
+-    bl ov02_0224B690
+-    mov r1, #0x15
+-    lsl r1, r1, #4
+-    str r0, [r5, r1]
+-    mov r1, #0
+-    cmp r6, #0
+-    ble _02248804
+-    ble _02248804
+-    ldr r0, [sp, #0x20]
+-    add r2, r1, #0
+-    lsl r0, r0, #0x10
+-    asr r0, r0, #0x10
+-_022487F4:
+-    mov r3, #0x51
+-    lsl r3, r3, #2
+-    ldr r3, [r5, r3]
+-    add r1, r1, #1
+-    strh r0, [r3, r2]
+-    add r2, #8
+-    cmp r1, r6
+-    blt _022487F4
+-_02248804:
+-    mov r3, #0
+-    cmp r7, #0
+-    ble _02248824
+-    ble _02248824
+-    ldr r0, [sp, #0x24]
+-    mov r6, #0x52
+-    lsl r0, r0, #0x10
+-    add r2, r3, #0
+-    asr r1, r0, #0x10
+-    lsl r6, r6, #2
+-_02248818:
+-    ldr r0, [r5, r6]
+-    add r3, r3, #1
+-    strh r1, [r0, r2]
+-    add r2, #8
+-    cmp r3, r7
+-    blt _02248818
+-_02248824:
+-    mov r1, #0
+-    cmp r4, #0
+-    ble _02248844
+-    ble _02248844
+-    ldr r2, [sp, #0x28]
+-    add r0, r1, #0
+-    lsl r2, r2, #0x10
+-    asr r6, r2, #0x10
+-    mov r2, #0x53
+-    lsl r2, r2, #2
+-_02248838:
+-    ldr r3, [r5, r2]
+-    add r1, r1, #1
+-    strh r6, [r3, r0]
+-    add r0, #8
+-    cmp r1, r4
+-    blt _02248838
+-_02248844:
+-    ldr r0, [sp, #0x1c]
+-    mov r1, #0
+-    cmp r0, #0
+-    ble _02248868
+-    ble _02248868
+-    ldr r2, [sp, #0x2c]
+-    mov r3, #0x15
+-    lsl r2, r2, #0x10
+-    add r0, r1, #0
+-    asr r4, r2, #0x10
+-    lsl r3, r3, #4
+-_0224885A:
+-    ldr r2, [r5, r3]
+-    add r1, r1, #1
+-    strh r4, [r2, r0]
+-    ldr r2, [sp, #0x1c]
+-    add r0, #8
+-    cmp r1, r2
+-    blt _0224885A
+-_02248868:
+-    pop {r3, r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_02248728(void *mgr, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9);
+ // clang-format on
+ 
+ WIP_LOCAL void ov02_0224886C(void *mgr) {
+@@ -1223,64 +1064,8 @@
+ 
+ // ov02_02248980
+ // clang-format off
+-asm void ov02_02248980(void *mgr, void *narc, int resId, int flag) {
+-    push {r4, r5, r6, r7, lr}
+-    sub sp, #0x14
+-    add r6, r0, #0
+-    ldrb r5, [r6, #0]
+-    str r2, [sp, #0x10]
+-    str r1, [sp, #0xc]
+-    add r7, r3, #0
+-    mov r2, #0
+-    cmp r5, #0
+-    ble _022489E6
+-    mov r0, #0x51
+-    lsl r0, r0, #2
+-    ldr r3, [r6, r0]
+-    mov r0, #4
+-    ldrsb r4, [r6, r0]
+-    mov ip, r3
+-    add r0, r2, #0
+-_022489A2:
+-    ldrsh r1, [r3, r0]
+-    cmp r4, r1
+-    bne _022489DE
+-    lsl r4, r2, #3
+-    mov r0, ip
+-    strh r7, [r0, r4]
+-    mov r0, #0x51
+-    lsl r0, r0, #2
+-    ldr r1, [r6, r0]
+-    mov r3, #0
+-    add r1, r1, r4
+-    strh r3, [r1, #2]
+-    str r7, [sp, #0]
+-    mov r1, #1
+-    str r1, [sp, #4]
+-    mov r1, #4
+-    str r1, [sp, #8]
+-    sub r0, #0x10
+-    ldr r0, [r6, r0]
+-    ldr r1, [sp, #0xc]
+-    ldr r2, [sp, #0x10]
+-    bl AddCharResObjFromOpenNarc
+-    mov r1, #0x51
+-    lsl r1, r1, #2
+-    ldr r1, [r6, r1]
+-    add sp, #0x14
+-    add r1, r1, r4
+-    str r0, [r1, #4]
+-    pop {r4, r5, r6, r7, pc}
+-_022489DE:
+-    add r2, r2, #1
+-    add r3, #8
+-    cmp r2, r5
+-    blt _022489A2
+-_022489E6:
+-    bl GF_AssertFail
+-    add sp, #0x14
+-    pop {r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_02248980(void *mgr, void *narc, int resId, int flag);
+ // clang-format on
+ 
+ WIP_LOCAL BOOL ov02_022489F0(void *mgr, int a1) {
+@@ -1308,65 +1093,8 @@
+ 
+ // ov02_02248A58
+ // clang-format off
+-asm void ov02_02248A58(void *mgr, void *narc, int resId, int flag) {
+-    push {r3, r4, r5, r6, r7, lr}
+-    sub sp, #0x18
+-    add r6, r0, #0
+-    ldrb r5, [r6, #0]
+-    str r2, [sp, #0x14]
+-    str r1, [sp, #0x10]
+-    add r7, r3, #0
+-    mov r2, #0
+-    cmp r5, #0
+-    ble _02248AC0
+-    mov r0, #0x52
+-    lsl r0, r0, #2
+-    ldr r3, [r6, r0]
+-    mov r0, #5
+-    ldrsb r4, [r6, r0]
+-    mov ip, r3
+-    add r0, r2, #0
+-_02248A7A:
+-    ldrsh r1, [r3, r0]
+-    cmp r4, r1
+-    bne _02248AB8
+-    lsl r4, r2, #3
+-    mov r0, ip
+-    strh r7, [r0, r4]
+-    mov r0, #0x52
+-    lsl r0, r0, #2
+-    ldr r1, [r6, r0]
+-    mov r3, #0
+-    add r1, r1, r4
+-    strh r3, [r1, #2]
+-    str r7, [sp, #0]
+-    mov r1, #1
+-    str r1, [sp, #4]
+-    str r1, [sp, #8]
+-    mov r1, #4
+-    str r1, [sp, #0xc]
+-    sub r0, #0x10
+-    ldr r0, [r6, r0]
+-    ldr r1, [sp, #0x10]
+-    ldr r2, [sp, #0x14]
+-    bl AddPlttResObjFromOpenNarc
+-    mov r1, #0x52
+-    lsl r1, r1, #2
+-    ldr r1, [r6, r1]
+-    add sp, #0x18
+-    add r1, r1, r4
+-    str r0, [r1, #4]
+-    pop {r3, r4, r5, r6, r7, pc}
+-_02248AB8:
+-    add r2, r2, #1
+-    add r3, #8
+-    cmp r2, r5
+-    blt _02248A7A
+-_02248AC0:
+-    bl GF_AssertFail
+-    add sp, #0x18
+-    pop {r3, r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_02248A58(void *mgr, void *narc, int resId, int flag);
+ // clang-format on
+ 
+ WIP_LOCAL BOOL ov02_02248AC8(void *mgr, int a1) {
+@@ -1394,126 +1122,14 @@
+ 
+ // ov02_02248B30
+ // clang-format off
+-asm void ov02_02248B30(void *mgr, void *narc, int resId, int flag) {
+-    push {r4, r5, r6, r7, lr}
+-    sub sp, #0x14
+-    add r6, r0, #0
+-    ldrb r5, [r6, #0]
+-    str r2, [sp, #0x10]
+-    str r1, [sp, #0xc]
+-    add r7, r3, #0
+-    mov r2, #0
+-    cmp r5, #0
+-    ble _02248B96
+-    mov r0, #0x53
+-    lsl r0, r0, #2
+-    ldr r3, [r6, r0]
+-    mov r0, #6
+-    ldrsb r4, [r6, r0]
+-    mov ip, r3
+-    add r0, r2, #0
+-_02248B52:
+-    ldrsh r1, [r3, r0]
+-    cmp r4, r1
+-    bne _02248B8E
+-    lsl r4, r2, #3
+-    mov r0, ip
+-    strh r7, [r0, r4]
+-    mov r0, #0x53
+-    lsl r0, r0, #2
+-    ldr r1, [r6, r0]
+-    mov r3, #0
+-    add r1, r1, r4
+-    strh r3, [r1, #2]
+-    str r7, [sp, #0]
+-    mov r1, #2
+-    str r1, [sp, #4]
+-    mov r1, #4
+-    str r1, [sp, #8]
+-    sub r0, #0x10
+-    ldr r0, [r6, r0]
+-    ldr r1, [sp, #0xc]
+-    ldr r2, [sp, #0x10]
+-    bl AddCellOrAnimResObjFromOpenNarc
+-    mov r1, #0x53
+-    lsl r1, r1, #2
+-    ldr r1, [r6, r1]
+-    add sp, #0x14
+-    add r1, r1, r4
+-    str r0, [r1, #4]
+-    pop {r4, r5, r6, r7, pc}
+-_02248B8E:
+-    add r2, r2, #1
+-    add r3, #8
+-    cmp r2, r5
+-    blt _02248B52
+-_02248B96:
+-    bl GF_AssertFail
+-    add sp, #0x14
+-    pop {r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_02248B30(void *mgr, void *narc, int resId, int flag);
+ // clang-format on
+ 
+ // ov02_02248BA0
+ // clang-format off
+-asm void ov02_02248BA0(void *mgr, void *narc, int resId, int flag) {
+-    push {r4, r5, r6, r7, lr}
+-    sub sp, #0x14
+-    add r6, r0, #0
+-    ldrb r5, [r6, #0]
+-    str r2, [sp, #0x10]
+-    str r1, [sp, #0xc]
+-    add r7, r3, #0
+-    mov r2, #0
+-    cmp r5, #0
+-    ble _02248C06
+-    mov r0, #0x15
+-    lsl r0, r0, #4
+-    ldr r3, [r6, r0]
+-    mov r0, #7
+-    ldrsb r4, [r6, r0]
+-    mov ip, r3
+-    add r0, r2, #0
+-_02248BC2:
+-    ldrsh r1, [r3, r0]
+-    cmp r4, r1
+-    bne _02248BFE
+-    lsl r4, r2, #3
+-    mov r0, ip
+-    strh r7, [r0, r4]
+-    mov r0, #0x15
+-    lsl r0, r0, #4
+-    ldr r1, [r6, r0]
+-    mov r3, #0
+-    add r1, r1, r4
+-    strh r3, [r1, #2]
+-    str r7, [sp, #0]
+-    mov r1, #3
+-    str r1, [sp, #4]
+-    mov r1, #4
+-    str r1, [sp, #8]
+-    sub r0, #0x10
+-    ldr r0, [r6, r0]
+-    ldr r1, [sp, #0xc]
+-    ldr r2, [sp, #0x10]
+-    bl AddCellOrAnimResObjFromOpenNarc
+-    mov r1, #0x15
+-    lsl r1, r1, #4
+-    ldr r1, [r6, r1]
+-    add sp, #0x14
+-    add r1, r1, r4
+-    str r0, [r1, #4]
+-    pop {r4, r5, r6, r7, pc}
+-_02248BFE:
+-    add r2, r2, #1
+-    add r3, #8
+-    cmp r2, r5
+-    blt _02248BC2
+-_02248C06:
+-    bl GF_AssertFail
+-    add sp, #0x14
+-    pop {r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_02248BA0(void *mgr, void *narc, int resId, int flag);
+ // clang-format on
+ 
+ WIP_LOCAL Sprite *ov02_02248C10(void *mgr, VecFx32 *pos, int charId, int plttId, int cellId, int cellAnmId, int priority, int drawPriority) {
+@@ -2889,69 +2505,8 @@
+ 
+ // ov02_0224AAD4
+ // clang-format off
+-asm void ov02_0224AAD4(void *a0, void *a1) {
+-    push {r3, r4, r5, r6, lr}
+-    sub sp, #0xc
+-    add r4, r1, #0
+-    add r1, sp, #0
+-    add r5, r0, #0
+-    bl sub_02068DB8
+-    ldr r1, [sp, #0]
+-    ldr r0, [r4, #0x18]
+-    add r0, r1, r0
+-    lsr r2, r0, #0x1f
+-    lsl r1, r0, #0xb
+-    str r0, [sp, #0]
+-    sub r1, r1, r2
+-    mov r0, #0xb
+-    ror r1, r0
+-    add r0, r2, r1
+-    str r0, [sp, #0]
+-    add r0, r5, #0
+-    add r1, sp, #0
+-    bl sub_02068DA8
+-    ldr r0, [r4, #8]
+-    add r1, sp, #0
+-    bl Sprite_SetMatrix
+-    ldr r0, [r4, #0x10]
+-    cmp r0, #1
+-    bne _0224AB4E
+-    ldr r3, [r4, #0x14]
+-    ldr r0, [r3, #0x14]
+-    cmp r0, #2
+-    bne _0224AB42
+-    ldr r2, [r3, #0x4c]
+-    ldr r0, [r3, #0x50]
+-    mov r3, #2
+-    ldr r6, [sp, #4]
+-    lsl r3, r3, #0xc
+-    sub r5, r6, r3
+-    mov r1, #0
+-    cmp r5, r2
+-    blt _0224AB38
+-    cmp r5, r0
+-    bgt _0224AB38
+-    add r3, r6, r3
+-    cmp r3, r2
+-    blt _0224AB38
+-    cmp r3, r0
+-    bgt _0224AB38
+-    mov r1, #1
+-_0224AB38:
+-    ldr r0, [r4, #8]
+-    bl Sprite_SetDrawFlag
+-    add sp, #0xc
+-    pop {r3, r4, r5, r6, pc}
+-_0224AB42:
+-    cmp r0, #1
+-    bne _0224AB4E
+-    ldr r0, [r4, #8]
+-    mov r1, #0
+-    bl Sprite_SetDrawFlag
+-_0224AB4E:
+-    add sp, #0xc
+-    pop {r3, r4, r5, r6, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_0224AAD4(void *a0, void *a1);
+ // clang-format on
+ 
+ WIP_LOCAL void ov02_0224AB54(void) {
+@@ -3653,8 +3208,14 @@
+ }
+ 
+ WIP_LOCAL BOOL PlayerStepEvent_RepelCounterDecrement(SaveData *saveData, FieldSystem *fieldSystem) {
+-    u8 *repel = RoamerSave_GetRepelAddr(Save_Roamers_Get(saveData));
++    RoamerSaveData *roamerSave = Save_Roamers_Get(saveData);
++    u8 *repel = RoamerSave_GetRepelAddr(roamerSave);
+     if (*repel != 0) {
++        // SS QoL repel re-use prompt: remember the Repel's full step count (100/200/250) in the
++        // save's unused roamer byte so the wore-off prompt knows which kind to offer again.
++        if (*repel > roamerSave->unk_66) {
++            roamerSave->unk_66 = *repel;
++        }
+         *repel = *repel - 1;
+         if (*repel == 0) {
+             StartMapSceneScript(fieldSystem, std_repel_wore_off, NULL);
+@@ -3823,53 +3384,8 @@
+ }
+ 
+ // clang-format off
+-asm void ov02_0224BF58(FieldSystem *fieldSystem, u8 a1) {
+-    push {r3, r4, r5, r6, r7, lr}
+-    sub sp, #0x28
+-    ldr r2, =sRodata+0x3F0
+-    add r7, r1, #0
+-    ldr r3, [r2, #0]
+-    ldr r2, [r2, #4]
+-    str r3, [sp, #0x18]
+-    str r2, [sp, #0x1c]
+-    add r2, sp, #0x20
+-    str r2, [sp, #0]
+-    add r1, sp, #0x18
+-    mov r2, #2
+-    add r3, sp, #0x24
+-    add r5, r0, #0
+-    bl sub_02054C90
+-    cmp r0, #0
+-    beq _0224BFB4
+-    ldr r0, [r5, #0x34]
+-    bl ov01_021FB9E0
+-    add r6, r0, #0
+-    ldr r0, [sp, #0x24]
+-    bl MapProp_GetRenderSurface
+-    add r4, r0, #0
+-    ldr r0, [sp, #0x24]
+-    bl MapProp_GetResModel
+-    str r4, [sp, #0]
+-    str r0, [sp, #4]
+-    str r6, [sp, #8]
+-    mov r0, #2
+-    str r0, [sp, #0xc]
+-    mov r0, #1
+-    str r0, [sp, #0x10]
+-    mov r0, #0
+-    str r0, [sp, #0x14]
+-    ldr r0, [r5, #0x54]
+-    ldr r1, [r5, #0x58]
+-    ldr r3, [sp, #0x20]
+-    add r2, r7, #0
+-    bl MapPropOneShotAnimationManager_LoadPropAnimations
+-    add sp, #0x28
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224BFB4:
+-    bl GF_AssertFail
+-    add sp, #0x28
+-    pop {r3, r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_0224BF58(FieldSystem *fieldSystem, u8 a1);
+ // clang-format on
+ 
+ WIP_LOCAL void ov02_0224BFC0(FieldSystem *fieldSystem, u8 a1) {
+@@ -4064,135 +3580,8 @@
+ }
+ 
+ // clang-format off
+-asm BOOL Task_FieldDig(TaskManager *taskManager) {
+-    push {r3, r4, r5, r6, r7, lr}
+-    add r7, r0, #0
+-    bl TaskManager_GetFieldSystem
+-    add r6, r0, #0
+-    add r0, r7, #0
+-    bl TaskManager_GetEnvironment
+-    add r4, r0, #0
+-    add r0, r7, #0
+-    bl TaskManager_GetStatePtr
+-    add r5, r0, #0
+-    ldr r0, [r5, #0]
+-    cmp r0, #3
+-    bhi _0224C4A2
+-    add r1, r0, r0
+-    add r1, pc
+-    ldrh r1, [r1, #6]
+-    lsl r1, r1, #0x10
+-    asr r1, r1, #0x10
+-    add pc, r1
+-    lsl r6, r0, #0
+-    lsl r6, r3, #0
+-    lsl r0, r2, #1
+-    lsl r2, r0, #2
+-_0224C3E0:
+-    ldr r0, [r4, #8]
+-    cmp r0, #0
+-    beq _0224C3F0
+-    ldr r1, =ov01_02205A60
+-    add r0, r7, #0
+-    mov r2, #0
+-    bl TaskManager_Call
+-_0224C3F0:
+-    ldr r0, [r5, #0]
+-    add r0, r0, #1
+-    str r0, [r5, #0]
+-    b _0224C4A2
+-_0224C3F8:
+-    add r0, r0, #1
+-    str r0, [r5, #0]
+-    ldr r0, [r4, #8]
+-    cmp r0, #0
+-    beq _0224C42A
+-    add r0, r6, #0
+-    mov r1, #4
+-    bl ov02_02250780
+-    cmp r0, #0
+-    beq _0224C41E
+-    mov r0, #0x42
+-    lsl r0, r0, #2
+-    ldr r0, [r6, r0]
+-    mov r1, #1
+-    mov r4, #2
+-    bl FieldSystem_UnkSub108_AddMonMood
+-    b _0224C420
+-_0224C41E:
+-    mov r4, #1
+-_0224C420:
+-    add r0, r6, #0
+-    add r1, r4, #0
+-    bl ov02_022507B4
+-    b _0224C4A2
+-_0224C42A:
+-    ldr r0, [r4, #8]
+-    cmp r0, #0
+-    beq _0224C456
+-    ldr r0, [r4, #0x28]
+-    mov r1, #5
+-    mov r2, #0
+-    bl GetMonData
+-    str r0, [sp, #0]
+-    ldr r0, [r4, #0x28]
+-    mov r1, #0x70
+-    mov r2, #0
+-    bl GetMonData
+-    add r1, r0, #0
+-    ldr r0, [sp, #0]
+-    lsl r1, r1, #0x18
+-    lsl r0, r0, #0x10
+-    lsr r0, r0, #0x10
+-    lsr r1, r1, #0x18
+-    bl PlayCry
+-_0224C456:
+-    ldr r0, [r5, #0]
+-    add r0, r0, #1
+-    str r0, [r5, #0]
+-_0224C45C:
+-    ldr r0, [r4, #8]
+-    cmp r0, #0
+-    beq _0224C482
+-    bl IsCryFinished
+-    cmp r0, #0
+-    beq _0224C46E
+-    mov r5, #0
+-    b _0224C494
+-_0224C46E:
+-    ldr r3, [r4, #0]
+-    add r0, r7, #0
+-    lsl r5, r3, #2
+-    ldr r3, =sRodata+0x418
+-    add r1, r6, #0
+-    ldr r3, [r3, r5]
+-    add r2, r4, #0
+-    blx r3
+-    add r5, r0, #0
+-    b _0224C494
+-_0224C482:
+-    ldr r3, [r4, #0]
+-    add r0, r7, #0
+-    lsl r5, r3, #2
+-    ldr r3, =sRodata+0x45C
+-    add r1, r6, #0
+-    ldr r3, [r3, r5]
+-    add r2, r4, #0
+-    blx r3
+-    add r5, r0, #0
+-_0224C494:
+-    cmp r5, #2
+-    bne _0224C49E
+-    add r0, r4, #0
+-    bl Heap_Free
+-_0224C49E:
+-    cmp r5, #1
+-    beq _0224C45C
+-_0224C4A2:
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-    nop
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern BOOL Task_FieldDig(TaskManager *taskManager);
+ // clang-format on
+ 
+ WIP_LOCAL int ov02_0224C4B4(void *a0, FieldSystem *fieldSystem, void *work) {
+@@ -4229,135 +3618,8 @@
+ }
+ 
+ // clang-format off
+-asm BOOL Task_FieldTeleport(TaskManager *taskManager) {
+-    push {r3, r4, r5, r6, r7, lr}
+-    add r7, r0, #0
+-    bl TaskManager_GetFieldSystem
+-    add r6, r0, #0
+-    add r0, r7, #0
+-    bl TaskManager_GetEnvironment
+-    add r4, r0, #0
+-    add r0, r7, #0
+-    bl TaskManager_GetStatePtr
+-    add r5, r0, #0
+-    ldr r0, [r5, #0]
+-    cmp r0, #3
+-    bhi _0224C64E
+-    add r1, r0, r0
+-    add r1, pc
+-    ldrh r1, [r1, #6]
+-    lsl r1, r1, #0x10
+-    asr r1, r1, #0x10
+-    add pc, r1
+-    lsl r6, r0, #0
+-    lsl r6, r3, #0
+-    lsl r0, r2, #1
+-    lsl r2, r0, #2
+-_0224C58C:
+-    ldr r0, [r4, #8]
+-    cmp r0, #0
+-    beq _0224C59C
+-    ldr r1, =ov01_02205A60
+-    add r0, r7, #0
+-    mov r2, #0
+-    bl TaskManager_Call
+-_0224C59C:
+-    ldr r0, [r5, #0]
+-    add r0, r0, #1
+-    str r0, [r5, #0]
+-    b _0224C64E
+-_0224C5A4:
+-    add r0, r0, #1
+-    str r0, [r5, #0]
+-    ldr r0, [r4, #8]
+-    cmp r0, #0
+-    beq _0224C5D6
+-    add r0, r6, #0
+-    mov r1, #0xe
+-    bl ov02_02250780
+-    cmp r0, #0
+-    beq _0224C5CA
+-    mov r0, #0x42
+-    lsl r0, r0, #2
+-    ldr r0, [r6, r0]
+-    mov r1, #1
+-    mov r4, #2
+-    bl FieldSystem_UnkSub108_AddMonMood
+-    b _0224C5CC
+-_0224C5CA:
+-    mov r4, #1
+-_0224C5CC:
+-    add r0, r6, #0
+-    add r1, r4, #0
+-    bl ov02_022507B4
+-    b _0224C64E
+-_0224C5D6:
+-    ldr r0, [r4, #8]
+-    cmp r0, #0
+-    beq _0224C602
+-    ldr r0, [r4, #0x28]
+-    mov r1, #5
+-    mov r2, #0
+-    bl GetMonData
+-    str r0, [sp, #0]
+-    ldr r0, [r4, #0x28]
+-    mov r1, #0x70
+-    mov r2, #0
+-    bl GetMonData
+-    add r1, r0, #0
+-    ldr r0, [sp, #0]
+-    lsl r1, r1, #0x18
+-    lsl r0, r0, #0x10
+-    lsr r0, r0, #0x10
+-    lsr r1, r1, #0x18
+-    bl PlayCry
+-_0224C602:
+-    ldr r0, [r5, #0]
+-    add r0, r0, #1
+-    str r0, [r5, #0]
+-_0224C608:
+-    ldr r0, [r4, #8]
+-    cmp r0, #0
+-    beq _0224C62E
+-    bl IsCryFinished
+-    cmp r0, #0
+-    beq _0224C61A
+-    mov r5, #0
+-    b _0224C640
+-_0224C61A:
+-    ldr r3, [r4, #0]
+-    add r0, r7, #0
+-    lsl r5, r3, #2
+-    ldr r3, =sRodata+0x444
+-    add r1, r6, #0
+-    ldr r3, [r3, r5]
+-    add r2, r4, #0
+-    blx r3
+-    add r5, r0, #0
+-    b _0224C640
+-_0224C62E:
+-    ldr r3, [r4, #0]
+-    add r0, r7, #0
+-    lsl r5, r3, #2
+-    ldr r3, =sRodata+0x42C
+-    add r1, r6, #0
+-    ldr r3, [r3, r5]
+-    add r2, r4, #0
+-    blx r3
+-    add r5, r0, #0
+-_0224C640:
+-    cmp r5, #2
+-    bne _0224C64A
+-    add r0, r4, #0
+-    bl Heap_Free
+-_0224C64A:
+-    cmp r5, #1
+-    beq _0224C608
+-_0224C64E:
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-    nop
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern BOOL Task_FieldTeleport(TaskManager *taskManager);
+ // clang-format on
+ 
+ WIP_LOCAL void *ov02_0224C660(enum HeapID heapID, u32 size) {
+@@ -4541,60 +3803,8 @@
+ 
+ // ov02_0224CA58
+ // clang-format off
+-asm void ov02_0224CA58(u8 *arr, int n, u8 val) {
+-    push {r4, r5, r6, r7}
+-    add r3, r0, #0
+-    add r0, r2, #0
+-    sub r0, r0, #1
+-    lsl r0, r0, #0x18
+-    lsr r0, r0, #0x18
+-    cmp r2, #0
+-    beq _0224CAB4
+-    add r6, r3, r1
+-    sub r7, r1, #1
+-_0224CA6C:
+-    sub r1, r6, #1
+-    ldrb r2, [r1, #0]
+-    mov r1, #1
+-    add r5, r7, #0
+-    and r1, r2
+-    lsl r1, r1, #0x18
+-    lsr r4, r1, #0x18
+-    cmp r7, #0
+-    ble _0224CA9A
+-_0224CA7E:
+-    ldrb r1, [r3, r5]
+-    add r2, r3, r5
+-    sub r2, r2, #1
+-    asr r1, r1, #1
+-    strb r1, [r3, r5]
+-    ldrb r2, [r2, #0]
+-    ldrb r1, [r3, r5]
+-    lsl r2, r2, #0x1f
+-    lsr r2, r2, #0x18
+-    orr r1, r2
+-    strb r1, [r3, r5]
+-    sub r5, r5, #1
+-    cmp r5, #0
+-    bgt _0224CA7E
+-_0224CA9A:
+-    ldrb r1, [r3, r5]
+-    asr r1, r1, #1
+-    strb r1, [r3, r5]
+-    ldrb r2, [r3, r5]
+-    lsl r1, r4, #7
+-    orr r1, r2
+-    strb r1, [r3, r5]
+-    add r1, r0, #0
+-    sub r0, r0, #1
+-    lsl r0, r0, #0x18
+-    lsr r0, r0, #0x18
+-    cmp r1, #0
+-    bne _0224CA6C
+-_0224CAB4:
+-    pop {r4, r5, r6, r7}
+-    bx lr
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_0224CA58(u8 *arr, int n, u8 val);
+ // clang-format on
+ 
+ WIP_LOCAL int ov02_0224CAB8(WallpaperPasswordBank *bank, u16 trainerId, u16 a, u16 b, u16 c, u16 d) {
+@@ -5058,120 +4268,8 @@
+ 
+ // ov02_0224D488
+ // clang-format off
+-asm void ov02_0224D488(void *a0, void *a1, void *a2) {
+-    push {r3, r4, r5, r6, r7, lr}
+-    sub sp, #8
+-    ldr r7, =0x000001CA
+-    add r4, r2, #0
+-    ldrh r0, [r4, r7]
+-    add r5, r1, #0
+-    cmp r0, #3
+-    bhi _0224D570
+-    add r0, r0, r0
+-    add r0, pc
+-    ldrh r0, [r0, #6]
+-    lsl r0, r0, #0x10
+-    asr r0, r0, #0x10
+-    add pc, r0
+-    lsl r6, r0, #0
+-    lsl r4, r4, #1
+-    lsl r4, r7, #1
+-    lsl r0, r7, #2
+-_0224D4AC:
+-    ldr r2, =sRodata+0x5F4
+-    add r1, sp, #4
+-    ldrb r3, [r2, #2]
+-    add r0, sp, #4
+-    add r1, #2
+-    strb r3, [r0, #2]
+-    ldrb r3, [r2, #3]
+-    strb r3, [r0, #3]
+-    ldrb r6, [r2, #4]
+-    add r3, sp, #4
+-    strb r6, [r0, #0]
+-    ldrb r2, [r2, #5]
+-    strb r2, [r0, #1]
+-    sub r0, r7, #2
+-    ldrh r0, [r4, r0]
+-    lsl r0, r0, #0x18
+-    lsr r2, r0, #0x18
+-    mov r0, #0xdc
+-    add r6, r2, #0
+-    mul r6, r0
+-    add r0, #0xdc
+-    add r0, r4, r0
+-    str r0, [sp, #0]
+-    ldrb r1, [r1, r2]
+-    ldrb r2, [r3, r2]
+-    add r0, r4, r6
+-    mov r3, #2
+-    bl ov02_0224D0C8
+-    ldr r0, [r5, #0x40]
+-    add r1, r4, r6
+-    bl ov02_0224D0AC
+-    sub r1, r7, #2
+-    ldrh r0, [r4, r1]
+-    add r0, r0, #1
+-    strh r0, [r4, r1]
+-    ldrh r0, [r4, r1]
+-    cmp r0, #2
+-    blo _0224D570
+-    add r0, r1, #2
+-    ldrh r0, [r4, r0]
+-    add sp, #8
+-    add r2, r0, #1
+-    add r0, r1, #2
+-    strh r2, [r4, r0]
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224D50A:
+-    add r0, r4, #0
+-    add r0, #0xdc
+-    mov r1, #0
+-    bl Field3dObject_SetActiveFlag
+-    ldr r0, =SEQ_SE_DP_FW463
+-    bl PlaySE
+-    add r0, r7, #0
+-    ldrh r1, [r4, r0]
+-    add r1, r1, #1
+-    strh r1, [r4, r0]
+-_0224D522:
+-    add r0, r4, #0
+-    bl ov02_0224D178
+-    add r6, r0, #0
+-    ldr r0, [r5, #0x40]
+-    add r1, r4, #0
+-    bl ov02_0224D0AC
+-    cmp r6, #1
+-    bne _0224D570
+-    add r0, r4, #0
+-    add r0, #0xdc
+-    mov r1, #1
+-    bl Field3dObject_SetActiveFlag
+-    add r0, r4, #0
+-    mov r1, #0
+-    bl Field3dObject_SetActiveFlag
+-    add r1, r4, #0
+-    ldr r0, [r5, #0x40]
+-    add r1, #0xdc
+-    bl ov02_0224D0AC
+-    ldr r0, =0x000001CA
+-    add sp, #8
+-    ldrh r1, [r4, r0]
+-    add r1, r1, #1
+-    strh r1, [r4, r0]
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224D55E:
+-    add r0, r4, #0
+-    add r0, #0xdc
+-    bl ov02_0224D1AC
+-    add r4, #0xdc
+-    ldr r0, [r5, #0x40]
+-    add r1, r4, #0
+-    bl ov02_0224D0AC
+-_0224D570:
+-    add sp, #8
+-    pop {r3, r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_0224D488(void *a0, void *a1, void *a2);
+ // clang-format on
+ 
+ WIP_LOCAL void ov02_0224D580(Field3dObjectTask *task, FieldSystem *fieldSystem, void *data) {
+@@ -5193,69 +4291,8 @@
+ 
+ // ov02_0224D5B4
+ // clang-format off
+-asm void ov02_0224D5B4(void *a0, void *a1, void *a2) {
+-    push {r4, r5, r6, lr}
+-    sub sp, #0x10
+-    add r5, r1, #0
+-    ldr r1, =sRodata+0x5F4
+-    add r4, r2, #0
+-    ldrb r2, [r1, #0]
+-    add r0, sp, #4
+-    strb r2, [r0, #1]
+-    ldrb r2, [r1, #1]
+-    strb r2, [r0, #0]
+-    ldrh r2, [r1, #6]
+-    strh r2, [r0, #2]
+-    ldrh r2, [r1, #8]
+-    strh r2, [r0, #4]
+-    ldrh r2, [r1, #0xa]
+-    strh r2, [r0, #6]
+-    ldrh r1, [r1, #0xc]
+-    mov r2, #0xf0
+-    strh r1, [r0, #8]
+-    add r0, r4, #0
+-    mov r1, #0
+-    bl memset
+-    add r0, r4, #0
+-    add r0, #0xdc
+-    mov r1, #4
+-    mov r2, #0x20
+-    bl HeapExp_FndInitAllocator
+-    ldr r0, [r5, #0x40]
+-    bl PlayerAvatar_GetFacingDirection
+-    add r6, r0, #0
+-    add r0, r4, #0
+-    add r0, #0xdc
+-    str r0, [sp, #0]
+-    add r2, sp, #4
+-    ldrb r1, [r2, #1]
+-    ldrb r2, [r2, #0]
+-    add r0, r4, #0
+-    mov r3, #1
+-    bl ov02_0224D0C8
+-    add r0, r4, #0
+-    bl ov02_0224D1AC
+-    ldr r0, [r5, #0x40]
+-    add r1, r4, #0
+-    bl ov02_0224D0AC
+-    add r0, sp, #4
+-    lsl r1, r6, #1
+-    add r0, #2
+-    ldrh r0, [r0, r1]
+-    bl GF_DegreeToSinCosIdxNoWrap
+-    add r1, r0, #0
+-    add r0, r4, #0
+-    mov r2, #1
+-    bl Field3dObject_SetXRotation
+-    ldr r0, =SEQ_SE_DP_FW463
+-    bl PlaySE
+-    mov r0, #0
+-    add r4, #0xec
+-    strh r0, [r4, #0]
+-    add sp, #0x10
+-    pop {r4, r5, r6, pc}
+-    nop
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_0224D5B4(void *a0, void *a1, void *a2);
+ // clang-format on
+ 
+ WIP_LOCAL void ov02_0224D648(Field3dObjectTask *task, FieldSystem *fieldSystem, void *data) {
+@@ -5505,97 +4542,8 @@
+ 
+ // ov02_0224DB9C
+ // clang-format off
+-asm int ov02_0224DB9C(void *a0, void *a1, void *a2) {
+-    push {r3, r4, r5, lr}
+-    add r5, r1, #0
+-    ldr r1, =0x00000113
+-    add r4, r2, #0
+-    ldrb r0, [r4, r1]
+-    cmp r0, #0
+-    beq _0224DBB0
+-    cmp r0, #1
+-    beq _0224DC38
+-    pop {r3, r4, r5, pc}
+-_0224DBB0:
+-    sub r0, r1, #1
+-    ldrb r0, [r4, r0]
+-    cmp r0, #2
+-    bhs _0224DC1C
+-    sub r0, r1, #3
+-    ldrsb r0, [r4, r0]
+-    cmp r0, #0
+-    bgt _0224DC12
+-    mov r2, #1
+-    sub r0, r1, #3
+-    strb r2, [r4, r0]
+-    sub r0, r1, #2
+-    ldrb r0, [r4, r0]
+-    add r0, r0, #1
+-    lsr r2, r0, #0x1f
+-    lsl r1, r0, #0x1f
+-    sub r1, r1, r2
+-    mov r0, #0x1f
+-    ror r1, r0
+-    add r2, r2, r1
+-    add r1, r0, #0
+-    add r1, #0xf2
+-    strb r2, [r4, r1]
+-    add r1, r0, #0
+-    add r1, #0xf2
+-    ldrb r1, [r4, r1]
+-    cmp r1, #0
+-    beq _0224DBF4
+-    add r0, #0xe5
+-    ldr r1, [r5, #0x24]
+-    add r0, r4, r0
+-    bl Camera_OffsetLookAtPosAndTarget
+-    b _0224DC1C
+-_0224DBF4:
+-    add r0, r4, #0
+-    ldr r1, [r5, #0x24]
+-    add r0, #0xf8
+-    bl Camera_SetLookAtCamTarget
+-    add r0, r4, #0
+-    ldr r1, [r5, #0x24]
+-    add r0, #0xec
+-    bl Camera_SetLookAtCamPos
+-    ldr r0, =0x00000112
+-    ldrb r1, [r4, r0]
+-    add r1, r1, #1
+-    strb r1, [r4, r0]
+-    b _0224DC1C
+-_0224DC12:
+-    sub r0, r1, #3
+-    ldrsb r0, [r4, r0]
+-    sub r2, r0, #1
+-    sub r0, r1, #3
+-    strb r2, [r4, r0]
+-_0224DC1C:
+-    add r0, r4, #0
+-    bl ov02_0224D178
+-    cmp r0, #1
+-    bne _0224DC4C
+-    add r0, r4, #0
+-    mov r1, #0
+-    bl Field3dObject_SetActiveFlag
+-    ldr r0, =0x00000113
+-    ldrb r1, [r4, r0]
+-    add r1, r1, #1
+-    strb r1, [r4, r0]
+-    pop {r3, r4, r5, pc}
+-_0224DC38:
+-    add r0, r4, #0
+-    ldr r1, [r5, #0x24]
+-    add r0, #0xf8
+-    bl Camera_SetLookAtCamTarget
+-    add r4, #0xec
+-    ldr r1, [r5, #0x24]
+-    add r0, r4, #0
+-    bl Camera_SetLookAtCamPos
+-_0224DC4C:
+-    pop {r3, r4, r5, pc}
+-    nop
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern int ov02_0224DB9C(void *a0, void *a1, void *a2);
+ // clang-format on
+ 
+ WIP_LOCAL void ov02_0224DC58(Field3dObjectTask *task, FieldSystem *fieldSystem, void *data) {
+@@ -6062,168 +5010,8 @@
+ 
+ // SafariDecoration_CreateArgs
+ // clang-format off
+-asm SafariDecorationArgs *SafariDecoration_CreateArgs(FieldSystem *fieldSystem, enum HeapID heapID) {
+-    push {r4, r5, r6, r7, lr}
+-    sub sp, #0x2c
+-    add r5, r0, #0
+-    add r0, r1, #0
+-    mov r1, #0x24
+-    bl Heap_AllocAtEnd
+-    mov r1, #0
+-    mov r2, #0x24
+-    add r4, r0, #0
+-    bl MI_CpuFill8
+-    add r0, r5, #0
+-    bl FieldSystem_GetSaveData
+-    str r0, [r4, #0]
+-    mov r0, #0x43
+-    lsl r0, r0, #2
+-    add r1, r5, r0
+-    add r0, r0, #5
+-    str r1, [r4, #4]
+-    add r0, r5, r0
+-    str r0, [r4, #0x20]
+-    ldr r0, [r5, #0x40]
+-    bl PlayerAvatar_GetState
+-    cmp r0, #2
+-    bne _0224E528
+-    mov r0, #1
+-    b _0224E52A
+-_0224E528:
+-    mov r0, #0
+-_0224E52A:
+-    lsl r0, r0, #0x18
+-    lsr r6, r0, #0x18
+-    strb r6, [r4, #0x18]
+-    ldr r0, [r5, #0x40]
+-    bl PlayerAvatar_GetFacingDirection
+-    lsl r0, r0, #0x18
+-    lsr r0, r0, #0x18
+-    str r0, [sp, #0x10]
+-    ldr r0, [r5, #0x40]
+-    bl PlayerAvatar_GetXCoord
+-    lsl r0, r0, #0x10
+-    asr r0, r0, #0x10
+-    str r0, [sp, #0x14]
+-    ldr r0, [r5, #0x40]
+-    bl PlayerAvatar_GetZCoord
+-    lsl r0, r0, #0x10
+-    asr r7, r0, #0x10
+-    ldr r0, [r5, #0x40]
+-    add r1, sp, #0x20
+-    bl PlayerAvatar_CopyPositionVector
+-    ldr r0, [sp, #0x14]
+-    add r1, r7, #0
+-    bl ov02_0224E31C
+-    strb r0, [r4, #0x19]
+-    add r0, sp, #0x18
+-    str r0, [sp, #0]
+-    ldr r1, [sp, #0x24]
+-    ldr r2, [sp, #0x20]
+-    ldr r3, [sp, #0x28]
+-    add r0, r5, #0
+-    bl sub_02054774
+-    str r0, [sp, #0x24]
+-    add r1, sp, #0x18
+-    ldrb r1, [r1, #0]
+-    cmp r1, #1
+-    beq _0224E584
+-    add sp, #0x2c
+-    add r0, r4, #0
+-    pop {r4, r5, r6, r7, pc}
+-_0224E584:
+-    asr r0, r0, #0xc
+-    strb r0, [r4, #0x1a]
+-    ldr r0, [sp, #0x10]
+-    bl GetDeltaXByFacingDirection
+-    ldr r1, [sp, #0x14]
+-    add r0, r1, r0
+-    strb r0, [r4, #9]
+-    ldr r0, [sp, #0x10]
+-    bl GetDeltaYByFacingDirection
+-    add r0, r7, r0
+-    strb r0, [r4, #0xb]
+-    mov r0, #1
+-    strb r0, [r4, #8]
+-    ldr r0, [sp, #0x24]
+-    add r2, r7, #0
+-    str r0, [sp, #0]
+-    add r0, sp, #0x1c
+-    str r0, [sp, #4]
+-    add r0, sp, #0x18
+-    add r0, #2
+-    str r0, [sp, #8]
+-    str r6, [sp, #0xc]
+-    ldr r1, [sp, #0x14]
+-    ldr r3, [sp, #0x10]
+-    add r0, r5, #0
+-    bl ov02_0224E828
+-    cmp r0, #0
+-    beq _0224E5D4
+-    add r1, sp, #0x18
+-    mov r0, #4
+-    ldrsh r0, [r1, r0]
+-    strb r0, [r4, #0xd]
+-    mov r0, #2
+-    ldrsh r0, [r1, r0]
+-    strb r0, [r4, #0xf]
+-    mov r0, #1
+-    strb r0, [r4, #0xc]
+-_0224E5D4:
+-    ldr r0, [sp, #0x24]
+-    add r2, r7, #0
+-    str r0, [sp, #0]
+-    add r0, sp, #0x1c
+-    str r0, [sp, #4]
+-    add r0, sp, #0x18
+-    add r0, #2
+-    str r0, [sp, #8]
+-    str r6, [sp, #0xc]
+-    ldr r1, [sp, #0x14]
+-    ldr r3, [sp, #0x10]
+-    add r0, r5, #0
+-    bl ov02_0224EB48
+-    cmp r0, #0
+-    beq _0224E606
+-    add r1, sp, #0x18
+-    mov r0, #4
+-    ldrsh r0, [r1, r0]
+-    strb r0, [r4, #0x11]
+-    mov r0, #2
+-    ldrsh r0, [r1, r0]
+-    strb r0, [r4, #0x13]
+-    mov r0, #1
+-    strb r0, [r4, #0x10]
+-_0224E606:
+-    ldr r0, [sp, #0x24]
+-    add r2, r7, #0
+-    str r0, [sp, #0]
+-    add r0, sp, #0x1c
+-    str r0, [sp, #4]
+-    add r0, sp, #0x18
+-    add r0, #2
+-    str r0, [sp, #8]
+-    str r6, [sp, #0xc]
+-    ldr r1, [sp, #0x14]
+-    ldr r3, [sp, #0x10]
+-    add r0, r5, #0
+-    bl ov02_0224EE4C
+-    cmp r0, #0
+-    beq _0224E638
+-    add r1, sp, #0x18
+-    mov r0, #4
+-    ldrsh r0, [r1, r0]
+-    strb r0, [r4, #0x15]
+-    mov r0, #2
+-    ldrsh r0, [r1, r0]
+-    strb r0, [r4, #0x17]
+-    mov r0, #1
+-    strb r0, [r4, #0x14]
+-_0224E638:
+-    add r0, r4, #0
+-    add sp, #0x2c
+-    pop {r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern SafariDecorationArgs *SafariDecoration_CreateArgs(FieldSystem *fieldSystem, enum HeapID heapID);
+ // clang-format on
+ 
+ WIP_LOCAL BOOL ov02_0224E640(SaveData *saveData) {
+@@ -6301,922 +5089,20 @@
+ 
+ // ov02_0224E828
+ // clang-format off
+-asm int ov02_0224E828(void *a0, int a1, int a2, int a3, fx32 a4, u16 *a5, u16 *a6, int a7) {
+-    push {r4, r5, r6, r7, lr}
+-    sub sp, #0x6c
+-    add r4, r0, #0
+-    add r5, r1, #0
+-    ldr r0, [sp, #0x84]
+-    str r2, [sp, #4]
+-    ldr r1, =sRodata+0x754
+-    str r0, [sp, #0x84]
+-    ldr r0, [sp, #0x88]
+-    ldrb r2, [r1, #2]
+-    str r0, [sp, #0x88]
+-    ldrb r1, [r1, #3]
+-    str r3, [sp, #8]
+-    add r0, sp, #0x68
+-    strb r2, [r0, #1]
+-    strb r1, [r0, #2]
+-    ldr r1, [sp, #0x84]
+-    ldr r6, [sp, #0x80]
+-    strh r5, [r1, #0]
+-    ldr r2, [sp, #4]
+-    ldr r1, [sp, #0x88]
+-    strh r2, [r1, #0]
+-    ldr r1, [sp, #8]
+-    cmp r1, #3
+-    bls _0224E85C
+-    b _0224EB3E
+-_0224E85C:
+-    add r1, r1, r1
+-    add r1, pc
+-    ldrh r1, [r1, #6]
+-    lsl r1, r1, #0x10
+-    asr r1, r1, #0x10
+-    add pc, r1
+-    lsl r6, r0, #0
+-    lsl r6, r0, #0
+-    lsl r0, r5, #4
+-    lsl r0, r5, #4
+-_0224E870:
+-    mov r0, #0
+-    str r0, [sp, #0x50]
+-    ldr r0, [sp, #8]
+-    cmp r0, #0
+-    beq _0224E87E
+-    mov r0, #1
+-    b _0224E880
+-_0224E87E:
+-    ldr r0, [sp, #0x50]
+-_0224E880:
+-    lsl r0, r0, #0x18
+-    lsr r1, r0, #0x18
+-    mov r0, #0
+-    str r0, [sp, #0x54]
+-    add r0, sp, #0x68
+-    add r0, #1
+-    ldrsb r0, [r0, r1]
+-    ldr r7, [sp, #0x54]
+-    str r0, [sp, #0x38]
+-    add r0, sp, #0x70
+-    ldrb r0, [r0, #0x1c]
+-    str r0, [sp, #0x48]
+-    lsl r0, r5, #4
+-    str r0, [sp, #0x44]
+-    add r0, #8
+-    str r0, [sp, #0x44]
+-    lsl r0, r0, #0xc
+-    str r0, [sp, #0x40]
+-_0224E8A4:
+-    ldr r0, [sp, #0x38]
+-    add r1, r7, r0
+-    ldr r0, [sp, #4]
+-    add r0, r0, r1
+-    lsl r0, r0, #0x10
+-    asr r0, r0, #0x10
+-    str r0, [sp, #0x3c]
+-    ldr r2, [sp, #0x3c]
+-    add r0, r4, #0
+-    add r1, r5, #0
+-    bl GetMetatileBehavior
+-    str r0, [sp, #0x58]
+-    ldr r2, [sp, #0x3c]
+-    add r0, r4, #0
+-    add r1, r5, #0
+-    bl sub_020548C0
+-    add r1, r0, #0
+-    ldr r0, [sp, #0x58]
+-    ldr r2, [sp, #0x48]
+-    bl ov02_0224EF6C
+-    cmp r0, #0
+-    beq _0224E95C
+-    ldr r0, [sp, #0x3c]
+-    lsl r0, r0, #4
+-    add r0, #8
+-    cmp r0, #0
+-    ble _0224E8F4
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    str r0, [sp, #0x14]
+-    b _0224E904
+-_0224E8F4:
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-    str r0, [sp, #0x14]
+-_0224E904:
+-    ldr r0, [sp, #0x44]
+-    cmp r0, #0
+-    ble _0224E91C
+-    ldr r0, [sp, #0x40]
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    b _0224E92A
+-_0224E91C:
+-    ldr r0, [sp, #0x40]
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-_0224E92A:
+-    bl _ffix
+-    str r0, [sp, #0x5c]
+-    ldr r0, [sp, #0x14]
+-    bl _ffix
+-    add r3, r0, #0
+-    add r0, sp, #0x68
+-    str r0, [sp, #0]
+-    ldr r2, [sp, #0x5c]
+-    add r0, r4, #0
+-    add r1, r6, #0
+-    bl sub_02054774
+-    add r1, sp, #0x68
+-    ldrb r1, [r1, #0]
+-    cmp r1, #1
+-    bne _0224E95C
+-    cmp r0, r6
+-    bne _0224E95C
+-    ldr r0, [sp, #0x50]
+-    add r0, r0, #1
+-    lsl r0, r0, #0x18
+-    lsr r0, r0, #0x18
+-    str r0, [sp, #0x50]
+-_0224E95C:
+-    ldr r0, [sp, #0x38]
+-    add r7, r7, r0
+-    ldr r0, [sp, #0x54]
+-    add r0, r0, #1
+-    str r0, [sp, #0x54]
+-    cmp r0, #2
+-    blt _0224E8A4
+-    ldr r0, [sp, #0x50]
+-    cmp r0, #2
+-    beq _0224E972
+-    b _0224EB3E
+-_0224E972:
+-    ldr r0, [sp, #0x84]
+-    strh r5, [r0, #0]
+-    ldr r0, [sp, #8]
+-    cmp r0, #0
+-    bne _0224E984
+-    ldr r0, [sp, #4]
+-    sub r1, r0, #1
+-    ldr r0, [sp, #0x88]
+-    b _0224E98A
+-_0224E984:
+-    ldr r0, [sp, #4]
+-    add r1, r0, #2
+-    ldr r0, [sp, #0x88]
+-_0224E98A:
+-    strh r1, [r0, #0]
+-    add sp, #0x6c
+-    mov r0, #1
+-    pop {r4, r5, r6, r7, pc}
+-_0224E992:
+-    ldr r1, [sp, #8]
+-    cmp r1, #2
+-    bne _0224E99C
+-    mov r1, #1
+-    b _0224E99E
+-_0224E99C:
+-    mov r1, #2
+-_0224E99E:
+-    ldrsb r0, [r0, r1]
+-    ldr r2, [sp, #4]
+-    add r0, r5, r0
+-    lsl r0, r0, #0x10
+-    asr r5, r0, #0x10
+-    add r0, r4, #0
+-    add r1, r5, #0
+-    bl GetMetatileBehavior
+-    str r0, [sp, #0x20]
+-    ldr r2, [sp, #4]
+-    add r0, r4, #0
+-    add r1, r5, #0
+-    bl sub_020548C0
+-    str r0, [sp, #0x18]
+-    ldr r0, [sp, #4]
+-    lsl r0, r0, #4
+-    add r0, #8
+-    cmp r0, #0
+-    ble _0224E9DC
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    str r0, [sp, #0x10]
+-    b _0224E9EC
+-_0224E9DC:
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-    str r0, [sp, #0x10]
+-_0224E9EC:
+-    lsl r0, r5, #4
+-    str r0, [sp, #0x2c]
+-    add r0, #8
+-    str r0, [sp, #0x2c]
+-    cmp r0, #0
+-    ble _0224EA0A
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    b _0224EA18
+-_0224EA0A:
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-_0224EA18:
+-    bl _ffix
+-    add r7, r0, #0
+-    ldr r0, [sp, #0x10]
+-    bl _ffix
+-    add r3, r0, #0
+-    add r0, sp, #0x68
+-    str r0, [sp, #0]
+-    add r0, r4, #0
+-    add r1, r6, #0
+-    add r2, r7, #0
+-    bl sub_02054774
+-    add r7, r0, #0
+-    add r0, sp, #0x70
+-    ldrb r0, [r0, #0x1c]
+-    ldr r1, [sp, #0x18]
+-    str r0, [sp, #0x34]
+-    ldr r0, [sp, #0x20]
+-    ldr r2, [sp, #0x34]
+-    bl ov02_0224EF6C
+-    cmp r0, #0
+-    beq _0224EA56
+-    add r0, sp, #0x68
+-    ldrb r0, [r0, #0]
+-    cmp r0, #1
+-    bne _0224EA56
+-    cmp r7, r6
+-    beq _0224EA5C
+-_0224EA56:
+-    add sp, #0x6c
+-    mov r0, #0
+-    pop {r4, r5, r6, r7, pc}
+-_0224EA5C:
+-    mov r0, #0
+-    str r0, [sp, #0x28]
+-    ldr r0, [sp, #0x2c]
+-    add r7, sp, #0x68
+-    lsl r0, r0, #0xc
+-    add r7, #1
+-    str r0, [sp, #0x4c]
+-_0224EA6A:
+-    mov r0, #0
+-    ldrsb r1, [r7, r0]
+-    ldr r0, [sp, #4]
+-    add r0, r0, r1
+-    lsl r0, r0, #0x10
+-    asr r0, r0, #0x10
+-    str r0, [sp, #0x30]
+-    ldr r2, [sp, #0x30]
+-    add r0, r4, #0
+-    add r1, r5, #0
+-    bl GetMetatileBehavior
+-    str r0, [sp, #0x24]
+-    ldr r2, [sp, #0x30]
+-    add r0, r4, #0
+-    add r1, r5, #0
+-    bl sub_020548C0
+-    str r0, [sp, #0x1c]
+-    ldr r0, [sp, #0x30]
+-    lsl r0, r0, #4
+-    add r0, #8
+-    cmp r0, #0
+-    ble _0224EAAE
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    str r0, [sp, #0xc]
+-    b _0224EABE
+-_0224EAAE:
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-    str r0, [sp, #0xc]
+-_0224EABE:
+-    ldr r0, [sp, #0x2c]
+-    cmp r0, #0
+-    ble _0224EAD6
+-    ldr r0, [sp, #0x4c]
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    b _0224EAE4
+-_0224EAD6:
+-    ldr r0, [sp, #0x4c]
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-_0224EAE4:
+-    bl _ffix
+-    str r0, [sp, #0x60]
+-    ldr r0, [sp, #0xc]
+-    bl _ffix
+-    add r3, r0, #0
+-    add r0, sp, #0x68
+-    str r0, [sp, #0]
+-    ldr r2, [sp, #0x60]
+-    add r0, r4, #0
+-    add r1, r6, #0
+-    bl sub_02054774
+-    str r0, [sp, #0x64]
+-    ldr r0, [sp, #0x24]
+-    ldr r1, [sp, #0x1c]
+-    ldr r2, [sp, #0x34]
+-    bl ov02_0224EF6C
+-    cmp r0, #0
+-    beq _0224EB32
+-    add r0, sp, #0x68
+-    ldrb r0, [r0, #0]
+-    cmp r0, #1
+-    bne _0224EB32
+-    ldr r0, [sp, #0x64]
+-    cmp r0, r6
+-    bne _0224EB32
+-    ldr r0, [sp, #0x84]
+-    strh r5, [r0, #0]
+-    ldr r1, [sp, #4]
+-    ldr r0, [sp, #0x28]
+-    add r1, r1, r0
+-    ldr r0, [sp, #0x88]
+-    add sp, #0x6c
+-    strh r1, [r0, #0]
+-    mov r0, #1
+-    pop {r4, r5, r6, r7, pc}
+-_0224EB32:
+-    ldr r0, [sp, #0x28]
+-    add r7, r7, #1
+-    add r0, r0, #1
+-    str r0, [sp, #0x28]
+-    cmp r0, #2
+-    blt _0224EA6A
+-_0224EB3E:
+-    mov r0, #0
+-    add sp, #0x6c
+-    pop {r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern int ov02_0224E828(void *a0, int a1, int a2, int a3, fx32 a4, u16 *a5, u16 *a6, int a7);
+ // clang-format on
+ 
+ // ov02_0224EB48
+ // clang-format off
+-asm int ov02_0224EB48(void *a0, int a1, int a2, int a3, fx32 a4, u16 *a5, u16 *a6, int a7) {
+-    push {r3, r4, r5, r6, r7, lr}
+-    sub sp, #0x68
+-    add r4, r0, #0
+-    ldr r0, [sp, #0x84]
+-    str r1, [sp, #4]
+-    str r0, [sp, #0x84]
+-    ldr r0, [sp, #0x88]
+-    ldr r1, =sRodata+0x754
+-    str r0, [sp, #0x88]
+-    add r5, r2, #0
+-    add r2, r3, #0
+-    ldrb r0, [r1, #0]
+-    add r3, sp, #0x64
+-    ldr r6, [sp, #0x80]
+-    strb r0, [r3, #1]
+-    ldrb r0, [r1, #1]
+-    cmp r2, #3
+-    strb r0, [r3, #2]
+-    ldr r1, [sp, #4]
+-    ldr r0, [sp, #0x84]
+-    strh r1, [r0, #0]
+-    ldr r0, [sp, #0x88]
+-    strh r5, [r0, #0]
+-    bls _0224EB7A
+-    b _0224EE42
+-_0224EB7A:
+-    add r0, r2, r2
+-    add r0, pc
+-    ldrh r0, [r0, #6]
+-    lsl r0, r0, #0x10
+-    asr r0, r0, #0x10
+-    add pc, r0
+-    lsl r6, r0, #0
+-    lsl r6, r0, #0
+-    lsl r2, r6, #6
+-    lsl r2, r6, #6
+-_0224EB8E:
+-    cmp r2, #0
+-    bne _0224EB96
+-    mov r0, #1
+-    b _0224EB98
+-_0224EB96:
+-    mov r0, #2
+-_0224EB98:
+-    ldrsb r0, [r3, r0]
+-    ldr r1, [sp, #4]
+-    add r0, r5, r0
+-    lsl r0, r0, #0x10
+-    asr r5, r0, #0x10
+-    add r0, r4, #0
+-    add r2, r5, #0
+-    bl GetMetatileBehavior
+-    str r0, [sp, #0x50]
+-    ldr r1, [sp, #4]
+-    add r0, r4, #0
+-    add r2, r5, #0
+-    bl sub_020548C0
+-    str r0, [sp, #0x4c]
+-    lsl r0, r5, #4
+-    str r0, [sp, #0x24]
+-    add r0, #8
+-    str r0, [sp, #0x24]
+-    cmp r0, #0
+-    ble _0224EBD8
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    str r0, [sp, #0x14]
+-    b _0224EBE8
+-_0224EBD8:
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-    str r0, [sp, #0x14]
+-_0224EBE8:
+-    ldr r0, [sp, #4]
+-    lsl r0, r0, #4
+-    add r0, #8
+-    cmp r0, #0
+-    ble _0224EC04
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    b _0224EC12
+-_0224EC04:
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-_0224EC12:
+-    bl _ffix
+-    add r7, r0, #0
+-    ldr r0, [sp, #0x14]
+-    bl _ffix
+-    add r3, r0, #0
+-    add r0, sp, #0x64
+-    str r0, [sp, #0]
+-    add r0, r4, #0
+-    add r1, r6, #0
+-    add r2, r7, #0
+-    bl sub_02054774
+-    add r7, r0, #0
+-    add r0, sp, #0x70
+-    ldrb r0, [r0, #0x1c]
+-    ldr r1, [sp, #0x4c]
+-    str r0, [sp, #0x30]
+-    ldr r0, [sp, #0x50]
+-    ldr r2, [sp, #0x30]
+-    bl ov02_0224EF6C
+-    cmp r0, #0
+-    beq _0224EC50
+-    add r0, sp, #0x64
+-    ldrb r0, [r0, #0]
+-    cmp r0, #1
+-    bne _0224EC50
+-    cmp r7, r6
+-    beq _0224EC56
+-_0224EC50:
+-    add sp, #0x68
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224EC56:
+-    mov r0, #0
+-    str r0, [sp, #0x48]
+-    ldr r0, [sp, #0x24]
+-    add r7, sp, #0x64
+-    lsl r0, r0, #0xc
+-    add r7, #1
+-    str r0, [sp, #0x34]
+-_0224EC64:
+-    mov r0, #0
+-    ldrsb r1, [r7, r0]
+-    ldr r0, [sp, #4]
+-    add r2, r5, #0
+-    sub r0, r0, r1
+-    lsl r0, r0, #0x10
+-    asr r0, r0, #0x10
+-    str r0, [sp, #0x2c]
+-    ldr r1, [sp, #0x2c]
+-    add r0, r4, #0
+-    bl GetMetatileBehavior
+-    str r0, [sp, #0x20]
+-    ldr r1, [sp, #0x2c]
+-    add r0, r4, #0
+-    add r2, r5, #0
+-    bl sub_020548C0
+-    str r0, [sp, #0x1c]
+-    ldr r0, [sp, #0x24]
+-    cmp r0, #0
+-    ble _0224ECA4
+-    ldr r0, [sp, #0x34]
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    str r0, [sp, #0x10]
+-    b _0224ECB4
+-_0224ECA4:
+-    ldr r0, [sp, #0x34]
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-    str r0, [sp, #0x10]
+-_0224ECB4:
+-    ldr r0, [sp, #0x2c]
+-    lsl r0, r0, #4
+-    add r0, #8
+-    cmp r0, #0
+-    ble _0224ECD0
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    b _0224ECDE
+-_0224ECD0:
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-_0224ECDE:
+-    bl _ffix
+-    str r0, [sp, #0x54]
+-    ldr r0, [sp, #0x10]
+-    bl _ffix
+-    add r3, r0, #0
+-    add r0, sp, #0x64
+-    str r0, [sp, #0]
+-    ldr r2, [sp, #0x54]
+-    add r0, r4, #0
+-    add r1, r6, #0
+-    bl sub_02054774
+-    str r0, [sp, #0x58]
+-    ldr r0, [sp, #0x20]
+-    ldr r1, [sp, #0x1c]
+-    ldr r2, [sp, #0x30]
+-    bl ov02_0224EF6C
+-    cmp r0, #0
+-    beq _0224ED2C
+-    add r0, sp, #0x64
+-    ldrb r0, [r0, #0]
+-    cmp r0, #1
+-    bne _0224ED2C
+-    ldr r0, [sp, #0x58]
+-    cmp r0, r6
+-    bne _0224ED2C
+-    ldr r1, [sp, #4]
+-    ldr r0, [sp, #0x48]
+-    sub r1, r1, r0
+-    ldr r0, [sp, #0x84]
+-    strh r1, [r0, #0]
+-    ldr r0, [sp, #0x88]
+-    add sp, #0x68
+-    strh r5, [r0, #0]
+-    mov r0, #1
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224ED2C:
+-    ldr r0, [sp, #0x48]
+-    add r7, r7, #1
+-    add r0, r0, #1
+-    str r0, [sp, #0x48]
+-    cmp r0, #2
+-    blt _0224EC64
+-    b _0224EE42
+-_0224ED3A:
+-    mov r0, #0
+-    str r0, [sp, #0x44]
+-    cmp r2, #2
+-    bne _0224ED4E
+-    ldr r0, [sp, #4]
+-    sub r0, r0, #2
+-    lsl r0, r0, #0x10
+-    asr r0, r0, #0x10
+-    str r0, [sp, #0xc]
+-    b _0224ED58
+-_0224ED4E:
+-    ldr r0, [sp, #4]
+-    add r0, r0, #1
+-    lsl r0, r0, #0x10
+-    asr r0, r0, #0x10
+-    str r0, [sp, #0xc]
+-_0224ED58:
+-    mov r0, #0
+-    str r0, [sp, #0x18]
+-    add r0, sp, #0x70
+-    ldrb r0, [r0, #0x1c]
+-    ldr r7, [sp, #0xc]
+-    str r0, [sp, #0x40]
+-    lsl r0, r5, #4
+-    str r0, [sp, #0x3c]
+-    add r0, #8
+-    str r0, [sp, #0x3c]
+-    lsl r0, r0, #0xc
+-    str r0, [sp, #0x38]
+-_0224ED70:
+-    lsl r0, r7, #0x10
+-    asr r0, r0, #0x10
+-    str r0, [sp, #0x28]
+-    ldr r1, [sp, #0x28]
+-    add r0, r4, #0
+-    add r2, r5, #0
+-    bl GetMetatileBehavior
+-    str r0, [sp, #0x5c]
+-    ldr r1, [sp, #0x28]
+-    add r0, r4, #0
+-    add r2, r5, #0
+-    bl sub_020548C0
+-    add r1, r0, #0
+-    ldr r0, [sp, #0x5c]
+-    ldr r2, [sp, #0x40]
+-    bl ov02_0224EF6C
+-    cmp r0, #0
+-    beq _0224EE20
+-    ldr r0, [sp, #0x3c]
+-    cmp r0, #0
+-    ble _0224EDB4
+-    ldr r0, [sp, #0x38]
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    str r0, [sp, #8]
+-    b _0224EDC4
+-_0224EDB4:
+-    ldr r0, [sp, #0x38]
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-    str r0, [sp, #8]
+-_0224EDC4:
+-    ldr r0, [sp, #0x28]
+-    lsl r0, r0, #4
+-    add r0, #8
+-    cmp r0, #0
+-    ble _0224EDE0
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    add r1, r0, #0
+-    mov r0, #0x3f
+-    lsl r0, r0, #0x18
+-    bl _fadd
+-    b _0224EDEE
+-_0224EDE0:
+-    lsl r0, r0, #0xc
+-    bl _fflt
+-    mov r1, #0x3f
+-    lsl r1, r1, #0x18
+-    bl _fsub
+-_0224EDEE:
+-    bl _ffix
+-    str r0, [sp, #0x60]
+-    ldr r0, [sp, #8]
+-    bl _ffix
+-    add r3, r0, #0
+-    add r0, sp, #0x64
+-    str r0, [sp, #0]
+-    ldr r2, [sp, #0x60]
+-    add r0, r4, #0
+-    add r1, r6, #0
+-    bl sub_02054774
+-    add r1, sp, #0x64
+-    ldrb r1, [r1, #0]
+-    cmp r1, #1
+-    bne _0224EE20
+-    cmp r0, r6
+-    bne _0224EE20
+-    ldr r0, [sp, #0x44]
+-    add r0, r0, #1
+-    lsl r0, r0, #0x18
+-    lsr r0, r0, #0x18
+-    str r0, [sp, #0x44]
+-_0224EE20:
+-    ldr r0, [sp, #0x18]
+-    add r7, r7, #1
+-    add r0, r0, #1
+-    str r0, [sp, #0x18]
+-    cmp r0, #2
+-    blt _0224ED70
+-    ldr r0, [sp, #0x44]
+-    cmp r0, #2
+-    bne _0224EE42
+-    ldr r1, [sp, #0xc]
+-    ldr r0, [sp, #0x84]
+-    strh r1, [r0, #0]
+-    ldr r0, [sp, #0x88]
+-    add sp, #0x68
+-    strh r5, [r0, #0]
+-    mov r0, #1
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224EE42:
+-    mov r0, #0
+-    add sp, #0x68
+-    pop {r3, r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern int ov02_0224EB48(void *a0, int a1, int a2, int a3, fx32 a4, u16 *a5, u16 *a6, int a7);
+ // clang-format on
+ 
+ // ov02_0224EE4C
+ // clang-format off
+-asm int ov02_0224EE4C(void *a0, int a1, int a2, int a3, fx32 a4, u16 *a5, u16 *a6, int a7) {
+-    push {r4, r5, r6, r7, lr}
+-    sub sp, #0x24
+-    str r1, [sp, #0x14]
+-    str r2, [sp, #0x18]
+-    ldr r4, [sp, #0x38]
+-    str r3, [sp, #0x1c]
+-    str r4, [sp, #0x38]
+-    ldr r4, [sp, #0x44]
+-    ldr r6, [sp, #0x3c]
+-    str r4, [sp, #0x44]
+-    ldr r4, =sRodata+0x754
+-    ldr r7, [sp, #0x40]
+-    ldrb r5, [r4, #4]
+-    add r4, sp, #0x20
+-    str r0, [sp, #0x10]
+-    strb r5, [r4, #0]
+-    ldr r4, =sRodata+0x754
+-    ldrb r5, [r4, #5]
+-    add r4, sp, #0x20
+-    strb r5, [r4, #1]
+-    ldr r4, [sp, #0x14]
+-    strh r4, [r6, #0]
+-    ldr r4, [sp, #0x18]
+-    strh r4, [r7, #0]
+-    ldr r4, [sp, #0x1c]
+-    cmp r4, #3
+-    bhi _0224EF60
+-    add r4, r4, r4
+-    add r4, pc
+-    ldrh r4, [r4, #6]
+-    lsl r4, r4, #0x10
+-    asr r4, r4, #0x10
+-    add pc, r4
+-    lsl r6, r0, #0
+-    lsl r6, r0, #0
+-    lsl r4, r5, #1
+-    lsl r4, r5, #1
+-_0224EE96:
+-    ldr r4, [sp, #0x38]
+-    str r4, [sp, #0]
+-    str r6, [sp, #4]
+-    str r7, [sp, #8]
+-    ldr r4, [sp, #0x44]
+-    str r4, [sp, #0xc]
+-    bl ov02_0224E828
+-    cmp r0, #0
+-    beq _0224EF60
+-    mov r4, #0
+-    add r5, sp, #0x20
+-_0224EEAE:
+-    ldr r0, [sp, #0x38]
+-    mov r1, #0
+-    str r0, [sp, #0]
+-    str r6, [sp, #4]
+-    str r7, [sp, #8]
+-    ldr r0, [sp, #0x44]
+-    str r0, [sp, #0xc]
+-    ldrsb r2, [r5, r1]
+-    ldr r1, [sp, #0x14]
+-    ldr r0, [sp, #0x10]
+-    add r1, r1, r2
+-    lsl r1, r1, #0x10
+-    ldr r2, [sp, #0x18]
+-    ldr r3, [sp, #0x1c]
+-    asr r1, r1, #0x10
+-    bl ov02_0224E828
+-    cmp r0, #0
+-    beq _0224EEF2
+-    ldr r0, [sp, #0x14]
+-    sub r0, r0, r4
+-    strh r0, [r6, #0]
+-    ldr r0, [sp, #0x1c]
+-    cmp r0, #0
+-    bne _0224EEE6
+-    ldr r0, [sp, #0x18]
+-    sub r0, r0, #1
+-    b _0224EEEA
+-_0224EEE6:
+-    ldr r0, [sp, #0x18]
+-    add r0, r0, #2
+-_0224EEEA:
+-    add sp, #0x24
+-    strh r0, [r7, #0]
+-    mov r0, #1
+-    pop {r4, r5, r6, r7, pc}
+-_0224EEF2:
+-    add r4, r4, #1
+-    add r5, r5, #1
+-    cmp r4, #2
+-    blt _0224EEAE
+-    b _0224EF60
+-_0224EEFC:
+-    ldr r4, [sp, #0x38]
+-    str r4, [sp, #0]
+-    str r6, [sp, #4]
+-    str r7, [sp, #8]
+-    ldr r4, [sp, #0x44]
+-    str r4, [sp, #0xc]
+-    bl ov02_0224EB48
+-    cmp r0, #0
+-    beq _0224EF60
+-    mov r5, #0
+-    add r4, sp, #0x20
+-_0224EF14:
+-    ldr r0, [sp, #0x38]
+-    mov r2, #0
+-    str r0, [sp, #0]
+-    str r6, [sp, #4]
+-    str r7, [sp, #8]
+-    ldr r0, [sp, #0x44]
+-    str r0, [sp, #0xc]
+-    ldrsb r3, [r4, r2]
+-    ldr r2, [sp, #0x18]
+-    ldr r0, [sp, #0x10]
+-    sub r2, r2, r3
+-    lsl r2, r2, #0x10
+-    ldr r1, [sp, #0x14]
+-    ldr r3, [sp, #0x1c]
+-    asr r2, r2, #0x10
+-    bl ov02_0224EB48
+-    cmp r0, #0
+-    beq _0224EF58
+-    ldr r0, [sp, #0x1c]
+-    cmp r0, #2
+-    bne _0224EF46
+-    ldr r0, [sp, #0x14]
+-    sub r0, r0, #2
+-    b _0224EF4A
+-_0224EF46:
+-    ldr r0, [sp, #0x14]
+-    add r0, r0, #1
+-_0224EF4A:
+-    strh r0, [r6, #0]
+-    ldr r0, [sp, #0x18]
+-    add sp, #0x24
+-    add r0, r0, r5
+-    strh r0, [r7, #0]
+-    mov r0, #1
+-    pop {r4, r5, r6, r7, pc}
+-_0224EF58:
+-    add r5, r5, #1
+-    add r4, r4, #1
+-    cmp r5, #2
+-    blt _0224EF14
+-_0224EF60:
+-    mov r0, #0
+-    add sp, #0x24
+-    pop {r4, r5, r6, r7, pc}
+-    nop
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern int ov02_0224EE4C(void *a0, int a1, int a2, int a3, fx32 a4, u16 *a5, u16 *a6, int a7);
+ // clang-format on
+ 
+ WIP_LOCAL BOOL ov02_0224EF6C(u8 tile, int flag, int sel) {
+@@ -7232,104 +5118,8 @@
+ 
+ // ov02_0224EF94
+ // clang-format off
+-asm int ov02_0224EF94(FieldSystem *fieldSystem) {
+-    push {r3, r4, r5, r6, r7, lr}
+-    sub sp, #0x1b0
+-    add r7, r0, #0
+-    ldr r0, [r7, #0x20]
+-    ldr r0, [r0, #0]
+-    bl MapHeader_GetMapSec
+-    add r2, r0, #0
+-    mov r0, #0x12
+-    lsl r0, r0, #4
+-    ldr r0, [r7, r0]
+-    mov r1, #0xde
+-    add r0, #0x14
+-    add r2, r2, #1
+-    bl ReadWholeNarcMemberByIdPair
+-    mov r0, #0x12
+-    lsl r0, r0, #4
+-    ldr r1, [r7, r0]
+-    mov r0, #0x9b
+-    lsl r0, r0, #2
+-    add r0, r1, r0
+-    mov r1, #0xde
+-    mov r2, #0
+-    bl ReadWholeNarcMemberByIdPair
+-    add r0, r7, #0
+-    add r1, sp, #4
+-    bl ov02_0224F058
+-    mov r0, #0x12
+-    lsl r0, r0, #4
+-    ldr r0, [r7, r0]
+-    add r3, sp, #0x20
+-    str r0, [sp, #0]
+-    add r0, #0x14
+-    str r0, [sp, #0]
+-    mov r0, #0
+-    add r2, r0, #0
+-_0224EFE2:
+-    add r1, r2, #0
+-    add r1, #0x1e
+-    add r2, r2, #1
+-    add r0, r0, #1
+-    stmia r3!, {r1}
+-    cmp r2, #0xc
+-    blt _0224EFE2
+-    add r2, sp, #0x20
+-    lsl r1, r0, #2
+-    mov r3, #0
+-    add r1, r2, r1
+-_0224EFF8:
+-    stmia r1!, {r3}
+-    add r3, r3, #1
+-    add r0, r0, #1
+-    cmp r3, #0x1e
+-    blt _0224EFF8
+-    add r2, sp, #0x20
+-    lsl r1, r0, #2
+-    mov r3, #0x2a
+-    add r1, r2, r1
+-_0224F00A:
+-    stmia r1!, {r3}
+-    add r3, r3, #1
+-    add r0, r0, #1
+-    cmp r3, #0x64
+-    blt _0224F00A
+-    mov r5, #0
+-    add r4, sp, #0x20
+-_0224F018:
+-    ldr r1, [r4, #0]
+-    mov r0, #0x14
+-    add r2, r1, #0
+-    mul r2, r0
+-    ldr r0, [sp, #0]
+-    add r6, r0, r2
+-    ldrh r0, [r6, #0xa]
+-    lsl r0, r0, #0x10
+-    lsr r0, r0, #0x16
+-    beq _0224F044
+-    add r0, r7, #0
+-    add r1, r6, #0
+-    add r2, sp, #4
+-    bl ov02_0224F108
+-    cmp r0, #0
+-    beq _0224F044
+-    ldrh r0, [r6, #0xa]
+-    add sp, #0x1b0
+-    lsl r0, r0, #0x10
+-    lsr r0, r0, #0x16
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F044:
+-    add r5, r5, #1
+-    add r4, r4, #4
+-    cmp r5, #0x64
+-    blt _0224F018
+-    bl GF_AssertFail
+-    mov r0, #0
+-    add sp, #0x1b0
+-    pop {r3, r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern int ov02_0224EF94(FieldSystem *fieldSystem);
+ // clang-format on
+ 
+ WIP_LOCAL void ov02_0224F058(FieldSystem *fieldSystem, void *work) {
+@@ -7351,298 +5141,8 @@
+ 
+ // ov02_0224F108
+ // clang-format off
+-asm int ov02_0224F108(void *a0, void *a1, void *a2) {
+-    push {r3, r4, r5, r6, r7, lr}
+-    add r6, r0, #0
+-    add r5, r1, #0
+-    add r4, r2, #0
+-    bl LCRandom
+-    mov r1, #0x64
+-    bl _s32_div_f
+-    ldrb r0, [r5, #0x11]
+-    cmp r1, r0
+-    blt _0224F124
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F124:
+-    ldrh r7, [r5, #0x12]
+-    cmp r7, #0
+-    beq _0224F13E
+-    ldr r0, [r6, #0xc]
+-    bl Save_VarsFlags_Get
+-    add r1, r7, #0
+-    bl Save_VarsFlags_CheckFlagInArray
+-    cmp r0, #0
+-    bne _0224F13E
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F13E:
+-    ldrb r0, [r5, #3]
+-    lsl r0, r0, #0x1b
+-    lsr r1, r0, #0x1b
+-    beq _0224F15E
+-    cmp r1, #9
+-    bne _0224F154
+-    ldrb r0, [r4, #0]
+-    cmp r0, #0
+-    bne _0224F15E
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F154:
+-    ldrb r0, [r4, #1]
+-    cmp r1, r0
+-    beq _0224F15E
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F15E:
+-    ldrb r1, [r5, #0]
+-    cmp r1, #0
+-    beq _0224F16E
+-    ldrb r0, [r4, #2]
+-    cmp r1, r0
+-    beq _0224F16E
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F16E:
+-    ldrb r0, [r5, #2]
+-    lsl r0, r0, #0x18
+-    lsr r1, r0, #0x1d
+-    beq _0224F19C
+-    cmp r1, #7
+-    ldrb r0, [r4, #3]
+-    bne _0224F194
+-    cmp r0, #2
+-    beq _0224F19C
+-    cmp r0, #3
+-    beq _0224F19C
+-    cmp r0, #4
+-    beq _0224F19C
+-    cmp r0, #5
+-    beq _0224F19C
+-    cmp r0, #8
+-    beq _0224F19C
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F194:
+-    cmp r1, r0
+-    beq _0224F19C
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F19C:
+-    ldrh r0, [r5, #0xa]
+-    lsl r0, r0, #0x1d
+-    lsr r1, r0, #0x1d
+-    beq _0224F1BA
+-    cmp r1, #5
+-    ldrb r0, [r4, #0xc]
+-    bne _0224F1B2
+-    cmp r0, #5
+-    bhs _0224F1BA
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F1B2:
+-    cmp r1, r0
+-    beq _0224F1BA
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F1BA:
+-    ldrb r0, [r5, #0x10]
+-    lsl r0, r0, #0x18
+-    lsr r1, r0, #0x1d
+-    beq _0224F1D8
+-    cmp r1, #4
+-    ldrb r0, [r4, #0xd]
+-    bne _0224F1D0
+-    cmp r0, #4
+-    bhs _0224F1D8
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F1D0:
+-    cmp r1, r0
+-    beq _0224F1D8
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F1D8:
+-    ldrb r0, [r5, #0x10]
+-    lsl r0, r0, #0x1d
+-    lsr r1, r0, #0x1e
+-    beq _0224F1EA
+-    ldrb r0, [r4, #4]
+-    cmp r1, r0
+-    beq _0224F1EA
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F1EA:
+-    ldrb r0, [r5, #0x10]
+-    lsl r0, r0, #0x1b
+-    lsr r1, r0, #0x1e
+-    beq _0224F212
+-    cmp r1, #3
+-    bne _0224F200
+-    ldrb r0, [r4, #0xe]
+-    cmp r0, #0
+-    bne _0224F200
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F200:
+-    cmp r1, #1
+-    bne _0224F20E
+-    ldrb r0, [r4, #0xf]
+-    cmp r0, #0
+-    bne _0224F20E
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F20E:
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F212:
+-    ldrb r0, [r5, #4]
+-    lsl r0, r0, #0x1b
+-    lsr r1, r0, #0x1b
+-    beq _0224F22A
+-    ldrb r0, [r4, #5]
+-    cmp r1, r0
+-    beq _0224F22A
+-    ldrb r0, [r4, #6]
+-    cmp r1, r0
+-    beq _0224F22A
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F22A:
+-    ldrh r0, [r5, #8]
+-    lsl r0, r0, #0x1d
+-    lsr r1, r0, #0x1d
+-    beq _0224F23C
+-    ldrb r0, [r4, #0x11]
+-    cmp r1, r0
+-    beq _0224F23C
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F23C:
+-    ldrh r1, [r5, #0xe]
+-    cmp r1, #0
+-    beq _0224F24C
+-    ldrb r0, [r4, #0x12]
+-    cmp r1, r0
+-    beq _0224F24C
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F24C:
+-    ldrb r1, [r5, #5]
+-    cmp r1, #0
+-    beq _0224F25C
+-    ldrb r0, [r4, #0x13]
+-    cmp r1, r0
+-    beq _0224F25C
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F25C:
+-    ldrh r0, [r5, #0xc]
+-    cmp r0, #0
+-    beq _0224F26E
+-    sub r1, r0, #1
+-    ldrh r0, [r4, #0x1a]
+-    cmp r1, r0
+-    beq _0224F26E
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F26E:
+-    ldrh r0, [r5, #0xa]
+-    lsl r0, r0, #0x1a
+-    lsr r1, r0, #0x1d
+-    beq _0224F280
+-    ldrb r0, [r4, #0x14]
+-    cmp r1, r0
+-    beq _0224F280
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F280:
+-    ldrb r0, [r5, #1]
+-    lsl r0, r0, #0x1c
+-    lsr r0, r0, #0x1c
+-    beq _0224F298
+-    mov r1, #0x15
+-    ldrsb r1, [r4, r1]
+-    bl ov02_02250628
+-    cmp r0, #0
+-    bne _0224F298
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F298:
+-    ldrb r0, [r5, #4]
+-    lsl r0, r0, #0x18
+-    lsr r1, r0, #0x1d
+-    beq _0224F2AA
+-    ldrb r0, [r4, #0x16]
+-    cmp r1, r0
+-    beq _0224F2AA
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F2AA:
+-    ldrb r0, [r5, #1]
+-    lsl r0, r0, #0x18
+-    lsr r0, r0, #0x1c
+-    beq _0224F2C0
+-    ldrb r1, [r4, #7]
+-    bl ov02_02250594
+-    cmp r0, #0
+-    bne _0224F2C0
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F2C0:
+-    ldrb r0, [r5, #2]
+-    lsl r0, r0, #0x1d
+-    lsr r1, r0, #0x1d
+-    beq _0224F2D2
+-    ldrb r0, [r4, #8]
+-    cmp r1, r0
+-    beq _0224F2D2
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F2D2:
+-    ldrb r0, [r5, #6]
+-    cmp r0, #0
+-    beq _0224F2E6
+-    ldrb r1, [r4, #0xa]
+-    bl ov02_022506D4
+-    cmp r0, #0
+-    bne _0224F2E6
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F2E6:
+-    ldrb r0, [r5, #7]
+-    cmp r0, #0
+-    beq _0224F2FA
+-    ldrb r1, [r4, #0xb]
+-    bl ov02_02250738
+-    cmp r0, #0
+-    bne _0224F2FA
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F2FA:
+-    ldrb r0, [r5, #2]
+-    lsl r0, r0, #0x1b
+-    lsr r1, r0, #0x1e
+-    beq _0224F30C
+-    ldrb r0, [r4, #9]
+-    cmp r1, r0
+-    beq _0224F30C
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F30C:
+-    ldrh r0, [r5, #8]
+-    lsl r0, r0, #0x10
+-    lsr r1, r0, #0x1d
+-    beq _0224F31E
+-    ldrb r0, [r4, #0x17]
+-    cmp r1, r0
+-    beq _0224F31E
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F31E:
+-    mov r0, #1
+-    pop {r3, r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern int ov02_0224F108(void *a0, void *a1, void *a2);
+ // clang-format on
+ 
+ WIP_LOCAL void ov02_0224F324(Pokemon *mon, void *work) {
+@@ -7997,292 +5497,8 @@
+ 
+ // ov02_0224F8FC
+ // clang-format off
+-asm int ov02_0224F8FC(FieldSystem *fieldSystem, void *a1) {
+-    push {r3, r4, r5, r6, r7, lr}
+-    ldr r2, =0x0000086C
+-    add r4, r1, #0
+-    ldrb r3, [r4, r2]
+-    add r5, r0, #0
+-    lsl r2, r3, #0x1c
+-    lsr r2, r2, #0x1c
+-    mov ip, r2
+-    cmp r2, #5
+-    blo _0224F93E
+-    bl ov02_02250504
+-    ldr r1, =0x0000080C
+-    ldr r0, [r4, r1]
+-    cmp r0, #0
+-    beq _0224F920
+-    mov r0, #2
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F920:
+-    add r0, r1, #0
+-    add r0, #0xa
+-    ldrb r0, [r4, r0]
+-    cmp r0, #0
+-    beq _0224F92E
+-    mov r0, #3
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F92E:
+-    add r1, #0xb
+-    ldrb r0, [r4, r1]
+-    cmp r0, #0
+-    beq _0224F93A
+-    mov r0, #4
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F93A:
+-    mov r0, #1
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F93E:
+-    ldr r2, =0x0000086C
+-    sub r2, #0x88
+-    add r7, r4, r2
+-    mov r2, ip
+-    lsl r2, r2, #3
+-    add r6, r7, r2
+-    ldrh r7, [r7, r2]
+-    ldr r2, =0x0000FFFF
+-    cmp r7, r2
+-    bne _0224F980
+-    bl ov02_02250504
+-    ldr r1, =0x0000080C
+-    ldr r0, [r4, r1]
+-    cmp r0, #0
+-    beq _0224F962
+-    mov r0, #2
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F962:
+-    add r0, r1, #0
+-    add r0, #0xa
+-    ldrb r0, [r4, r0]
+-    cmp r0, #0
+-    beq _0224F970
+-    mov r0, #3
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F970:
+-    add r1, #0xb
+-    ldrb r0, [r4, r1]
+-    cmp r0, #0
+-    beq _0224F97C
+-    mov r0, #4
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F97C:
+-    mov r0, #1
+-    pop {r3, r4, r5, r6, r7, pc}
+-_0224F980:
+-    ldr r2, =0x0000086C
+-    sub r2, r2, #3
+-    ldrb r2, [r4, r2]
+-    cmp r2, #7
+-    bls _0224F98C
+-    b _0224FB28
+-_0224F98C:
+-    add r2, r2, r2
+-    add r2, pc
+-    ldrh r2, [r2, #6]
+-    lsl r2, r2, #0x10
+-    asr r2, r2, #0x10
+-    add pc, r2
+-    lsl r6, r1, #0
+-    lsl r0, r6, #0
+-    lsl r6, r1, #1
+-    lsl r4, r5, #1
+-    lsl r0, r0, #2
+-    lsl r4, r4, #2
+-    lsl r6, r6, #2
+-    lsl r4, r2, #5
+-_0224F9A8:
+-    add r0, r4, #0
+-    add r1, r6, #0
+-    bl ov02_0224FB44
+-    cmp r0, #0
+-    beq _0224F9CA
+-    add r5, #0xe4
+-    ldr r0, [r5, #0]
+-    bl MapObject_UnpauseMovement
+-    ldr r0, =0x00000868
+-    mov r1, #0
+-    strb r1, [r4, r0]
+-    mov r1, #5
+-    add r0, r0, #1
+-    strb r1, [r4, r0]
+-    b _0224FB28
+-_0224F9CA:
+-    add r0, r5, #0
+-    add r1, r4, #0
+-    add r2, r6, #0
+-    bl ov02_0224FB54
+-    cmp r0, #0
+-    beq _0224F9E8
+-    add r5, #0xe4
+-    ldr r0, [r5, #0]
+-    bl MapObject_UnpauseMovement
+-    ldr r0, =0x00000869
+-    mov r1, #2
+-    strb r1, [r4, r0]
+-    b _0224FB28
+-_0224F9E8:
+-    add r0, r5, #0
+-    add r1, r4, #0
+-    add r2, r6, #0
+-    bl FollowMon_TryPrintInteractionMessage
+-    cmp r0, #0
+-    beq _0224FA06
+-    add r5, #0xe4
+-    ldr r0, [r5, #0]
+-    bl MapObject_PauseMovement
+-    ldr r0, =0x00000869
+-    mov r1, #6
+-    strb r1, [r4, r0]
+-    b _0224FB28
+-_0224FA06:
+-    add r0, r4, #0
+-    add r1, r6, #0
+-    bl ov02_0224FC74
+-    cmp r0, #0
+-    beq _0224FA1A
+-    ldr r0, =0x00000869
+-    mov r1, #7
+-    strb r1, [r4, r0]
+-    b _0224FB28
+-_0224FA1A:
+-    ldr r2, =0x0000086C
+-    mov r1, #0xf
+-    ldrb r3, [r4, r2]
+-    add r0, r3, #0
+-    bic r0, r1
+-    lsl r1, r3, #0x1c
+-    lsr r1, r1, #0x1c
+-    add r1, r1, #1
+-    lsl r1, r1, #0x18
+-    lsr r3, r1, #0x18
+-    mov r1, #0xf
+-    and r1, r3
+-    orr r0, r1
+-    strb r0, [r4, r2]
+-    mov r1, #0
+-    sub r0, r2, #3
+-    strb r1, [r4, r0]
+-    b _0224FB28
+-_0224FA3E:
+-    add r2, r7, #0
+-    bl ov02_02250004
+-    cmp r0, #0
+-    beq _0224FB28
+-    ldr r0, =0x00000869
+-    mov r1, #1
+-    strb r1, [r4, r0]
+-    b _0224FB28
+-_0224FA50:
+-    ldr r0, =0x0000086C
+-    add r0, r0, #2
+-    ldrh r0, [r4, r0]
+-    lsl r0, r0, #0x18
+-    lsr r0, r0, #0x18
+-    bl DialogBox_IsPrintFinished
+-    cmp r0, #1
+-    bne _0224FB28
+-    ldr r1, =0x0000086C
+-    ldrb r2, [r4, r1]
+-    lsl r0, r2, #0x18
+-    lsl r2, r2, #0x1c
+-    lsr r2, r2, #0x1c
+-    lsr r0, r0, #0x1c
+-    add r2, r2, #1
+-    cmp r0, r2
+-    ble _0224FAA8
+-    ldr r0, =gSystem
+-    ldr r1, [r0, #0x48]
+-    mov r0, #3
+-    tst r0, r1
+-    beq _0224FB28
+-    add r0, r4, #0
+-    mov r1, #0
+-    bl ClearFrameAndWindow2
+-    add r0, r4, #0
+-    bl RemoveWindow
+-    ldr r0, [r4, #0x10]
+-    bl String_Delete
+-    add r0, r5, #0
+-    add r0, #0xd2
+-    ldrb r1, [r0, #0]
+-    mov r0, #0x40
+-    add r5, #0xd2
+-    bic r1, r0
+-    strb r1, [r5, #0]
+-    ldr r0, =0x00000869
+-    mov r1, #3
+-    strb r1, [r4, r0]
+-    b _0224FB28
+-_0224FAA8:
+-    add r0, r1, #0
+-    sub r0, #0x60
+-    ldr r0, [r4, r0]
+-    cmp r0, #0
+-    beq _0224FABA
+-    mov r2, #3
+-    sub r0, r1, #3
+-    strb r2, [r4, r0]
+-    b _0224FB28
+-_0224FABA:
+-    ldr r0, =gSystem
+-    ldr r1, [r0, #0x48]
+-    mov r0, #3
+-    tst r0, r1
+-    beq _0224FB28
+-    add r0, r4, #0
+-    mov r1, #0
+-    bl ClearFrameAndWindow2
+-    add r0, r4, #0
+-    bl RemoveWindow
+-    ldr r0, [r4, #0x10]
+-    bl String_Delete
+-    add r0, r5, #0
+-    add r0, #0xd2
+-    ldrb r1, [r0, #0]
+-    mov r0, #0x40
+-    add r5, #0xd2
+-    bic r1, r0
+-    strb r1, [r5, #0]
+-    ldr r0, =0x00000869
+-    mov r1, #3
+-    strb r1, [r4, r0]
+-    b _0224FB28
+-_0224FAEE:
+-    ldr r0, =0x0000086C
+-    add r0, r0, #1
+-    ldrb r1, [r4, r0]
+-    ldrb r0, [r6, #7]
+-    cmp r1, r0
+-    blo _0224FB1A
+-    mov r0, #0xf
+-    bic r3, r0
+-    mov r0, ip
+-    add r0, r0, #1
+-    lsl r0, r0, #0x18
+-    lsr r1, r0, #0x18
+-    mov r0, #0xf
+-    and r0, r1
+-    add r1, r3, #0
+-    orr r1, r0
+-    ldr r0, =0x0000086C
+-    strb r1, [r4, r0]
+-    mov r1, #0
+-    sub r0, r0, #3
+-    strb r1, [r4, r0]
+-    b _0224FB28
+-_0224FB1A:
+-    ldr r0, =0x0000086C
+-    add r0, r0, #1
+-    ldrb r0, [r4, r0]
+-    add r1, r0, #1
+-    ldr r0, =0x0000086C
+-    add r0, r0, #1
+-    strb r1, [r4, r0]
+-_0224FB28:
+-    mov r0, #0
+-    pop {r3, r4, r5, r6, r7, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern int ov02_0224F8FC(FieldSystem *fieldSystem, void *a1);
+ // clang-format on
+ 
+ WIP_LOCAL BOOL ov02_0224FB44(void *a0, u16 *a1) {
+@@ -8968,44 +6184,8 @@
+ }
+ 
+ // clang-format off
+-asm BOOL ov02_02250738(u32 a0, u32 a1) {
+-    push {r4, r5}
+-    sub sp, #8
+-    ldr r4, =sRodata+0x75C
+-    add r2, sp, #0
+-    ldrb r5, [r4, #0]
+-    add r3, sp, #0
+-    add r0, r2, r0
+-    strb r5, [r3, #0]
+-    ldrb r5, [r4, #1]
+-    sub r0, r0, #1
+-    strb r5, [r3, #1]
+-    ldrb r5, [r4, #2]
+-    strb r5, [r3, #2]
+-    ldrb r5, [r4, #3]
+-    ldrb r4, [r4, #4]
+-    strb r5, [r3, #3]
+-    strb r4, [r3, #4]
+-    ldrb r0, [r0, #0]
+-    mov r3, #0
+-    and r0, r1
+-_02250760:
+-    cmp r0, #0
+-    bne _0225076C
+-    add sp, #8
+-    mov r0, #1
+-    pop {r4, r5}
+-    bx lr
+-_0225076C:
+-    add r3, r3, #1
+-    cmp r3, #5
+-    blt _02250760
+-    mov r0, #0
+-    add sp, #8
+-    pop {r4, r5}
+-    bx lr
+-    nop
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern BOOL ov02_02250738(u32 a0, u32 a1);
+ // clang-format on
+ 
+ WIP_LOCAL BOOL ov02_02250780(FieldSystem *fieldSystem, u8 a1) {
+@@ -9093,22 +6273,8 @@
+ }
+ #else
+ // clang-format off
+-asm void ov02_022508B4(FieldSystem *fieldSystem) {
+-    push {r4, lr}
+-    add r4, r0, #0
+-    mov r0, #0xb
+-    mov r1, #4
+-    bl Heap_AllocAtEnd
+-    add r2, r0, #0
+-    mov r0, #0
+-    strh r0, [r2, #0]
+-    strh r0, [r2, #2]
+-    ldr r0, [r4, #0x10]
+-    ldr r1, =ov02_022508D8
+-    bl TaskManager_Call
+-    mov r0, #1
+-    pop {r4, pc}
+-}
++/* Original ARM implementation remains unresolved; no placeholder body. */
++extern void ov02_022508B4(FieldSystem *fieldSystem);
+ // clang-format on
+ #endif
+ 
+diff -ruN a/src/pokemon.c b/src/pokemon.c
+--- a/src/pokemon.c	2026-09-14 18:29:01
++++ b/src/pokemon.c	2026-09-13 22:51:38
+@@ -2827,13 +2827,15 @@
+                 }
+                 break;
+             case EVO_FRIENDSHIP_DAY:
+-                if (IsNighttime() == 0 && friendship >= 220) {
++                // SS QoL (Drayano, Renegade Platinum evolution changes): timed friendship evolutions
++                // (Budew, Riolu, Chingling) only need happiness. Eevee keeps day=Espeon / night=Umbreon.
++                if ((species != SPECIES_EEVEE || IsNighttime() == 0) && friendship >= 220) {
+                     target = evoTable[i].target;
+                     *method_ret = EVO_FRIENDSHIP_DAY;
+                 }
+                 break;
+             case EVO_FRIENDSHIP_NIGHT:
+-                if (IsNighttime() == 1 && friendship >= 220) {
++                if ((species != SPECIES_EEVEE || IsNighttime() == 1) && friendship >= 220) {
+                     target = evoTable[i].target;
+                     *method_ret = EVO_FRIENDSHIP_NIGHT;
+                 }
+@@ -2845,6 +2847,12 @@
+                 }
+                 break;
+             case EVO_TRADE:
++                // SS QoL: Kadabra/Machoke/Graveler/Haunter evolve at Lv. 36 (Drayano's Renegade Platinum
++                // value; Sacred Gold/Storm Silver use a custom "Covenant Orb" item that the ROM lacks).
++                if (level >= 36) {
++                    target = evoTable[i].target;
++                    *method_ret = EVO_LEVEL;
++                }
+                 break;
+             case EVO_TRADE_ITEM:
+                 break;
+@@ -2981,6 +2989,14 @@
+     case EVOCTX_ITEM_CHECK:
+     case EVOCTX_ITEM_USE:
+         for (i = 0; i < 7; i++) {
++            // SS QoL (Sacred Gold/Storm Silver): use the trade item from the Bag like an evolution stone
++            // (Poliwhirl, Slowpoke, Onix, Rhydon, Seadra, Scyther, Electabuzz, Magmar, Porygon, Porygon2,
++            // Dusclops, Clamperl). The party menu consumes the item exactly as for a stone.
++            if (evoTable[i].method == EVO_TRADE_ITEM && usedItem != ITEM_NONE && usedItem == evoTable[i].param) {
++                target = evoTable[i].target;
++                *method_ret = 0;
++                break;
++            }
+             if (evoTable[i].method == EVO_STONE && usedItem == evoTable[i].param) {
+                 target = evoTable[i].target;
+                 *method_ret = 0;
+diff -ruN a/src/save.c b/src/save.c
+--- a/src/save.c	2026-09-14 18:29:01
++++ b/src/save.c	2026-09-12 07:19:02
+@@ -759,7 +759,7 @@
+         adrs += arr_hdr[i].size;
+         if (i == gNumSaveChunkHeaders - 1 || hdr[i].block != hdr[i + 1].block) {
+             adrs += sizeof(struct SaveChunkFooter);
+-            if (hdr[i].block != hdr[i + 1].block && i + 1 < gNumSaveChunkHeaders && (adrs % 0x100) != 0) {
++            if (i + 1 < gNumSaveChunkHeaders && hdr[i].block != hdr[i + 1].block && (adrs % 0x100) != 0) {
+                 adrs += 0x100 - (adrs % 0x100);
+             }
+         }
+@@ -779,7 +779,7 @@
+     for (i = 0; i < 2; i++) {
+         slotSpecs[i].id = i;
+         slotSpecs[i].size = 0;
+-        for (; i == headers[j].slot && j < gNumSaveChunkHeaders; j++) {
++        for (; j < gNumSaveChunkHeaders && i == headers[j].slot; j++) {
+             slotSpecs[i].size += headers[j].size;
+         }
+         slotSpecs[i].size += sizeof(struct SaveChunkFooter);
+diff -ruN a/src/scrcmd_battle.c b/src/scrcmd_battle.c
+--- a/src/scrcmd_battle.c	2026-09-14 18:29:01
++++ b/src/scrcmd_battle.c	2026-09-13 04:09:30
+@@ -58,7 +58,7 @@
+         return TRUE;
+     }
+ 
+-    if (sub_02064598() == TRUE) {
++    if (sub_02064598(*r5) == TRUE) {
+         sub_020645AC(*r5);
+         *r5 = 0;
+         *var1 = 1;
+diff -ruN a/src/script_manager.c b/src/script_manager.c
+--- a/src/script_manager.c	2026-09-14 18:29:01
++++ b/src/script_manager.c	2026-09-13 22:51:13
+@@ -180,6 +180,22 @@
+     return ctx;
+ }
+ 
++// SS QoL repel re-use prompt. Same as scr_seq_0003_022 (PlaySE SEQ_SE_DP_SELECT, LockAll, NPCMsg 65
++// "Repel's effect wore off...", WaitABPress) plus: SSRepelAsk (853: "Use another <item>?" when the Bag has
++// one, else skips the next command), YesNo VAR_SPECIAL_RESULT, SSRepelUse (854), CloseMsg, ReleaseAll, End.
++static const u8 sSSRepelWoreOffScript[] = {
++    73, 0, 0xDC, 0x05,
++    96, 0,
++    45, 0, 65,
++    49, 0,
++    0x55, 0x03,
++    63, 0, 0x0C, 0x80,
++    0x56, 0x03,
++    53, 0,
++    97, 0,
++    2, 0,
++};
++
+ void SetUpScriptContextForMap(FieldSystem *fieldSystem, ScriptContext *ctx, u16 scriptId, u32 unused_r3) {
+ #pragma unused(unused_r3)
+     u16 r6;
+@@ -188,6 +204,10 @@
+     r6 = LoadScriptsAndMessagesByMapId(fieldSystem, ctx, scriptId);
+     SetupBytecodeScript(ctx, ctx->mapScripts);
+     ScriptRunByIndex(ctx, r6);
++    if (scriptId == std_repel_wore_off) {
++        // SS QoL: run the repel re-use prompt instead of the ROM's script (message bank msg_0040 stays loaded).
++        SetupBytecodeScript(ctx, sSSRepelWoreOffScript);
++    }
+     sub_0203FD68(ctx, fieldSystem->taskman);
+ }
+ 
+diff -ruN a/src/sound.c b/src/sound.c
+--- a/src/sound.c	2026-09-14 18:29:01
++++ b/src/sound.c	2026-09-14 05:35:40
+@@ -66,6 +66,9 @@
+ }; // size: 0xBEC88
+ 
+ SND_WORK sSoundWork;
++#ifdef SDK_BUILD_PSP
++static u8 sPspSndHeapBuf[1043168];
++#endif
+ u32 _0211194C;
+ u32 _02111950;
+ u32 sSndHeapFreeSize;
+@@ -84,7 +87,13 @@
+     NNS_SndInit();
+     GF_SoundDataInit(work);
+     GF_InitMic(work);
++#ifdef SDK_BUILD_PSP
++    /* PSP port: SDK_PORT sound-heap blocks carry a larger header than on DS, so the DS-sized heap_buf runs out
++     * (Pokeathlon event intro BGM fails to load and the intro waits on it forever). Same layout, bigger heap. */
++    work->heap = NNS_SndHeapCreate(sPspSndHeapBuf, sizeof(sPspSndHeapBuf));
++#else
+     work->heap = NNS_SndHeapCreate(work->heap_buf, sizeof(work->heap_buf));
++#endif
+     NNS_SndArcInit(&work->arc, "data/sound/gs_sound_data.sdat", work->heap, FALSE);
+     NNS_SndArcPlayerSetup(work->heap);
+     SndRadio_Init(&work->heap);
+diff -ruN a/src/system.c b/src/system.c
+--- a/src/system.c	2026-09-14 18:29:01
++++ b/src/system.c	2026-09-12 07:50:03
+@@ -243,6 +243,8 @@
+ }
+ 
+ void ReadKeypadAndTouchpad(void) {
++    extern void PSPNativeInputPoll(void);
++    PSPNativeInputPoll();
+     TPData rawTpData, calibTpData;
+     int raw;
+     if (PAD_DetectFold()) {
+diff -ruN a/src/text.c b/src/text.c
+--- a/src/text.c	2026-09-14 18:29:01
++++ b/src/text.c	2026-09-13 22:50:54
+@@ -208,19 +208,39 @@
+ 
+         GenerateFontHalfRowLookupTable(printer->template.fgColor, printer->template.bgColor, printer->template.shadowColor);
+ 
+-        switch (RenderFont(printer)) {
+-        case RENDER_PRINT:
+-            CopyWindowToVram(printer->template.window);
+-            // fallthrough
+-        case RENDER_UPDATE:
++        // SS QoL instant text: render every glyph of the current page in one frame, at every text speed.
++        // Stops at anything that is not a plain glyph (button waits, scrolls, timed 0x201 pauses, callbacks
++        // asking to pause), so input waits and scripted timing behave exactly as before.
++        BOOL printed = FALSE;
++        for (int n = 0; n < 0x400; n++) {
++            if (printer->state == 0) {
++                printer->delayCounter = 0;
++            }
++            RenderResult result = RenderFont(printer);
++            if (result == RENDER_FINISH) {
++                if (printed) {
++                    CopyWindowToVram(printer->template.window);
++                }
++                DestroyTextPrinterSysTask(printer->id);
++                return;
++            }
++            if (result == RENDER_PRINT) {
++                printed = TRUE;
++            }
+             if (printer->callback != NULL) {
+                 printer->unk2D = printer->callback(&printer->template, printer->unk2E);
++                if (printer->unk2D != 0) {
++                    break;
++                }
+             }
+-            return;
+-        case RENDER_FINISH:
+-            DestroyTextPrinterSysTask(printer->id);
+-            return;
++            if (result != RENDER_PRINT || printer->state != 0) {
++                break;
++            }
+         }
++        if (printed) {
++            CopyWindowToVram(printer->template.window);
++        }
++        return;
+     } else {
+         printer->unk2D = printer->callback(&printer->template, printer->unk2E);
+     }
+diff -ruN a/src/unk_02013534.c b/src/unk_02013534.c
+--- a/src/unk_02013534.c	2026-09-14 18:29:01
++++ b/src/unk_02013534.c	2026-09-12 21:19:15
+@@ -7,13 +7,9 @@
+ #include "gf_gfx_loader.h"
+ #include "obj_char_transfer.h"
+ 
+-static const struct {
+-    u8 unk_00[1];
+-    u8 unk_01[23];
+-} sRodata = {
+-    { 0x08 },
+-    { 0x08, 0x08, 0x04, 0x04, 0x08, 0x04, 0x04, 0x04, 0x02, 0x04, 0x01, 0x02, 0x04, 0x02, 0x02, 0x02, 0x01, 0x01, 0x04, 0x01, 0x02, 0x01, 0x01 }
+-};
++/* PSP port: 12 OAM shapes as a flat [width,height] table. The decompiled form indexed
++ * past a 1-byte array into the next field, which is UB and folds wrong under GCC -O2. */
++static const u8 sShapeSizes[24] = { 0x08, 0x08, 0x08, 0x04, 0x04, 0x08, 0x04, 0x04, 0x04, 0x02, 0x04, 0x01, 0x02, 0x04, 0x02, 0x02, 0x02, 0x01, 0x01, 0x04, 0x01, 0x02, 0x01, 0x01 };
+ 
+ typedef struct FontOAMQuad {
+     s32 a, b, c, d;
+@@ -619,7 +615,7 @@
+ 
+ static int sub_02013AF8(int w, int h) {
+     int i = 0;
+-    const u8 *p = sRodata.unk_00;
++    const u8 *p = sShapeSizes;
+     while (i < 12) {
+         if (p[0] <= w && p[1] <= h) {
+             return i;
+@@ -644,22 +640,22 @@
+     node->unk_08 = shapeType;
+     node->unk_00 = state->unk_04;
+     node->unk_04 = state->unk_00;
+-    shapeW = sRodata.unk_00[node->unk_08 * 2];
+-    shapeH = sRodata.unk_01[node->unk_08 * 2];
++    shapeW = sShapeSizes[node->unk_08 * 2];
++    shapeH = sShapeSizes[(node->unk_08 * 2) + 1];
+     remW = state->unk_08 - shapeW;
+     remH = state->unk_0c - shapeH;
+     if (remW > 0) {
+         state->unk_1c = state->unk_0c;
+         state->unk_18 = remW;
+         state->unk_10 = state->unk_00;
+-        state->unk_14 = state->unk_04 + sRodata.unk_00[node->unk_08 * 2];
++        state->unk_14 = state->unk_04 + sShapeSizes[node->unk_08 * 2];
+         if (state->unk_20 == 1) {
+             GF_AssertFail();
+         }
+         state->unk_20 = 1;
+     }
+     if (remH > 0) {
+-        state->unk_00 += sRodata.unk_01[node->unk_08 * 2];
++        state->unk_00 += sShapeSizes[(node->unk_08 * 2) + 1];
+         state->unk_0c = remH;
+     } else if (state->unk_20 == 1) {
+         *(FontOAMQuad *)&state->unk_00 = *(const FontOAMQuad *)&state->unk_10;
+@@ -692,7 +688,7 @@
+     state.unk_2c = width;
+     while (remaining != 0) {
+         int shapeType = sub_02013AF8(state.unk_08, remaining);
+-        int spriteH = sRodata.unk_00[shapeType * 2 + 1];
++        int spriteH = sShapeSizes[shapeType * 2 + 1];
+         state.unk_24 = state.unk_00 + spriteH;
+         state.unk_30 = state.unk_0c - spriteH;
+         state.unk_0c = spriteH;
+@@ -738,8 +734,8 @@
+     void *tmpBuf;
+     GXOBJVRamModeChar mode2;
+ 
+-    shapeW = sRodata.unk_00[node->unk_08 * 2];
+-    shapeH = sRodata.unk_01[node->unk_08 * 2];
++    shapeW = sShapeSizes[node->unk_08 * 2];
++    shapeH = sShapeSizes[(node->unk_08 * 2) + 1];
+     area = shapeW * shapeH;
+     if (area < blockSize) {
+         area = blockSize;
+@@ -881,8 +877,8 @@
+     int shapeH;
+     int area;
+ 
+-    shapeW = sRodata.unk_00[node->unk_08 * 2];
+-    shapeH = sRodata.unk_01[node->unk_08 * 2];
++    shapeW = sShapeSizes[node->unk_08 * 2];
++    shapeH = sShapeSizes[(node->unk_08 * 2) + 1];
+     area = shapeW * shapeH;
+     if (area < blockSize) {
+         area = blockSize;
+@@ -908,8 +904,8 @@
+     while (node != (FontOAMNode *)list) {
+         int shapeType = node->unk_08;
+         int idx = shapeType * 2;
+-        int shapeW = sRodata.unk_00[idx];
+-        int shapeH = sRodata.unk_01[idx];
++        int shapeW = sShapeSizes[idx];
++        int shapeH = sShapeSizes[(idx) + 1];
+         int area = shapeW * shapeH;
+         if (area < blockSize) {
+             area = blockSize;
+diff -ruN a/src/unk_02014DA0.c b/src/unk_02014DA0.c
+--- a/src/unk_02014DA0.c	2026-09-14 18:29:01
++++ b/src/unk_02014DA0.c	2026-09-12 08:16:47
+@@ -11,13 +11,13 @@
+ #include "sys_task_api.h"
+ #include "text.h"
+ 
+-extern SPLManager *SPL_Init(u32 (*allocFn)(u32, BOOL), u16 maxEmtr, u16 maxPtcl, u8 polyIdMin, u8 polyIdMax, u8 unk5);
++extern SPLManager *SPL_Init(void *(*allocFn)(u32), u16 maxEmtr, u16 maxPtcl, u8 polyIdMin, u8 polyIdMax, u8 unk5);
+ extern void SPL_Load(SPLManager *mgr, void *data);
+ extern void SPL_LoadTexByVRAMManager(SPLManager *mgr);
+ extern void SPL_LoadTexByCallbackFunction(SPLManager *mgr, texAllocFun texAlloc);
+ extern void SPL_LoadTexPlttByVRAMManager(SPLManager *mgr);
+ extern void SPL_LoadTexPlttByCallbackFunction(SPLManager *mgr, plttAllocFun plttAlloc);
+-extern SPLEmitter *SPL_Create(SPLManager *mgr);
++extern SPLEmitter *SPL_Create(SPLManager *mgr, int resourceID, const VecFx32 *pos);
+ extern void SPL_DeleteAll(SPLManager *mgr);
+ extern void SPL_Delete(SPLManager *mgr, SPLEmitter *emitter);
+ extern void SPL_Draw(SPLManager *mgr, const MtxFx43 *cameraMtx);
+@@ -70,29 +70,29 @@
+ 
+ // Forward declarations (headerless .public + static, before sFuncTable)
+ void sub_02014F84(void);
+-static u32 sub_02014FA4(u32 size, BOOL is4x4comp);
+-static u32 sub_02014FD0(u32 size, BOOL is4x4comp);
+-static u32 sub_02014FFC(u32 size, BOOL is4x4comp);
+-static u32 sub_02015028(u32 size, BOOL is4x4comp);
+-static u32 sub_02015054(u32 size, BOOL is4x4comp);
+-static u32 sub_02015080(u32 size, BOOL is4x4comp);
+-static u32 sub_020150AC(u32 size, BOOL is4x4comp);
+-static u32 sub_020150D8(u32 size, BOOL is4x4comp);
+-static u32 sub_02015104(u32 size, BOOL is4x4comp);
+-static u32 sub_02015130(u32 size, BOOL is4x4comp);
+-static u32 sub_0201515C(u32 size, BOOL is4x4comp);
+-static u32 sub_02015188(u32 size, BOOL is4x4comp);
+-static u32 sub_020151B4(u32 size, BOOL is4x4comp);
+-static u32 sub_020151E0(u32 size, BOOL is4x4comp);
+-static u32 sub_0201520C(u32 size, BOOL is4x4comp);
+-static u32 sub_02015238(u32 size, BOOL is4x4comp);
++static void *sub_02014FA4(u32 size);
++static void *sub_02014FD0(u32 size);
++static void *sub_02014FFC(u32 size);
++static void *sub_02015028(u32 size);
++static void *sub_02015054(u32 size);
++static void *sub_02015080(u32 size);
++static void *sub_020150AC(u32 size);
++static void *sub_020150D8(u32 size);
++static void *sub_02015104(u32 size);
++static void *sub_02015130(u32 size);
++static void *sub_0201515C(u32 size);
++static void *sub_02015188(u32 size);
++static void *sub_020151B4(u32 size);
++static void *sub_020151E0(u32 size);
++static void *sub_0201520C(u32 size);
++static void *sub_02015238(u32 size);
+ static void sub_02015300(SplSys *sys);
+ static void sub_02015340(SysTask *task, void *data);
+ static void sub_020153D8(SplSys *sys);
+ static void sub_02015414(SplSys *sys);
+-void sub_02015484(SPLEmitter *emitter);
++void sub_02015484(SPLEmitter *emitter, int resourceID, const VecFx32 *pos);
+ void sub_020154B8(SPLEmitter *emitter);
+-void sub_020154C4(SPLEmitter *emitter);
++void sub_020154C4(SPLEmitter *emitter, SPLEmitter *active);
+ void sub_020154D4(SPLEmitter *emitter, VecFx32 *dst);
+ void sub_020154E4(SPLEmitter *emitter, const VecFx32 *upVec);
+ void sub_02015510(VecFx32 *dst);
+@@ -116,24 +116,24 @@
+ static const VecFx32 sVec_020F6084 = { 0, 0, 0 };
+ static const VecFx32 sVec_020F6090 = { 0, 0, 0x00004000 };
+ 
+-static u32 sub_02014FA4(u32 size, BOOL is4x4comp);
+-static u32 sub_02014FD0(u32 size, BOOL is4x4comp);
+-static u32 sub_02014FFC(u32 size, BOOL is4x4comp);
+-static u32 sub_02015028(u32 size, BOOL is4x4comp);
+-static u32 sub_02015054(u32 size, BOOL is4x4comp);
+-static u32 sub_02015080(u32 size, BOOL is4x4comp);
+-static u32 sub_020150AC(u32 size, BOOL is4x4comp);
+-static u32 sub_020150D8(u32 size, BOOL is4x4comp);
+-static u32 sub_02015104(u32 size, BOOL is4x4comp);
+-static u32 sub_02015130(u32 size, BOOL is4x4comp);
+-static u32 sub_0201515C(u32 size, BOOL is4x4comp);
+-static u32 sub_02015188(u32 size, BOOL is4x4comp);
+-static u32 sub_020151B4(u32 size, BOOL is4x4comp);
+-static u32 sub_020151E0(u32 size, BOOL is4x4comp);
+-static u32 sub_0201520C(u32 size, BOOL is4x4comp);
+-static u32 sub_02015238(u32 size, BOOL is4x4comp);
++static void *sub_02014FA4(u32 size);
++static void *sub_02014FD0(u32 size);
++static void *sub_02014FFC(u32 size);
++static void *sub_02015028(u32 size);
++static void *sub_02015054(u32 size);
++static void *sub_02015080(u32 size);
++static void *sub_020150AC(u32 size);
++static void *sub_020150D8(u32 size);
++static void *sub_02015104(u32 size);
++static void *sub_02015130(u32 size);
++static void *sub_0201515C(u32 size);
++static void *sub_02015188(u32 size);
++static void *sub_020151B4(u32 size);
++static void *sub_020151E0(u32 size);
++static void *sub_0201520C(u32 size);
++static void *sub_02015238(u32 size);
+ 
+-static u32 (*const sFuncTable[16])(u32, BOOL) = {
++static void *(*const sFuncTable[16])(u32) = {
+     sub_02014FA4,
+     sub_02014FD0,
+     sub_02014FFC,
+@@ -286,7 +286,7 @@
+     }
+ }
+ 
+-static u32 sub_02014FA4(u32 size, BOOL is4x4comp) {
++static void *sub_02014FA4(u32 size) {
+     SplSys *sys = sSplState.slots[0];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -297,10 +297,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_02014FD0(u32 size, BOOL is4x4comp) {
++static void *sub_02014FD0(u32 size) {
+     SplSys *sys = sSplState.slots[1];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -311,10 +311,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_02014FFC(u32 size, BOOL is4x4comp) {
++static void *sub_02014FFC(u32 size) {
+     SplSys *sys = sSplState.slots[2];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -325,10 +325,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_02015028(u32 size, BOOL is4x4comp) {
++static void *sub_02015028(u32 size) {
+     SplSys *sys = sSplState.slots[3];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -339,10 +339,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_02015054(u32 size, BOOL is4x4comp) {
++static void *sub_02015054(u32 size) {
+     SplSys *sys = sSplState.slots[4];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -353,10 +353,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_02015080(u32 size, BOOL is4x4comp) {
++static void *sub_02015080(u32 size) {
+     SplSys *sys = sSplState.slots[5];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -367,10 +367,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_020150AC(u32 size, BOOL is4x4comp) {
++static void *sub_020150AC(u32 size) {
+     SplSys *sys = sSplState.slots[6];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -381,10 +381,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_020150D8(u32 size, BOOL is4x4comp) {
++static void *sub_020150D8(u32 size) {
+     SplSys *sys = sSplState.slots[7];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -395,10 +395,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_02015104(u32 size, BOOL is4x4comp) {
++static void *sub_02015104(u32 size) {
+     SplSys *sys = sSplState.slots[8];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -409,10 +409,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_02015130(u32 size, BOOL is4x4comp) {
++static void *sub_02015130(u32 size) {
+     SplSys *sys = sSplState.slots[9];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -423,10 +423,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_0201515C(u32 size, BOOL is4x4comp) {
++static void *sub_0201515C(u32 size) {
+     SplSys *sys = sSplState.slots[10];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -437,10 +437,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_02015188(u32 size, BOOL is4x4comp) {
++static void *sub_02015188(u32 size) {
+     SplSys *sys = sSplState.slots[11];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -451,10 +451,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_020151B4(u32 size, BOOL is4x4comp) {
++static void *sub_020151B4(u32 size) {
+     SplSys *sys = sSplState.slots[12];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -465,10 +465,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_020151E0(u32 size, BOOL is4x4comp) {
++static void *sub_020151E0(u32 size) {
+     SplSys *sys = sSplState.slots[13];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -479,10 +479,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_0201520C(u32 size, BOOL is4x4comp) {
++static void *sub_0201520C(u32 size) {
+     SplSys *sys = sSplState.slots[14];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -493,10 +493,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+-static u32 sub_02015238(u32 size, BOOL is4x4comp) {
++static void *sub_02015238(u32 size) {
+     SplSys *sys = sSplState.slots[15];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -507,7 +507,7 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+ void *sub_02015264(NarcId narcId, int fileId, enum HeapID heapID) {
+@@ -672,9 +672,9 @@
+     }
+ }
+ 
+-void sub_02015484(SPLEmitter *emitter) {
++void sub_02015484(SPLEmitter *emitter, int resourceID, const VecFx32 *pos) {
+     SplSys *sys = (SplSys *)emitter;
+-    sys->activeEmitter = SPL_Create(sys->spl);
++    sys->activeEmitter = SPL_Create(sys->spl, resourceID, pos);
+ }
+ 
+ void sub_02015494(SPLEmitter *emitter, int res_no, void (*fp_callback)(struct SPLEmitter *), void *arg) {
+@@ -694,9 +694,9 @@
+     SPL_DeleteAll(sys->spl);
+ }
+ 
+-void sub_020154C4(SPLEmitter *emitter) {
++void sub_020154C4(SPLEmitter *emitter, SPLEmitter *active) {
+     SplSys *sys = (SplSys *)emitter;
+-    SPL_Delete(sys->spl, NULL);
++    SPL_Delete(sys->spl, active);
+ }
+ 
+ void *sub_020154D0(SPLEmitter *emitter) {
+diff -ruN a/src/unk_02027010.c b/src/unk_02027010.c
+--- a/src/unk_02027010.c	2026-09-14 18:29:01
++++ b/src/unk_02027010.c	2026-09-12 07:09:04
+@@ -9,7 +9,7 @@
+ 
+ static const char _020F6458[] = "rom";
+ 
+-void sub_02027010(void) {
++void SSOriginalFixedAddressHeaderInit(void) {
+     FSArchive *arc;
+     u8 *header;
+ 
+diff -ruN a/src/unk_02054648.c b/src/unk_02054648.c
+--- a/src/unk_02054648.c	2026-09-14 18:29:01
++++ b/src/unk_02054648.c	2026-09-12 07:19:14
+@@ -186,34 +186,11 @@
+ }
+ 
+ // clang-format off
+-static asm fx32 sub_020547A4(FieldSystem *fieldSystem, fx32 refHeight, fx32 xFx32, fx32 zFx32, u8 *outSelector) {
+-    push {r3, lr}
+-    asr r1, r2, #0xf
+-    lsr r1, r1, #0x10
+-    add r1, r2, r1
+-    asr r2, r3, #0xf
+-    lsr r2, r2, #0x10
+-    add r2, r3, r2
+-    ldr r0, [r0, #0x2c]
+-    asr r1, r1, #0x10
+-    asr r2, r2, #0x10
+-    mov r3, #0
+-    bl ov01_021F654C
+-    ldr r1, [sp, #8]
+-    cmp r1, #0
+-    beq _020547D2
+-    cmp r0, #0
+-    beq _020547CC
+-    mov r1, #1
+-    b _020547CE
+-_020547CC:
+-    mov r1, #0
+-_020547CE:
+-    ldr r0, [sp, #8]
+-    strb r1, [r0]
+-_020547D2:
+-    mov r0, #0
+-    pop {r3, pc}
++static fx32 sub_020547A4(FieldSystem *fieldSystem, fx32 refHeight, fx32 xFx32, fx32 zFx32, u8 *outSelector) {
++    // ARM's sign correction followed by ASR16 implements truncation toward zero.
++    BOOL hit = ov01_021F654C(fieldSystem->mapLoadManager, xFx32 / 65536, zFx32 / 65536, NULL);
++    if (outSelector != NULL) *outSelector = hit != 0;
++    return 0;
+ }
+ // clang-format on
+ 
+@@ -535,32 +512,13 @@
+ }
+ 
+ // clang-format off
+-asm void sub_02054DC8(int idx, int width, VecFx32 *out) {
+-    push {r4, r5, r6, lr}
+-    add r4, r2, #0
+-    mov r2, #1
+-    lsl r2, r2, #0x14
+-    str r2, [r4, #0]
+-    add r5, r0, #0
+-    add r6, r1, #0
+-    str r2, [r4, #8]
+-    bl _s32_div_f
+-    lsl r1, r1, #0x10
+-    lsr r1, r1, #0x10
+-    ldr r0, [r4, #0]
+-    lsl r1, r1, #0x15
+-    add r0, r0, r1
+-    str r0, [r4, #0]
+-    add r0, r5, #0
+-    add r1, r6, #0
+-    bl _s32_div_f
+-    lsl r0, r0, #0x10
+-    lsr r0, r0, #0x10
+-    ldr r1, [r4, #8]
+-    lsl r0, r0, #0x15
+-    add r0, r1, r0
+-    str r0, [r4, #8]
+-    pop {r4, r5, r6, pc}
++void sub_02054DC8(int idx, int width, VecFx32 *out) {
++    // Preserve ARM wrapping shifts and leave Y untouched.
++    GF_ASSERT(width != 0);
++    s64 q = (s64)idx / width;
++    s64 r = (s64)idx % width;
++    out->x = (fx32)(0x100000u + ((u32)(u16)r << 21));
++    out->z = (fx32)(0x100000u + ((u32)(u16)q << 21));
+ }
+ // clang-format on
+ 
+@@ -589,3 +547,7 @@
+     }
+     return FALSE;
+ }
++
++#ifdef SS_NATIVE_ISLAND_TEST
++fx32 SS_TestHeight(FieldSystem *f, fx32 x, fx32 z, u8 *o) { return sub_020547A4(f, 123, x, z, o); }
++#endif
+diff -ruN a/src/unk_020689C8.c b/src/unk_020689C8.c
+--- a/src/unk_020689C8.c	2026-09-14 18:29:01
++++ b/src/unk_020689C8.c	2026-09-12 15:02:45
+@@ -368,6 +368,7 @@
+ }
+ 
+ static BOOL sub_02068DCC(void *work, void *data) {
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ BOOL sub_02068DD0(void *work, void *data) {
+@@ -377,7 +378,9 @@
+ }
+ 
+ static BOOL sub_02068DD8(void *work, void *data) {
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+ 
+ static BOOL sub_02068DDC(void *work, void *data) {
++    return TRUE; /* PSP port: decomp omitted the return; on ARM r0 held a non-zero pointer here */
+ }
+diff -ruN a/src/unk_020773AC.c b/src/unk_020773AC.c
+--- a/src/unk_020773AC.c	2026-09-14 18:29:01
++++ b/src/unk_020773AC.c	2026-09-12 07:19:14
+@@ -50,8 +50,8 @@
+ }
+ 
+ void sub_020773D4(void) {
+-    G2x_SetBlendAlpha_(0x04000050, 0, 0xe, 0xb, 7);
+-    G2x_SetBlendAlpha_(0x04001050, 0, 0xe, 7, 8);
++    G2x_SetBlendAlpha_((u32)REG_BLDCNT_ADDR, 0, 0xe, 0xb, 7);
++    G2x_SetBlendAlpha_((u32)REG_DB_BLDCNT_ADDR, 0, 0xe, 7, 8);
+ }
+ 
+ void sub_02077400(enum HeapID heapID) {
+@@ -59,58 +59,17 @@
+ }
+ 
+ // clang-format off
+-static asm void sub_0207741C(void) {
+-	push {r3, lr}
+-	mov r0, #1
+-	add r1, r0, #0
+-	bl GfGfx_EngineATogglePlanes
+-	ldr r0, =0x04000008
+-	mov r1, #3
+-	ldrh r2, [r0, #0]
+-	bic r2, r1
+-	mov r1, #1
+-	orr r1, r2
+-	strh r1, [r0, #0]
+-	add r0, #0x58
+-	ldrh r2, [r0, #0]
+-	ldr r1, =0xFFFFCFFD
+-	and r2, r1
+-	strh r2, [r0, #0]
+-	add r2, r1, #2
+-	ldrh r3, [r0, #0]
+-	add r1, r1, #2
+-	and r3, r2
+-	mov r2, #0x10
+-	orr r2, r3
+-	strh r2, [r0, #0]
+-	ldrh r3, [r0, #0]
+-	ldr r2, =0x0000CFFB
+-	and r3, r2
+-	strh r3, [r0, #0]
+-	ldrh r3, [r0, #0]
+-	sub r2, #0x1c
+-	and r3, r1
+-	mov r1, #8
+-	orr r1, r3
+-	strh r1, [r0, #0]
+-	ldrh r1, [r0, #0]
+-	and r1, r2
+-	strh r1, [r0, #0]
+-	mov r0, #0
+-	add r1, r0, #0
+-	add r2, r0, #0
+-	add r3, r0, #0
+-	bl G3X_SetFog
+-	mov r0, #0
+-	ldr r2, =0x00007FFF
+-	add r1, r0, #0
+-	mov r3, #0x3f
+-	str r0, [sp, #0]
+-	bl G3X_SetClearColor
+-	ldr r1, =0xBFFF0000
+-	ldr r0, =0x04000580
+-	str r1, [r0, #0]
+-	pop {r3, pc}
++static void sub_0207741C(void) {
++    GfGfx_EngineATogglePlanes(1, 1);
++    reg_G2_BG0CNT = (reg_G2_BG0CNT & ~3u) | 1u;
++    reg_G3X_DISP3DCNT &= 0xcffdu;
++    reg_G3X_DISP3DCNT = (reg_G3X_DISP3DCNT & 0xcfffu) | 0x10u;
++    reg_G3X_DISP3DCNT &= 0xcffbu;
++    reg_G3X_DISP3DCNT = (reg_G3X_DISP3DCNT & 0xcfffu) | 8u;
++    reg_G3X_DISP3DCNT &= 0xcfdfu;
++    G3X_SetFog(0, 0, 0, 0);
++    G3X_SetClearColor(0, 0, 0x7fff, 0x3f, 0);
++    G3_ViewPort(0, 0, 255, 191);
+ }
+ // clang-format on
+ 
+@@ -168,39 +127,10 @@
+ }
+ 
+ // clang-format off
+-static asm void sub_020775C4(SPLEmitter *emitter) {
+-	push {r3}
+-	sub sp, #0xc
+-	add r1, sp, #0
+-	mov r2, #0
+-	str r2, [r1, #0]
+-	str r2, [r1, #4]
+-	str r2, [r1, #8]
+-	mov r1, #0x56
+-	lsl r1, r1, #4
+-	str r2, [sp, #0]
+-	str r2, [sp, #8]
+-	str r1, [sp, #4]
+-	ldr r1, [r0, #0x20]
+-	ldr r1, [r1, #0]
+-	ldr r1, [r1, #4]
+-	add r1, r2, r1
+-	str r1, [r0, #0x28]
+-	ldr r1, [r0, #0x20]
+-	ldr r2, [sp, #4]
+-	ldr r1, [r1, #0]
+-	ldr r1, [r1, #8]
+-	add r1, r2, r1
+-	str r1, [r0, #0x2c]
+-	ldr r1, [r0, #0x20]
+-	ldr r2, [sp, #8]
+-	ldr r1, [r1, #0]
+-	ldr r1, [r1, #0xc]
+-	add r1, r2, r1
+-	str r1, [r0, #0x30]
+-	add sp, #0xc
+-	pop {r3}
+-	bx lr
++static void sub_020775C4(SPLEmitter *emitter) {
++    emitter->emtr_pos.x = emitter->p_res->p_base->pos.x;
++    emitter->emtr_pos.y = (fx32)((u32)emitter->p_res->p_base->pos.y + 0x560u);
++    emitter->emtr_pos.z = emitter->p_res->p_base->pos.z;
+ }
+ // clang-format on
+ 
+@@ -280,4 +210,9 @@
+     lsl r0, r0, #0
+ }
+ // clang-format on
++#endif
++
++#ifdef SS_NATIVE_ISLAND_TEST
++void SS_TestParticle(SPLEmitter *e) { sub_020775C4(e); }
++void SS_TestGraphics(void) { sub_0207741C(); }
+ #endif
+diff -ruN a/src/voltorb_flip/voltorb_flip.c b/src/voltorb_flip/voltorb_flip.c
+--- a/src/voltorb_flip/voltorb_flip.c	2026-09-14 18:29:01
++++ b/src/voltorb_flip/voltorb_flip.c	2026-09-12 07:03:24
+@@ -191,7 +191,7 @@
+     { 0x6B, 0x0B },
+ };
+ 
+-const TouchscreenListMenuTemplate sListMenuTemplate = {
++const TouchscreenListMenuTemplate vf_sListMenuTemplate = {
+     .wrapAround = TRUE,
+     .centered = TRUE,
+     .xOffset = 0,
+@@ -1807,7 +1807,7 @@
+     const MsgNoList *ptr = &sMenuMsgNos[whichList];
+     GF_ASSERT(work->bgConfig != NULL);
+ 
+-    header.template = sListMenuTemplate;
++    header.template = vf_sListMenuTemplate;
+ 
+     header.listMenuItems = work->menuItems[whichList];
+     header.bgConfig = work->bgConfig;

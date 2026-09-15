@@ -1,0 +1,18 @@
+{
+ "ov12_0225E830": {
+  "ov10_0221BE20": "ov08_0221BE20"
+ },
+ "ov12_0225F4E0": {
+  "ov10_0221BE20": "ov08_0221BE20"
+ },
+ "ov12_022609F8": {
+  "ov10_0221BE20": "ov08_0221BE20"
+ },
+ "*": {
+  "G2x_SetBGyAffine_": "SSAsm_G2x_SetBGyAffine_",
+  "G2x_SetBlendAlpha_": "SSAsm_G2x_SetBlendAlpha_",
+  "G2x_SetBlendBrightness_": "SSAsm_G2x_SetBlendBrightness_",
+  "G2x_SetBlendBrightnessExt_": "SSAsm_G2x_SetBlendBrightnessExt_",
+  "G2x_ChangeBlendBrightness_": "SSAsm_G2x_ChangeBlendBrightness_"
+ }
+}

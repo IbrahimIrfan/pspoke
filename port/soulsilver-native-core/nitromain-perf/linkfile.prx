@@ -1,0 +1,506 @@
+/* Default linker script, for normal executables */
+OUTPUT_FORMAT("elf32-littlemips", "elf32-bigmips",
+	      "elf32-littlemips")
+OUTPUT_ARCH(mips:allegrex)
+ENTRY(module_start)
+SEARCH_DIR("/Users/runner/work/pspdev/pspdev/pspdev/psp/lib");
+/* Do we need any of these for elf?
+   __DYNAMIC = 0;    */
+SECTIONS
+{
+  /* Read-only sections, merged into text segment: */
+  PROVIDE (__executable_start = 0x0); . = 0x0;
+  .interp         : { *(.interp) }
+  .dynamic        : { *(.dynamic) }
+  .hash           : { *(.hash) }
+  .dynsym         : { *(.dynsym) }
+  .dynstr         : { *(.dynstr) }
+  .gnu.version    : { *(.gnu.version) }
+  .gnu.version_d  : { *(.gnu.version_d) }
+  .gnu.version_r  : { *(.gnu.version_r) }
+  .rel.text       : { *(.rel.text .rel.text.* .rel.gnu.linkonce.t.*) }
+  .rela.text      : { *(.rela.text .rela.text.* .rela.gnu.linkonce.t.*) }
+  .rel.init       : { *(.rel.init) }
+  .rela.init      : { *(.rela.init) }
+  .rel.fini       : { *(.rel.fini) }
+  .rela.fini      : { *(.rela.fini) }
+  /* PSP-specific relocations. */
+  .rel.sceStub.text   : { *(.rel.sceStub.text) *(SORT(.rel.sceStub.text.*)) }
+  .rel.lib.ent.top    : { *(.rel.lib.ent.top) }
+  .rel.lib.ent        : { *(.rel.lib.ent) }
+  .rel.lib.ent.btm    : { *(.rel.lib.ent.btm) }
+  .rel.lib.stub.top   : { *(.rel.lib.stub.top) }
+  .rel.lib.stub       : { *(.rel.lib.stub) }
+  .rel.lib.stub.btm   : { *(.rel.lib.stub.btm) }
+  .rel.rodata.sceModuleInfo   : { *(.rel.rodata.sceModuleInfo) }
+  .rel.rodata.sceResident     : { *(.rel.rodata.sceResident) }
+  .rel.rodata.sceNid          : { *(.rel.rodata.sceNid) }
+  .rel.rodata.sceVstub        : { *(.rel.rodata.sceVstub) *(SORT(.rel.rodata.sceVstub.*)) }
+  .rel.rodata     : { *(.rel.rodata .rel.rodata.* .rel.gnu.linkonce.r.*) }
+  .rela.rodata    : { *(.rela.rodata .rela.rodata.* .rela.gnu.linkonce.r.*) }
+  .rel.data.rel.ro   : { *(.rel.data.rel.ro*) }
+  .rela.data.rel.ro   : { *(.rel.data.rel.ro*) }
+  .rel.data       : { *(.rel.data .rel.data.* .rel.gnu.linkonce.d.*) }
+  .rela.data      : { *(.rela.data .rela.data.* .rela.gnu.linkonce.d.*) }
+  .rel.tdata	  : { *(.rel.tdata .rel.tdata.* .rel.gnu.linkonce.td.*) }
+  .rela.tdata	  : { *(.rela.tdata .rela.tdata.* .rela.gnu.linkonce.td.*) }
+  .rel.tbss	  : { *(.rel.tbss .rel.tbss.* .rel.gnu.linkonce.tb.*) }
+  .rela.tbss	  : { *(.rela.tbss .rela.tbss.* .rela.gnu.linkonce.tb.*) }
+  .rel.ctors      : { *(.rel.ctors) }
+  .rela.ctors     : { *(.rela.ctors) }
+  .rel.dtors      : { *(.rel.dtors) }
+  .rela.dtors     : { *(.rela.dtors) }
+  .rel.got        : { *(.rel.got) }
+  .rela.got       : { *(.rela.got) }
+  .rel.sdata      : { *(.rel.sdata .rel.sdata.* .rel.gnu.linkonce.s.*) }
+  .rela.sdata     : { *(.rela.sdata .rela.sdata.* .rela.gnu.linkonce.s.*) }
+  .rel.sbss       : { *(.rel.sbss .rel.sbss.* .rel.gnu.linkonce.sb.*) }
+  .rela.sbss      : { *(.rela.sbss .rela.sbss.* .rela.gnu.linkonce.sb.*) }
+  .rel.sdata2     : { *(.rel.sdata2 .rel.sdata2.* .rel.gnu.linkonce.s2.*) }
+  .rela.sdata2    : { *(.rela.sdata2 .rela.sdata2.* .rela.gnu.linkonce.s2.*) }
+  .rel.sbss2      : { *(.rel.sbss2 .rel.sbss2.* .rel.gnu.linkonce.sb2.*) }
+  .rela.sbss2     : { *(.rela.sbss2 .rela.sbss2.* .rela.gnu.linkonce.sb2.*) }
+  .rel.bss        : { *(.rel.bss .rel.bss.* .rel.gnu.linkonce.b.*) }
+  .rela.bss       : { *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*) }
+  .rel.plt        : { *(.rel.plt) }
+  .rela.plt       : { *(.rela.plt) }
+  .text           :
+  {
+    _ftext = . ;
+    *(.text .stub .text.* .gnu.linkonce.t.*)
+    KEEP (*(.text.*personality*))
+    /* .gnu.warning sections are handled specially by elf32.em.  */
+    *(.gnu.warning)
+    *(.mips16.fn.*) *(.mips16.call.*)
+  } =0
+  .init           :
+  {
+    KEEP (*(.init))
+  } =0
+  .plt            : { *(.plt) }
+  .fini           :
+  {
+    KEEP (*(.fini))
+  } =0
+  /* PSP library stub functions. */
+  .sceStub.text     : { KEEP(*(.sceStub.text)) KEEP(*(SORT(.sceStub.text.*))) }
+  PROVIDE (__etext = .);
+  PROVIDE (_etext = .);
+  PROVIDE (etext = .);
+  /* PSP library entry table and library stub table. */
+  .lib.ent.top    : { *(.lib.ent.top) }
+  .lib.ent        : { KEEP(*(.lib.ent)) }
+  .lib.ent.btm    : { *(.lib.ent.btm) }
+  .lib.stub.top   : { *(.lib.stub.top) }
+  .lib.stub       : { *(.lib.stub) }
+  .lib.stub.btm   : { *(.lib.stub.btm) }
+  /* PSP read-only data for module info, NIDs, and Vstubs.  The
+     .rodata.sceModuleInfo section must appear before the .rodata section
+     otherwise it would get absorbed into .rodata and the PSP bootloader
+     would be unable to locate the module info structure. */
+  .rodata.sceModuleInfo    : { KEEP (*(.rodata.sceModuleInfo)) }
+  .rodata.sceResident      : { *(.rodata.sceResident) }
+  .rodata.sceNid           : { KEEP (*(.rodata.sceNid)) }
+  .rodata.sceVstub         : { *(.rodata.sceVstub) *(SORT(.rodata.sceVstub.*)) }
+  .rodata         : { *(.rodata .rodata.* .gnu.linkonce.r.*) }
+  .rodata1        : { *(.rodata1) }
+  .sdata2         : { *(.sdata2 .sdata2.* .gnu.linkonce.s2.*) }
+  .sbss2          : { *(.sbss2 .sbss2.* .gnu.linkonce.sb2.*) }
+  .eh_frame_hdr : { *(.eh_frame_hdr) }
+  .eh_frame       : ONLY_IF_RO { KEEP (*(.eh_frame)) }
+  .gcc_except_table   : ONLY_IF_RO { KEEP (*(.gcc_except_table)) *(.gcc_except_table.*) }
+  /* Adjust the address for the data segment.  We want to adjust up to
+     the same address within the page on the next page up.  */
+  . = ALIGN(256) + (. & (256 - 1));
+  /* Exception handling  */
+  .eh_frame       : ONLY_IF_RW { KEEP (*(.eh_frame)) }
+  .gcc_except_table   : ONLY_IF_RW { KEEP (*(.gcc_except_table)) *(.gcc_except_table.*) }
+  /* Thread Local Storage sections  */
+  .tdata	  : { *(.tdata .tdata.* .gnu.linkonce.td.*) }
+  .tbss		  : { *(.tbss .tbss.* .gnu.linkonce.tb.*) *(.tcommon) }
+  /* Ensure the __preinit_array_start label is properly aligned.  We
+     could instead move the label definition inside the section, but
+     the linker would then create the section even if it turns out to
+     be empty, which isn't pretty.  */
+  . = ALIGN(32 / 8);
+  PROVIDE (__preinit_array_start = .);
+  .preinit_array     : { KEEP (*(.preinit_array)) }
+  PROVIDE (__preinit_array_end = .);
+  PROVIDE (__init_array_start = .);
+  .init_array     : { KEEP (*(.init_array)) }
+  PROVIDE (__init_array_end = .);
+  PROVIDE (__fini_array_start = .);
+  .fini_array     : { KEEP (*(.fini_array)) }
+  PROVIDE (__fini_array_end = .);
+  .ctors          :
+  {
+    /* gcc uses crtbegin.o to find the start of
+       the constructors, so we make sure it is
+       first.  Because this is a wildcard, it
+       doesn't matter if the user does not
+       actually link against crtbegin.o; the
+       linker won't look for a file to match a
+       wildcard.  The wildcard also means that it
+       doesn't matter which directory crtbegin.o
+       is in.  */
+    KEEP (*crtbegin*.o(.ctors))
+    /* We don't want to include the .ctor section from
+       from the crtend.o file until after the sorted ctors.
+       The .ctor section from the crtend file contains the
+       end of ctors marker and it must be last */
+    KEEP (*(EXCLUDE_FILE (*crtend*.o ) .ctors))
+    KEEP (*(SORT(.ctors.*)))
+    KEEP (*(.ctors))
+  }
+  .dtors          :
+  {
+    KEEP (*crtbegin*.o(.dtors))
+    KEEP (*(EXCLUDE_FILE (*crtend*.o ) .dtors))
+    KEEP (*(SORT(.dtors.*)))
+    KEEP (*(.dtors))
+  }
+  .jcr            : { KEEP (*(.jcr)) }
+  .data.rel.ro : { *(.data.rel.ro.local) *(.data.rel.ro*) }
+  .ssov.0.data : ALIGN(16) { ss_ov_0_data_start = .; KEEP(*(.ssov.0.data*)) ss_ov_0_data_end = .; }
+  .ssov.1.data : ALIGN(16) { ss_ov_1_data_start = .; KEEP(*(.ssov.1.data*)) ss_ov_1_data_end = .; }
+  .ssov.2.data : ALIGN(16) { ss_ov_2_data_start = .; KEEP(*(.ssov.2.data*)) ss_ov_2_data_end = .; }
+  .ssov.3.data : ALIGN(16) { ss_ov_3_data_start = .; KEEP(*(.ssov.3.data*)) ss_ov_3_data_end = .; }
+  .ssov.4.data : ALIGN(16) { ss_ov_4_data_start = .; KEEP(*(.ssov.4.data*)) ss_ov_4_data_end = .; }
+  .ssov.5.data : ALIGN(16) { ss_ov_5_data_start = .; KEEP(*(.ssov.5.data*)) ss_ov_5_data_end = .; }
+  .ssov.6.data : ALIGN(16) { ss_ov_6_data_start = .; KEEP(*(.ssov.6.data*)) ss_ov_6_data_end = .; }
+  .ssov.7.data : ALIGN(16) { ss_ov_7_data_start = .; KEEP(*(.ssov.7.data*)) ss_ov_7_data_end = .; }
+  .ssov.8.data : ALIGN(16) { ss_ov_8_data_start = .; KEEP(*(.ssov.8.data*)) ss_ov_8_data_end = .; }
+  .ssov.9.data : ALIGN(16) { ss_ov_9_data_start = .; KEEP(*(.ssov.9.data*)) ss_ov_9_data_end = .; }
+  .ssov.10.data : ALIGN(16) { ss_ov_10_data_start = .; KEEP(*(.ssov.10.data*)) ss_ov_10_data_end = .; }
+  .ssov.11.data : ALIGN(16) { ss_ov_11_data_start = .; KEEP(*(.ssov.11.data*)) ss_ov_11_data_end = .; }
+  .ssov.12.data : ALIGN(16) { ss_ov_12_data_start = .; KEEP(*(.ssov.12.data*)) ss_ov_12_data_end = .; }
+  .ssov.13.data : ALIGN(16) { ss_ov_13_data_start = .; KEEP(*(.ssov.13.data*)) ss_ov_13_data_end = .; }
+  .ssov.14.data : ALIGN(16) { ss_ov_14_data_start = .; KEEP(*(.ssov.14.data*)) ss_ov_14_data_end = .; }
+  .ssov.15.data : ALIGN(16) { ss_ov_15_data_start = .; KEEP(*(.ssov.15.data*)) ss_ov_15_data_end = .; }
+  .ssov.16.data : ALIGN(16) { ss_ov_16_data_start = .; KEEP(*(.ssov.16.data*)) ss_ov_16_data_end = .; }
+  .ssov.17.data : ALIGN(16) { ss_ov_17_data_start = .; KEEP(*(.ssov.17.data*)) ss_ov_17_data_end = .; }
+  .ssov.18.data : ALIGN(16) { ss_ov_18_data_start = .; KEEP(*(.ssov.18.data*)) ss_ov_18_data_end = .; }
+  .ssov.19.data : ALIGN(16) { ss_ov_19_data_start = .; KEEP(*(.ssov.19.data*)) ss_ov_19_data_end = .; }
+  .ssov.20.data : ALIGN(16) { ss_ov_20_data_start = .; KEEP(*(.ssov.20.data*)) ss_ov_20_data_end = .; }
+  .ssov.21.data : ALIGN(16) { ss_ov_21_data_start = .; KEEP(*(.ssov.21.data*)) ss_ov_21_data_end = .; }
+  .ssov.22.data : ALIGN(16) { ss_ov_22_data_start = .; KEEP(*(.ssov.22.data*)) ss_ov_22_data_end = .; }
+  .ssov.23.data : ALIGN(16) { ss_ov_23_data_start = .; KEEP(*(.ssov.23.data*)) ss_ov_23_data_end = .; }
+  .ssov.24.data : ALIGN(16) { ss_ov_24_data_start = .; KEEP(*(.ssov.24.data*)) ss_ov_24_data_end = .; }
+  .ssov.25.data : ALIGN(16) { ss_ov_25_data_start = .; KEEP(*(.ssov.25.data*)) ss_ov_25_data_end = .; }
+  .ssov.26.data : ALIGN(16) { ss_ov_26_data_start = .; KEEP(*(.ssov.26.data*)) ss_ov_26_data_end = .; }
+  .ssov.27.data : ALIGN(16) { ss_ov_27_data_start = .; KEEP(*(.ssov.27.data*)) ss_ov_27_data_end = .; }
+  .ssov.28.data : ALIGN(16) { ss_ov_28_data_start = .; KEEP(*(.ssov.28.data*)) ss_ov_28_data_end = .; }
+  .ssov.29.data : ALIGN(16) { ss_ov_29_data_start = .; KEEP(*(.ssov.29.data*)) ss_ov_29_data_end = .; }
+  .ssov.30.data : ALIGN(16) { ss_ov_30_data_start = .; KEEP(*(.ssov.30.data*)) ss_ov_30_data_end = .; }
+  .ssov.31.data : ALIGN(16) { ss_ov_31_data_start = .; KEEP(*(.ssov.31.data*)) ss_ov_31_data_end = .; }
+  .ssov.32.data : ALIGN(16) { ss_ov_32_data_start = .; KEEP(*(.ssov.32.data*)) ss_ov_32_data_end = .; }
+  .ssov.33.data : ALIGN(16) { ss_ov_33_data_start = .; KEEP(*(.ssov.33.data*)) ss_ov_33_data_end = .; }
+  .ssov.34.data : ALIGN(16) { ss_ov_34_data_start = .; KEEP(*(.ssov.34.data*)) ss_ov_34_data_end = .; }
+  .ssov.35.data : ALIGN(16) { ss_ov_35_data_start = .; KEEP(*(.ssov.35.data*)) ss_ov_35_data_end = .; }
+  .ssov.36.data : ALIGN(16) { ss_ov_36_data_start = .; KEEP(*(.ssov.36.data*)) ss_ov_36_data_end = .; }
+  .ssov.37.data : ALIGN(16) { ss_ov_37_data_start = .; KEEP(*(.ssov.37.data*)) ss_ov_37_data_end = .; }
+  .ssov.38.data : ALIGN(16) { ss_ov_38_data_start = .; KEEP(*(.ssov.38.data*)) ss_ov_38_data_end = .; }
+  .ssov.39.data : ALIGN(16) { ss_ov_39_data_start = .; KEEP(*(.ssov.39.data*)) ss_ov_39_data_end = .; }
+  .ssov.40.data : ALIGN(16) { ss_ov_40_data_start = .; KEEP(*(.ssov.40.data*)) ss_ov_40_data_end = .; }
+  .ssov.41.data : ALIGN(16) { ss_ov_41_data_start = .; KEEP(*(.ssov.41.data*)) ss_ov_41_data_end = .; }
+  .ssov.42.data : ALIGN(16) { ss_ov_42_data_start = .; KEEP(*(.ssov.42.data*)) ss_ov_42_data_end = .; }
+  .ssov.43.data : ALIGN(16) { ss_ov_43_data_start = .; KEEP(*(.ssov.43.data*)) ss_ov_43_data_end = .; }
+  .ssov.44.data : ALIGN(16) { ss_ov_44_data_start = .; KEEP(*(.ssov.44.data*)) ss_ov_44_data_end = .; }
+  .ssov.45.data : ALIGN(16) { ss_ov_45_data_start = .; KEEP(*(.ssov.45.data*)) ss_ov_45_data_end = .; }
+  .ssov.46.data : ALIGN(16) { ss_ov_46_data_start = .; KEEP(*(.ssov.46.data*)) ss_ov_46_data_end = .; }
+  .ssov.47.data : ALIGN(16) { ss_ov_47_data_start = .; KEEP(*(.ssov.47.data*)) ss_ov_47_data_end = .; }
+  .ssov.48.data : ALIGN(16) { ss_ov_48_data_start = .; KEEP(*(.ssov.48.data*)) ss_ov_48_data_end = .; }
+  .ssov.49.data : ALIGN(16) { ss_ov_49_data_start = .; KEEP(*(.ssov.49.data*)) ss_ov_49_data_end = .; }
+  .ssov.50.data : ALIGN(16) { ss_ov_50_data_start = .; KEEP(*(.ssov.50.data*)) ss_ov_50_data_end = .; }
+  .ssov.51.data : ALIGN(16) { ss_ov_51_data_start = .; KEEP(*(.ssov.51.data*)) ss_ov_51_data_end = .; }
+  .ssov.52.data : ALIGN(16) { ss_ov_52_data_start = .; KEEP(*(.ssov.52.data*)) ss_ov_52_data_end = .; }
+  .ssov.53.data : ALIGN(16) { ss_ov_53_data_start = .; KEEP(*(.ssov.53.data*)) ss_ov_53_data_end = .; }
+  .ssov.54.data : ALIGN(16) { ss_ov_54_data_start = .; KEEP(*(.ssov.54.data*)) ss_ov_54_data_end = .; }
+  .ssov.55.data : ALIGN(16) { ss_ov_55_data_start = .; KEEP(*(.ssov.55.data*)) ss_ov_55_data_end = .; }
+  .ssov.56.data : ALIGN(16) { ss_ov_56_data_start = .; KEEP(*(.ssov.56.data*)) ss_ov_56_data_end = .; }
+  .ssov.57.data : ALIGN(16) { ss_ov_57_data_start = .; KEEP(*(.ssov.57.data*)) ss_ov_57_data_end = .; }
+  .ssov.58.data : ALIGN(16) { ss_ov_58_data_start = .; KEEP(*(.ssov.58.data*)) ss_ov_58_data_end = .; }
+  .ssov.59.data : ALIGN(16) { ss_ov_59_data_start = .; KEEP(*(.ssov.59.data*)) ss_ov_59_data_end = .; }
+  .ssov.60.data : ALIGN(16) { ss_ov_60_data_start = .; KEEP(*(.ssov.60.data*)) ss_ov_60_data_end = .; }
+  .ssov.61.data : ALIGN(16) { ss_ov_61_data_start = .; KEEP(*(.ssov.61.data*)) ss_ov_61_data_end = .; }
+  .ssov.62.data : ALIGN(16) { ss_ov_62_data_start = .; KEEP(*(.ssov.62.data*)) ss_ov_62_data_end = .; }
+  .ssov.63.data : ALIGN(16) { ss_ov_63_data_start = .; KEEP(*(.ssov.63.data*)) ss_ov_63_data_end = .; }
+  .ssov.64.data : ALIGN(16) { ss_ov_64_data_start = .; KEEP(*(.ssov.64.data*)) ss_ov_64_data_end = .; }
+  .ssov.65.data : ALIGN(16) { ss_ov_65_data_start = .; KEEP(*(.ssov.65.data*)) ss_ov_65_data_end = .; }
+  .ssov.66.data : ALIGN(16) { ss_ov_66_data_start = .; KEEP(*(.ssov.66.data*)) ss_ov_66_data_end = .; }
+  .ssov.67.data : ALIGN(16) { ss_ov_67_data_start = .; KEEP(*(.ssov.67.data*)) ss_ov_67_data_end = .; }
+  .ssov.68.data : ALIGN(16) { ss_ov_68_data_start = .; KEEP(*(.ssov.68.data*)) ss_ov_68_data_end = .; }
+  .ssov.69.data : ALIGN(16) { ss_ov_69_data_start = .; KEEP(*(.ssov.69.data*)) ss_ov_69_data_end = .; }
+  .ssov.70.data : ALIGN(16) { ss_ov_70_data_start = .; KEEP(*(.ssov.70.data*)) ss_ov_70_data_end = .; }
+  .ssov.71.data : ALIGN(16) { ss_ov_71_data_start = .; KEEP(*(.ssov.71.data*)) ss_ov_71_data_end = .; }
+  .ssov.72.data : ALIGN(16) { ss_ov_72_data_start = .; KEEP(*(.ssov.72.data*)) ss_ov_72_data_end = .; }
+  .ssov.73.data : ALIGN(16) { ss_ov_73_data_start = .; KEEP(*(.ssov.73.data*)) ss_ov_73_data_end = .; }
+  .ssov.74.data : ALIGN(16) { ss_ov_74_data_start = .; KEEP(*(.ssov.74.data*)) ss_ov_74_data_end = .; }
+  .ssov.75.data : ALIGN(16) { ss_ov_75_data_start = .; KEEP(*(.ssov.75.data*)) ss_ov_75_data_end = .; }
+  .ssov.76.data : ALIGN(16) { ss_ov_76_data_start = .; KEEP(*(.ssov.76.data*)) ss_ov_76_data_end = .; }
+  .ssov.77.data : ALIGN(16) { ss_ov_77_data_start = .; KEEP(*(.ssov.77.data*)) ss_ov_77_data_end = .; }
+  .ssov.78.data : ALIGN(16) { ss_ov_78_data_start = .; KEEP(*(.ssov.78.data*)) ss_ov_78_data_end = .; }
+  .ssov.79.data : ALIGN(16) { ss_ov_79_data_start = .; KEEP(*(.ssov.79.data*)) ss_ov_79_data_end = .; }
+  .ssov.80.data : ALIGN(16) { ss_ov_80_data_start = .; KEEP(*(.ssov.80.data*)) ss_ov_80_data_end = .; }
+  .ssov.81.data : ALIGN(16) { ss_ov_81_data_start = .; KEEP(*(.ssov.81.data*)) ss_ov_81_data_end = .; }
+  .ssov.82.data : ALIGN(16) { ss_ov_82_data_start = .; KEEP(*(.ssov.82.data*)) ss_ov_82_data_end = .; }
+  .ssov.83.data : ALIGN(16) { ss_ov_83_data_start = .; KEEP(*(.ssov.83.data*)) ss_ov_83_data_end = .; }
+  .ssov.84.data : ALIGN(16) { ss_ov_84_data_start = .; KEEP(*(.ssov.84.data*)) ss_ov_84_data_end = .; }
+  .ssov.85.data : ALIGN(16) { ss_ov_85_data_start = .; KEEP(*(.ssov.85.data*)) ss_ov_85_data_end = .; }
+  .ssov.86.data : ALIGN(16) { ss_ov_86_data_start = .; KEEP(*(.ssov.86.data*)) ss_ov_86_data_end = .; }
+  .ssov.87.data : ALIGN(16) { ss_ov_87_data_start = .; KEEP(*(.ssov.87.data*)) ss_ov_87_data_end = .; }
+  .ssov.88.data : ALIGN(16) { ss_ov_88_data_start = .; KEEP(*(.ssov.88.data*)) ss_ov_88_data_end = .; }
+  .ssov.89.data : ALIGN(16) { ss_ov_89_data_start = .; KEEP(*(.ssov.89.data*)) ss_ov_89_data_end = .; }
+  .ssov.90.data : ALIGN(16) { ss_ov_90_data_start = .; KEEP(*(.ssov.90.data*)) ss_ov_90_data_end = .; }
+  .ssov.91.data : ALIGN(16) { ss_ov_91_data_start = .; KEEP(*(.ssov.91.data*)) ss_ov_91_data_end = .; }
+  .ssov.92.data : ALIGN(16) { ss_ov_92_data_start = .; KEEP(*(.ssov.92.data*)) ss_ov_92_data_end = .; }
+  .ssov.93.data : ALIGN(16) { ss_ov_93_data_start = .; KEEP(*(.ssov.93.data*)) ss_ov_93_data_end = .; }
+  .ssov.94.data : ALIGN(16) { ss_ov_94_data_start = .; KEEP(*(.ssov.94.data*)) ss_ov_94_data_end = .; }
+  .ssov.95.data : ALIGN(16) { ss_ov_95_data_start = .; KEEP(*(.ssov.95.data*)) ss_ov_95_data_end = .; }
+  .ssov.96.data : ALIGN(16) { ss_ov_96_data_start = .; KEEP(*(.ssov.96.data*)) ss_ov_96_data_end = .; }
+  .ssov.97.data : ALIGN(16) { ss_ov_97_data_start = .; KEEP(*(.ssov.97.data*)) ss_ov_97_data_end = .; }
+  .ssov.98.data : ALIGN(16) { ss_ov_98_data_start = .; KEEP(*(.ssov.98.data*)) ss_ov_98_data_end = .; }
+  .ssov.99.data : ALIGN(16) { ss_ov_99_data_start = .; KEEP(*(.ssov.99.data*)) ss_ov_99_data_end = .; }
+  .ssov.100.data : ALIGN(16) { ss_ov_100_data_start = .; KEEP(*(.ssov.100.data*)) ss_ov_100_data_end = .; }
+  .ssov.101.data : ALIGN(16) { ss_ov_101_data_start = .; KEEP(*(.ssov.101.data*)) ss_ov_101_data_end = .; }
+  .ssov.102.data : ALIGN(16) { ss_ov_102_data_start = .; KEEP(*(.ssov.102.data*)) ss_ov_102_data_end = .; }
+  .ssov.103.data : ALIGN(16) { ss_ov_103_data_start = .; KEEP(*(.ssov.103.data*)) ss_ov_103_data_end = .; }
+  .ssov.104.data : ALIGN(16) { ss_ov_104_data_start = .; KEEP(*(.ssov.104.data*)) ss_ov_104_data_end = .; }
+  .ssov.105.data : ALIGN(16) { ss_ov_105_data_start = .; KEEP(*(.ssov.105.data*)) ss_ov_105_data_end = .; }
+  .ssov.106.data : ALIGN(16) { ss_ov_106_data_start = .; KEEP(*(.ssov.106.data*)) ss_ov_106_data_end = .; }
+  .ssov.107.data : ALIGN(16) { ss_ov_107_data_start = .; KEEP(*(.ssov.107.data*)) ss_ov_107_data_end = .; }
+  .ssov.108.data : ALIGN(16) { ss_ov_108_data_start = .; KEEP(*(.ssov.108.data*)) ss_ov_108_data_end = .; }
+  .ssov.109.data : ALIGN(16) { ss_ov_109_data_start = .; KEEP(*(.ssov.109.data*)) ss_ov_109_data_end = .; }
+  .ssov.110.data : ALIGN(16) { ss_ov_110_data_start = .; KEEP(*(.ssov.110.data*)) ss_ov_110_data_end = .; }
+  .ssov.111.data : ALIGN(16) { ss_ov_111_data_start = .; KEEP(*(.ssov.111.data*)) ss_ov_111_data_end = .; }
+  .ssov.112.data : ALIGN(16) { ss_ov_112_data_start = .; KEEP(*(.ssov.112.data*)) ss_ov_112_data_end = .; }
+  .ssov.113.data : ALIGN(16) { ss_ov_113_data_start = .; KEEP(*(.ssov.113.data*)) ss_ov_113_data_end = .; }
+  .ssov.114.data : ALIGN(16) { ss_ov_114_data_start = .; KEEP(*(.ssov.114.data*)) ss_ov_114_data_end = .; }
+  .ssov.115.data : ALIGN(16) { ss_ov_115_data_start = .; KEEP(*(.ssov.115.data*)) ss_ov_115_data_end = .; }
+  .ssov.116.data : ALIGN(16) { ss_ov_116_data_start = .; KEEP(*(.ssov.116.data*)) ss_ov_116_data_end = .; }
+  .ssov.117.data : ALIGN(16) { ss_ov_117_data_start = .; KEEP(*(.ssov.117.data*)) ss_ov_117_data_end = .; }
+  .ssov.118.data : ALIGN(16) { ss_ov_118_data_start = .; KEEP(*(.ssov.118.data*)) ss_ov_118_data_end = .; }
+  .ssov.119.data : ALIGN(16) { ss_ov_119_data_start = .; KEEP(*(.ssov.119.data*)) ss_ov_119_data_end = .; }
+  .ssov.120.data : ALIGN(16) { ss_ov_120_data_start = .; KEEP(*(.ssov.120.data*)) ss_ov_120_data_end = .; }
+  .ssov.121.data : ALIGN(16) { ss_ov_121_data_start = .; KEEP(*(.ssov.121.data*)) ss_ov_121_data_end = .; }
+  .ssov.122.data : ALIGN(16) { ss_ov_122_data_start = .; KEEP(*(.ssov.122.data*)) ss_ov_122_data_end = .; }
+  .ssov.123.data : ALIGN(16) { ss_ov_123_data_start = .; KEEP(*(.ssov.123.data*)) ss_ov_123_data_end = .; }
+  .ssov.124.data : ALIGN(16) { ss_ov_124_data_start = .; KEEP(*(.ssov.124.data*)) ss_ov_124_data_end = .; }
+  .ssov.125.data : ALIGN(16) { ss_ov_125_data_start = .; KEEP(*(.ssov.125.data*)) ss_ov_125_data_end = .; }
+  .ssov.126.data : ALIGN(16) { ss_ov_126_data_start = .; KEEP(*(.ssov.126.data*)) ss_ov_126_data_end = .; }
+  .ssov.127.data : ALIGN(16) { ss_ov_127_data_start = .; KEEP(*(.ssov.127.data*)) ss_ov_127_data_end = .; }
+  .ssov.128.data : ALIGN(16) { ss_ov_128_data_start = .; KEEP(*(.ssov.128.data*)) ss_ov_128_data_end = .; }
+  .data           :
+  {
+    _fdata = . ;
+    *(.data .data.* .gnu.linkonce.d.*)
+    KEEP (*(.gnu.linkonce.d.*personality*))
+    SORT(CONSTRUCTORS)
+  }
+  .data1          : { *(.data1) }
+  . = .;
+  _gp = ALIGN(16) + 0x7ff0;
+  .got            : { *(.got.plt) *(.got) }
+  /* We want the small data sections together, so single-instruction offsets
+     can access them all, and initialized data all before uninitialized, so
+     we can shorten the on-disk segment size.  */
+  .sdata          :
+  {
+    *(.sdata .sdata.* .gnu.linkonce.s.*)
+  }
+  .lit8           : { *(.lit8) }
+  .lit4           : { *(.lit4) }
+  _edata = .;
+  PROVIDE (edata = .);
+  __bss_start = .;
+  _fbss = .;
+  .sbss           :
+  {
+    PROVIDE (__sbss_start = .);
+    PROVIDE (___sbss_start = .);
+    *(.dynsbss)
+    *(.sbss .sbss.* .gnu.linkonce.sb.*)
+    *(.scommon)
+    PROVIDE (__sbss_end = .);
+    PROVIDE (___sbss_end = .);
+  }
+  .ssov.0.bss (NOLOAD) : ALIGN(16) { ss_ov_0_bss_start = .; KEEP(*(.ssov.0.bss*)) ss_ov_0_bss_end = .; }
+  .ssov.1.bss (NOLOAD) : ALIGN(16) { ss_ov_1_bss_start = .; KEEP(*(.ssov.1.bss*)) ss_ov_1_bss_end = .; }
+  .ssov.2.bss (NOLOAD) : ALIGN(16) { ss_ov_2_bss_start = .; KEEP(*(.ssov.2.bss*)) ss_ov_2_bss_end = .; }
+  .ssov.3.bss (NOLOAD) : ALIGN(16) { ss_ov_3_bss_start = .; KEEP(*(.ssov.3.bss*)) ss_ov_3_bss_end = .; }
+  .ssov.4.bss (NOLOAD) : ALIGN(16) { ss_ov_4_bss_start = .; KEEP(*(.ssov.4.bss*)) ss_ov_4_bss_end = .; }
+  .ssov.5.bss (NOLOAD) : ALIGN(16) { ss_ov_5_bss_start = .; KEEP(*(.ssov.5.bss*)) ss_ov_5_bss_end = .; }
+  .ssov.6.bss (NOLOAD) : ALIGN(16) { ss_ov_6_bss_start = .; KEEP(*(.ssov.6.bss*)) ss_ov_6_bss_end = .; }
+  .ssov.7.bss (NOLOAD) : ALIGN(16) { ss_ov_7_bss_start = .; KEEP(*(.ssov.7.bss*)) ss_ov_7_bss_end = .; }
+  .ssov.8.bss (NOLOAD) : ALIGN(16) { ss_ov_8_bss_start = .; KEEP(*(.ssov.8.bss*)) ss_ov_8_bss_end = .; }
+  .ssov.9.bss (NOLOAD) : ALIGN(16) { ss_ov_9_bss_start = .; KEEP(*(.ssov.9.bss*)) ss_ov_9_bss_end = .; }
+  .ssov.10.bss (NOLOAD) : ALIGN(16) { ss_ov_10_bss_start = .; KEEP(*(.ssov.10.bss*)) ss_ov_10_bss_end = .; }
+  .ssov.11.bss (NOLOAD) : ALIGN(16) { ss_ov_11_bss_start = .; KEEP(*(.ssov.11.bss*)) ss_ov_11_bss_end = .; }
+  .ssov.12.bss (NOLOAD) : ALIGN(16) { ss_ov_12_bss_start = .; KEEP(*(.ssov.12.bss*)) ss_ov_12_bss_end = .; }
+  .ssov.13.bss (NOLOAD) : ALIGN(16) { ss_ov_13_bss_start = .; KEEP(*(.ssov.13.bss*)) ss_ov_13_bss_end = .; }
+  .ssov.14.bss (NOLOAD) : ALIGN(16) { ss_ov_14_bss_start = .; KEEP(*(.ssov.14.bss*)) ss_ov_14_bss_end = .; }
+  .ssov.15.bss (NOLOAD) : ALIGN(16) { ss_ov_15_bss_start = .; KEEP(*(.ssov.15.bss*)) ss_ov_15_bss_end = .; }
+  .ssov.16.bss (NOLOAD) : ALIGN(16) { ss_ov_16_bss_start = .; KEEP(*(.ssov.16.bss*)) ss_ov_16_bss_end = .; }
+  .ssov.17.bss (NOLOAD) : ALIGN(16) { ss_ov_17_bss_start = .; KEEP(*(.ssov.17.bss*)) ss_ov_17_bss_end = .; }
+  .ssov.18.bss (NOLOAD) : ALIGN(16) { ss_ov_18_bss_start = .; KEEP(*(.ssov.18.bss*)) ss_ov_18_bss_end = .; }
+  .ssov.19.bss (NOLOAD) : ALIGN(16) { ss_ov_19_bss_start = .; KEEP(*(.ssov.19.bss*)) ss_ov_19_bss_end = .; }
+  .ssov.20.bss (NOLOAD) : ALIGN(16) { ss_ov_20_bss_start = .; KEEP(*(.ssov.20.bss*)) ss_ov_20_bss_end = .; }
+  .ssov.21.bss (NOLOAD) : ALIGN(16) { ss_ov_21_bss_start = .; KEEP(*(.ssov.21.bss*)) ss_ov_21_bss_end = .; }
+  .ssov.22.bss (NOLOAD) : ALIGN(16) { ss_ov_22_bss_start = .; KEEP(*(.ssov.22.bss*)) ss_ov_22_bss_end = .; }
+  .ssov.23.bss (NOLOAD) : ALIGN(16) { ss_ov_23_bss_start = .; KEEP(*(.ssov.23.bss*)) ss_ov_23_bss_end = .; }
+  .ssov.24.bss (NOLOAD) : ALIGN(16) { ss_ov_24_bss_start = .; KEEP(*(.ssov.24.bss*)) ss_ov_24_bss_end = .; }
+  .ssov.25.bss (NOLOAD) : ALIGN(16) { ss_ov_25_bss_start = .; KEEP(*(.ssov.25.bss*)) ss_ov_25_bss_end = .; }
+  .ssov.26.bss (NOLOAD) : ALIGN(16) { ss_ov_26_bss_start = .; KEEP(*(.ssov.26.bss*)) ss_ov_26_bss_end = .; }
+  .ssov.27.bss (NOLOAD) : ALIGN(16) { ss_ov_27_bss_start = .; KEEP(*(.ssov.27.bss*)) ss_ov_27_bss_end = .; }
+  .ssov.28.bss (NOLOAD) : ALIGN(16) { ss_ov_28_bss_start = .; KEEP(*(.ssov.28.bss*)) ss_ov_28_bss_end = .; }
+  .ssov.29.bss (NOLOAD) : ALIGN(16) { ss_ov_29_bss_start = .; KEEP(*(.ssov.29.bss*)) ss_ov_29_bss_end = .; }
+  .ssov.30.bss (NOLOAD) : ALIGN(16) { ss_ov_30_bss_start = .; KEEP(*(.ssov.30.bss*)) ss_ov_30_bss_end = .; }
+  .ssov.31.bss (NOLOAD) : ALIGN(16) { ss_ov_31_bss_start = .; KEEP(*(.ssov.31.bss*)) ss_ov_31_bss_end = .; }
+  .ssov.32.bss (NOLOAD) : ALIGN(16) { ss_ov_32_bss_start = .; KEEP(*(.ssov.32.bss*)) ss_ov_32_bss_end = .; }
+  .ssov.33.bss (NOLOAD) : ALIGN(16) { ss_ov_33_bss_start = .; KEEP(*(.ssov.33.bss*)) ss_ov_33_bss_end = .; }
+  .ssov.34.bss (NOLOAD) : ALIGN(16) { ss_ov_34_bss_start = .; KEEP(*(.ssov.34.bss*)) ss_ov_34_bss_end = .; }
+  .ssov.35.bss (NOLOAD) : ALIGN(16) { ss_ov_35_bss_start = .; KEEP(*(.ssov.35.bss*)) ss_ov_35_bss_end = .; }
+  .ssov.36.bss (NOLOAD) : ALIGN(16) { ss_ov_36_bss_start = .; KEEP(*(.ssov.36.bss*)) ss_ov_36_bss_end = .; }
+  .ssov.37.bss (NOLOAD) : ALIGN(16) { ss_ov_37_bss_start = .; KEEP(*(.ssov.37.bss*)) ss_ov_37_bss_end = .; }
+  .ssov.38.bss (NOLOAD) : ALIGN(16) { ss_ov_38_bss_start = .; KEEP(*(.ssov.38.bss*)) ss_ov_38_bss_end = .; }
+  .ssov.39.bss (NOLOAD) : ALIGN(16) { ss_ov_39_bss_start = .; KEEP(*(.ssov.39.bss*)) ss_ov_39_bss_end = .; }
+  .ssov.40.bss (NOLOAD) : ALIGN(16) { ss_ov_40_bss_start = .; KEEP(*(.ssov.40.bss*)) ss_ov_40_bss_end = .; }
+  .ssov.41.bss (NOLOAD) : ALIGN(16) { ss_ov_41_bss_start = .; KEEP(*(.ssov.41.bss*)) ss_ov_41_bss_end = .; }
+  .ssov.42.bss (NOLOAD) : ALIGN(16) { ss_ov_42_bss_start = .; KEEP(*(.ssov.42.bss*)) ss_ov_42_bss_end = .; }
+  .ssov.43.bss (NOLOAD) : ALIGN(16) { ss_ov_43_bss_start = .; KEEP(*(.ssov.43.bss*)) ss_ov_43_bss_end = .; }
+  .ssov.44.bss (NOLOAD) : ALIGN(16) { ss_ov_44_bss_start = .; KEEP(*(.ssov.44.bss*)) ss_ov_44_bss_end = .; }
+  .ssov.45.bss (NOLOAD) : ALIGN(16) { ss_ov_45_bss_start = .; KEEP(*(.ssov.45.bss*)) ss_ov_45_bss_end = .; }
+  .ssov.46.bss (NOLOAD) : ALIGN(16) { ss_ov_46_bss_start = .; KEEP(*(.ssov.46.bss*)) ss_ov_46_bss_end = .; }
+  .ssov.47.bss (NOLOAD) : ALIGN(16) { ss_ov_47_bss_start = .; KEEP(*(.ssov.47.bss*)) ss_ov_47_bss_end = .; }
+  .ssov.48.bss (NOLOAD) : ALIGN(16) { ss_ov_48_bss_start = .; KEEP(*(.ssov.48.bss*)) ss_ov_48_bss_end = .; }
+  .ssov.49.bss (NOLOAD) : ALIGN(16) { ss_ov_49_bss_start = .; KEEP(*(.ssov.49.bss*)) ss_ov_49_bss_end = .; }
+  .ssov.50.bss (NOLOAD) : ALIGN(16) { ss_ov_50_bss_start = .; KEEP(*(.ssov.50.bss*)) ss_ov_50_bss_end = .; }
+  .ssov.51.bss (NOLOAD) : ALIGN(16) { ss_ov_51_bss_start = .; KEEP(*(.ssov.51.bss*)) ss_ov_51_bss_end = .; }
+  .ssov.52.bss (NOLOAD) : ALIGN(16) { ss_ov_52_bss_start = .; KEEP(*(.ssov.52.bss*)) ss_ov_52_bss_end = .; }
+  .ssov.53.bss (NOLOAD) : ALIGN(16) { ss_ov_53_bss_start = .; KEEP(*(.ssov.53.bss*)) ss_ov_53_bss_end = .; }
+  .ssov.54.bss (NOLOAD) : ALIGN(16) { ss_ov_54_bss_start = .; KEEP(*(.ssov.54.bss*)) ss_ov_54_bss_end = .; }
+  .ssov.55.bss (NOLOAD) : ALIGN(16) { ss_ov_55_bss_start = .; KEEP(*(.ssov.55.bss*)) ss_ov_55_bss_end = .; }
+  .ssov.56.bss (NOLOAD) : ALIGN(16) { ss_ov_56_bss_start = .; KEEP(*(.ssov.56.bss*)) ss_ov_56_bss_end = .; }
+  .ssov.57.bss (NOLOAD) : ALIGN(16) { ss_ov_57_bss_start = .; KEEP(*(.ssov.57.bss*)) ss_ov_57_bss_end = .; }
+  .ssov.58.bss (NOLOAD) : ALIGN(16) { ss_ov_58_bss_start = .; KEEP(*(.ssov.58.bss*)) ss_ov_58_bss_end = .; }
+  .ssov.59.bss (NOLOAD) : ALIGN(16) { ss_ov_59_bss_start = .; KEEP(*(.ssov.59.bss*)) ss_ov_59_bss_end = .; }
+  .ssov.60.bss (NOLOAD) : ALIGN(16) { ss_ov_60_bss_start = .; KEEP(*(.ssov.60.bss*)) ss_ov_60_bss_end = .; }
+  .ssov.61.bss (NOLOAD) : ALIGN(16) { ss_ov_61_bss_start = .; KEEP(*(.ssov.61.bss*)) ss_ov_61_bss_end = .; }
+  .ssov.62.bss (NOLOAD) : ALIGN(16) { ss_ov_62_bss_start = .; KEEP(*(.ssov.62.bss*)) ss_ov_62_bss_end = .; }
+  .ssov.63.bss (NOLOAD) : ALIGN(16) { ss_ov_63_bss_start = .; KEEP(*(.ssov.63.bss*)) ss_ov_63_bss_end = .; }
+  .ssov.64.bss (NOLOAD) : ALIGN(16) { ss_ov_64_bss_start = .; KEEP(*(.ssov.64.bss*)) ss_ov_64_bss_end = .; }
+  .ssov.65.bss (NOLOAD) : ALIGN(16) { ss_ov_65_bss_start = .; KEEP(*(.ssov.65.bss*)) ss_ov_65_bss_end = .; }
+  .ssov.66.bss (NOLOAD) : ALIGN(16) { ss_ov_66_bss_start = .; KEEP(*(.ssov.66.bss*)) ss_ov_66_bss_end = .; }
+  .ssov.67.bss (NOLOAD) : ALIGN(16) { ss_ov_67_bss_start = .; KEEP(*(.ssov.67.bss*)) ss_ov_67_bss_end = .; }
+  .ssov.68.bss (NOLOAD) : ALIGN(16) { ss_ov_68_bss_start = .; KEEP(*(.ssov.68.bss*)) ss_ov_68_bss_end = .; }
+  .ssov.69.bss (NOLOAD) : ALIGN(16) { ss_ov_69_bss_start = .; KEEP(*(.ssov.69.bss*)) ss_ov_69_bss_end = .; }
+  .ssov.70.bss (NOLOAD) : ALIGN(16) { ss_ov_70_bss_start = .; KEEP(*(.ssov.70.bss*)) ss_ov_70_bss_end = .; }
+  .ssov.71.bss (NOLOAD) : ALIGN(16) { ss_ov_71_bss_start = .; KEEP(*(.ssov.71.bss*)) ss_ov_71_bss_end = .; }
+  .ssov.72.bss (NOLOAD) : ALIGN(16) { ss_ov_72_bss_start = .; KEEP(*(.ssov.72.bss*)) ss_ov_72_bss_end = .; }
+  .ssov.73.bss (NOLOAD) : ALIGN(16) { ss_ov_73_bss_start = .; KEEP(*(.ssov.73.bss*)) ss_ov_73_bss_end = .; }
+  .ssov.74.bss (NOLOAD) : ALIGN(16) { ss_ov_74_bss_start = .; KEEP(*(.ssov.74.bss*)) ss_ov_74_bss_end = .; }
+  .ssov.75.bss (NOLOAD) : ALIGN(16) { ss_ov_75_bss_start = .; KEEP(*(.ssov.75.bss*)) ss_ov_75_bss_end = .; }
+  .ssov.76.bss (NOLOAD) : ALIGN(16) { ss_ov_76_bss_start = .; KEEP(*(.ssov.76.bss*)) ss_ov_76_bss_end = .; }
+  .ssov.77.bss (NOLOAD) : ALIGN(16) { ss_ov_77_bss_start = .; KEEP(*(.ssov.77.bss*)) ss_ov_77_bss_end = .; }
+  .ssov.78.bss (NOLOAD) : ALIGN(16) { ss_ov_78_bss_start = .; KEEP(*(.ssov.78.bss*)) ss_ov_78_bss_end = .; }
+  .ssov.79.bss (NOLOAD) : ALIGN(16) { ss_ov_79_bss_start = .; KEEP(*(.ssov.79.bss*)) ss_ov_79_bss_end = .; }
+  .ssov.80.bss (NOLOAD) : ALIGN(16) { ss_ov_80_bss_start = .; KEEP(*(.ssov.80.bss*)) ss_ov_80_bss_end = .; }
+  .ssov.81.bss (NOLOAD) : ALIGN(16) { ss_ov_81_bss_start = .; KEEP(*(.ssov.81.bss*)) ss_ov_81_bss_end = .; }
+  .ssov.82.bss (NOLOAD) : ALIGN(16) { ss_ov_82_bss_start = .; KEEP(*(.ssov.82.bss*)) ss_ov_82_bss_end = .; }
+  .ssov.83.bss (NOLOAD) : ALIGN(16) { ss_ov_83_bss_start = .; KEEP(*(.ssov.83.bss*)) ss_ov_83_bss_end = .; }
+  .ssov.84.bss (NOLOAD) : ALIGN(16) { ss_ov_84_bss_start = .; KEEP(*(.ssov.84.bss*)) ss_ov_84_bss_end = .; }
+  .ssov.85.bss (NOLOAD) : ALIGN(16) { ss_ov_85_bss_start = .; KEEP(*(.ssov.85.bss*)) ss_ov_85_bss_end = .; }
+  .ssov.86.bss (NOLOAD) : ALIGN(16) { ss_ov_86_bss_start = .; KEEP(*(.ssov.86.bss*)) ss_ov_86_bss_end = .; }
+  .ssov.87.bss (NOLOAD) : ALIGN(16) { ss_ov_87_bss_start = .; KEEP(*(.ssov.87.bss*)) ss_ov_87_bss_end = .; }
+  .ssov.88.bss (NOLOAD) : ALIGN(16) { ss_ov_88_bss_start = .; KEEP(*(.ssov.88.bss*)) ss_ov_88_bss_end = .; }
+  .ssov.89.bss (NOLOAD) : ALIGN(16) { ss_ov_89_bss_start = .; KEEP(*(.ssov.89.bss*)) ss_ov_89_bss_end = .; }
+  .ssov.90.bss (NOLOAD) : ALIGN(16) { ss_ov_90_bss_start = .; KEEP(*(.ssov.90.bss*)) ss_ov_90_bss_end = .; }
+  .ssov.91.bss (NOLOAD) : ALIGN(16) { ss_ov_91_bss_start = .; KEEP(*(.ssov.91.bss*)) ss_ov_91_bss_end = .; }
+  .ssov.92.bss (NOLOAD) : ALIGN(16) { ss_ov_92_bss_start = .; KEEP(*(.ssov.92.bss*)) ss_ov_92_bss_end = .; }
+  .ssov.93.bss (NOLOAD) : ALIGN(16) { ss_ov_93_bss_start = .; KEEP(*(.ssov.93.bss*)) ss_ov_93_bss_end = .; }
+  .ssov.94.bss (NOLOAD) : ALIGN(16) { ss_ov_94_bss_start = .; KEEP(*(.ssov.94.bss*)) ss_ov_94_bss_end = .; }
+  .ssov.95.bss (NOLOAD) : ALIGN(16) { ss_ov_95_bss_start = .; KEEP(*(.ssov.95.bss*)) ss_ov_95_bss_end = .; }
+  .ssov.96.bss (NOLOAD) : ALIGN(16) { ss_ov_96_bss_start = .; KEEP(*(.ssov.96.bss*)) ss_ov_96_bss_end = .; }
+  .ssov.97.bss (NOLOAD) : ALIGN(16) { ss_ov_97_bss_start = .; KEEP(*(.ssov.97.bss*)) ss_ov_97_bss_end = .; }
+  .ssov.98.bss (NOLOAD) : ALIGN(16) { ss_ov_98_bss_start = .; KEEP(*(.ssov.98.bss*)) ss_ov_98_bss_end = .; }
+  .ssov.99.bss (NOLOAD) : ALIGN(16) { ss_ov_99_bss_start = .; KEEP(*(.ssov.99.bss*)) ss_ov_99_bss_end = .; }
+  .ssov.100.bss (NOLOAD) : ALIGN(16) { ss_ov_100_bss_start = .; KEEP(*(.ssov.100.bss*)) ss_ov_100_bss_end = .; }
+  .ssov.101.bss (NOLOAD) : ALIGN(16) { ss_ov_101_bss_start = .; KEEP(*(.ssov.101.bss*)) ss_ov_101_bss_end = .; }
+  .ssov.102.bss (NOLOAD) : ALIGN(16) { ss_ov_102_bss_start = .; KEEP(*(.ssov.102.bss*)) ss_ov_102_bss_end = .; }
+  .ssov.103.bss (NOLOAD) : ALIGN(16) { ss_ov_103_bss_start = .; KEEP(*(.ssov.103.bss*)) ss_ov_103_bss_end = .; }
+  .ssov.104.bss (NOLOAD) : ALIGN(16) { ss_ov_104_bss_start = .; KEEP(*(.ssov.104.bss*)) ss_ov_104_bss_end = .; }
+  .ssov.105.bss (NOLOAD) : ALIGN(16) { ss_ov_105_bss_start = .; KEEP(*(.ssov.105.bss*)) ss_ov_105_bss_end = .; }
+  .ssov.106.bss (NOLOAD) : ALIGN(16) { ss_ov_106_bss_start = .; KEEP(*(.ssov.106.bss*)) ss_ov_106_bss_end = .; }
+  .ssov.107.bss (NOLOAD) : ALIGN(16) { ss_ov_107_bss_start = .; KEEP(*(.ssov.107.bss*)) ss_ov_107_bss_end = .; }
+  .ssov.108.bss (NOLOAD) : ALIGN(16) { ss_ov_108_bss_start = .; KEEP(*(.ssov.108.bss*)) ss_ov_108_bss_end = .; }
+  .ssov.109.bss (NOLOAD) : ALIGN(16) { ss_ov_109_bss_start = .; KEEP(*(.ssov.109.bss*)) ss_ov_109_bss_end = .; }
+  .ssov.110.bss (NOLOAD) : ALIGN(16) { ss_ov_110_bss_start = .; KEEP(*(.ssov.110.bss*)) ss_ov_110_bss_end = .; }
+  .ssov.111.bss (NOLOAD) : ALIGN(16) { ss_ov_111_bss_start = .; KEEP(*(.ssov.111.bss*)) ss_ov_111_bss_end = .; }
+  .ssov.112.bss (NOLOAD) : ALIGN(16) { ss_ov_112_bss_start = .; KEEP(*(.ssov.112.bss*)) ss_ov_112_bss_end = .; }
+  .ssov.113.bss (NOLOAD) : ALIGN(16) { ss_ov_113_bss_start = .; KEEP(*(.ssov.113.bss*)) ss_ov_113_bss_end = .; }
+  .ssov.114.bss (NOLOAD) : ALIGN(16) { ss_ov_114_bss_start = .; KEEP(*(.ssov.114.bss*)) ss_ov_114_bss_end = .; }
+  .ssov.115.bss (NOLOAD) : ALIGN(16) { ss_ov_115_bss_start = .; KEEP(*(.ssov.115.bss*)) ss_ov_115_bss_end = .; }
+  .ssov.116.bss (NOLOAD) : ALIGN(16) { ss_ov_116_bss_start = .; KEEP(*(.ssov.116.bss*)) ss_ov_116_bss_end = .; }
+  .ssov.117.bss (NOLOAD) : ALIGN(16) { ss_ov_117_bss_start = .; KEEP(*(.ssov.117.bss*)) ss_ov_117_bss_end = .; }
+  .ssov.118.bss (NOLOAD) : ALIGN(16) { ss_ov_118_bss_start = .; KEEP(*(.ssov.118.bss*)) ss_ov_118_bss_end = .; }
+  .ssov.119.bss (NOLOAD) : ALIGN(16) { ss_ov_119_bss_start = .; KEEP(*(.ssov.119.bss*)) ss_ov_119_bss_end = .; }
+  .ssov.120.bss (NOLOAD) : ALIGN(16) { ss_ov_120_bss_start = .; KEEP(*(.ssov.120.bss*)) ss_ov_120_bss_end = .; }
+  .ssov.121.bss (NOLOAD) : ALIGN(16) { ss_ov_121_bss_start = .; KEEP(*(.ssov.121.bss*)) ss_ov_121_bss_end = .; }
+  .ssov.122.bss (NOLOAD) : ALIGN(16) { ss_ov_122_bss_start = .; KEEP(*(.ssov.122.bss*)) ss_ov_122_bss_end = .; }
+  .ssov.123.bss (NOLOAD) : ALIGN(16) { ss_ov_123_bss_start = .; KEEP(*(.ssov.123.bss*)) ss_ov_123_bss_end = .; }
+  .ssov.124.bss (NOLOAD) : ALIGN(16) { ss_ov_124_bss_start = .; KEEP(*(.ssov.124.bss*)) ss_ov_124_bss_end = .; }
+  .ssov.125.bss (NOLOAD) : ALIGN(16) { ss_ov_125_bss_start = .; KEEP(*(.ssov.125.bss*)) ss_ov_125_bss_end = .; }
+  .ssov.126.bss (NOLOAD) : ALIGN(16) { ss_ov_126_bss_start = .; KEEP(*(.ssov.126.bss*)) ss_ov_126_bss_end = .; }
+  .ssov.127.bss (NOLOAD) : ALIGN(16) { ss_ov_127_bss_start = .; KEEP(*(.ssov.127.bss*)) ss_ov_127_bss_end = .; }
+  .ssov.128.bss (NOLOAD) : ALIGN(16) { ss_ov_128_bss_start = .; KEEP(*(.ssov.128.bss*)) ss_ov_128_bss_end = .; }
+  /* Retail CheckElfSectionPRX rejects sh_offset+sh_size >= 32MiB even for NOBITS (80020148): keep the DS memory backing out of .bss. */
+  .native.backing (NOLOAD) : { *backing.o(.bss) }
+  .bss            :
+  {
+   *(.dynbss)
+   *(.bss .bss.* .gnu.linkonce.b.*)
+   *(COMMON)
+   /* Align here to ensure that the .bss section occupies space up to
+      _end.  Align after .bss to ensure correct alignment even if the
+      .bss section disappears because there are no input sections.  */
+   . = ALIGN(32 / 8);
+  }
+  . = ALIGN(32 / 8);
+  _end = .;
+  PROVIDE (end = .);
+  /* Stabs debugging sections.  */
+  .stab          0 : { *(.stab) }
+  .stabstr       0 : { *(.stabstr) }
+  .stab.excl     0 : { *(.stab.excl) }
+  .stab.exclstr  0 : { *(.stab.exclstr) }
+  .stab.index    0 : { *(.stab.index) }
+  .stab.indexstr 0 : { *(.stab.indexstr) }
+  .comment       0 : { *(.comment) }
+  /* DWARF debug sections.
+     Symbols in the DWARF debugging sections are relative to the beginning
+     of the section so we begin them at 0.  */
+  /* DWARF 1 */
+  .debug          0 : { *(.debug) }
+  .line           0 : { *(.line) }
+  /* GNU DWARF 1 extensions */
+  .debug_srcinfo  0 : { *(.debug_srcinfo) }
+  .debug_sfnames  0 : { *(.debug_sfnames) }
+  /* DWARF 1.1 and DWARF 2 */
+  .debug_aranges  0 : { *(.debug_aranges) }
+  .debug_pubnames 0 : { *(.debug_pubnames) }
+  /* DWARF 2 */
+  .debug_info     0 : { *(.debug_info .gnu.linkonce.wi.*) }
+  .debug_abbrev   0 : { *(.debug_abbrev) }
+  .debug_line     0 : { *(.debug_line) }
+  .debug_frame    0 : { *(.debug_frame) }
+  .debug_str      0 : { *(.debug_str) }
+  .debug_loc      0 : { *(.debug_loc) }
+  .debug_macinfo  0 : { *(.debug_macinfo) }
+  /* SGI/MIPS DWARF 2 extensions */
+  .debug_weaknames 0 : { *(.debug_weaknames) }
+  .debug_funcnames 0 : { *(.debug_funcnames) }
+  .debug_typenames 0 : { *(.debug_typenames) }
+  .debug_varnames  0 : { *(.debug_varnames) }
+  /DISCARD/ : { *(.comment) *(.pdr) }
+  /DISCARD/ : { *(.note.GNU-stack) }
+}

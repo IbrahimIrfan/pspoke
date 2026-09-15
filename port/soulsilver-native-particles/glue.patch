@@ -1,0 +1,378 @@
+--- src/unk_02014DA0.c
++++ src/unk_02014DA0.c
+@@ -11,13 +11,13 @@
+ #include "sys_task_api.h"
+ #include "text.h"
+ 
+-extern SPLManager *SPL_Init(u32 (*allocFn)(u32, BOOL), u16 maxEmtr, u16 maxPtcl, u8 polyIdMin, u8 polyIdMax, u8 unk5);
++extern SPLManager *SPL_Init(void *(*allocFn)(u32), u16 maxEmtr, u16 maxPtcl, u8 polyIdMin, u8 polyIdMax, u8 unk5);
+ extern void SPL_Load(SPLManager *mgr, void *data);
+ extern void SPL_LoadTexByVRAMManager(SPLManager *mgr);
+ extern void SPL_LoadTexByCallbackFunction(SPLManager *mgr, texAllocFun texAlloc);
+ extern void SPL_LoadTexPlttByVRAMManager(SPLManager *mgr);
+ extern void SPL_LoadTexPlttByCallbackFunction(SPLManager *mgr, plttAllocFun plttAlloc);
+-extern SPLEmitter *SPL_Create(SPLManager *mgr);
++extern SPLEmitter *SPL_Create(SPLManager *mgr, int resourceID, const VecFx32 *pos);
+ extern void SPL_DeleteAll(SPLManager *mgr);
+ extern void SPL_Delete(SPLManager *mgr, SPLEmitter *emitter);
+ extern void SPL_Draw(SPLManager *mgr, const MtxFx43 *cameraMtx);
+@@ -70,29 +70,29 @@
+ 
+ // Forward declarations (headerless .public + static, before sFuncTable)
+ void sub_02014F84(void);
+-static u32 sub_02014FA4(u32 size, BOOL is4x4comp);
+-static u32 sub_02014FD0(u32 size, BOOL is4x4comp);
+-static u32 sub_02014FFC(u32 size, BOOL is4x4comp);
+-static u32 sub_02015028(u32 size, BOOL is4x4comp);
+-static u32 sub_02015054(u32 size, BOOL is4x4comp);
+-static u32 sub_02015080(u32 size, BOOL is4x4comp);
+-static u32 sub_020150AC(u32 size, BOOL is4x4comp);
+-static u32 sub_020150D8(u32 size, BOOL is4x4comp);
+-static u32 sub_02015104(u32 size, BOOL is4x4comp);
+-static u32 sub_02015130(u32 size, BOOL is4x4comp);
+-static u32 sub_0201515C(u32 size, BOOL is4x4comp);
+-static u32 sub_02015188(u32 size, BOOL is4x4comp);
+-static u32 sub_020151B4(u32 size, BOOL is4x4comp);
+-static u32 sub_020151E0(u32 size, BOOL is4x4comp);
+-static u32 sub_0201520C(u32 size, BOOL is4x4comp);
+-static u32 sub_02015238(u32 size, BOOL is4x4comp);
++static void *sub_02014FA4(u32 size);
++static void *sub_02014FD0(u32 size);
++static void *sub_02014FFC(u32 size);
++static void *sub_02015028(u32 size);
++static void *sub_02015054(u32 size);
++static void *sub_02015080(u32 size);
++static void *sub_020150AC(u32 size);
++static void *sub_020150D8(u32 size);
++static void *sub_02015104(u32 size);
++static void *sub_02015130(u32 size);
++static void *sub_0201515C(u32 size);
++static void *sub_02015188(u32 size);
++static void *sub_020151B4(u32 size);
++static void *sub_020151E0(u32 size);
++static void *sub_0201520C(u32 size);
++static void *sub_02015238(u32 size);
+ static void sub_02015300(SplSys *sys);
+ static void sub_02015340(SysTask *task, void *data);
+ static void sub_020153D8(SplSys *sys);
+ static void sub_02015414(SplSys *sys);
+-void sub_02015484(SPLEmitter *emitter);
++void sub_02015484(SPLEmitter *emitter, int resourceID, const VecFx32 *pos);
+ void sub_020154B8(SPLEmitter *emitter);
+-void sub_020154C4(SPLEmitter *emitter);
++void sub_020154C4(SPLEmitter *emitter, SPLEmitter *active);
+ void sub_020154D4(SPLEmitter *emitter, VecFx32 *dst);
+ void sub_020154E4(SPLEmitter *emitter, const VecFx32 *upVec);
+ void sub_02015510(VecFx32 *dst);
+@@ -116,24 +116,24 @@
+ static const VecFx32 sVec_020F6084 = { 0, 0, 0 };
+ static const VecFx32 sVec_020F6090 = { 0, 0, 0x00004000 };
+ 
+-static u32 sub_02014FA4(u32 size, BOOL is4x4comp);
+-static u32 sub_02014FD0(u32 size, BOOL is4x4comp);
+-static u32 sub_02014FFC(u32 size, BOOL is4x4comp);
+-static u32 sub_02015028(u32 size, BOOL is4x4comp);
+-static u32 sub_02015054(u32 size, BOOL is4x4comp);
+-static u32 sub_02015080(u32 size, BOOL is4x4comp);
+-static u32 sub_020150AC(u32 size, BOOL is4x4comp);
+-static u32 sub_020150D8(u32 size, BOOL is4x4comp);
+-static u32 sub_02015104(u32 size, BOOL is4x4comp);
+-static u32 sub_02015130(u32 size, BOOL is4x4comp);
+-static u32 sub_0201515C(u32 size, BOOL is4x4comp);
+-static u32 sub_02015188(u32 size, BOOL is4x4comp);
+-static u32 sub_020151B4(u32 size, BOOL is4x4comp);
+-static u32 sub_020151E0(u32 size, BOOL is4x4comp);
+-static u32 sub_0201520C(u32 size, BOOL is4x4comp);
+-static u32 sub_02015238(u32 size, BOOL is4x4comp);
+-
+-static u32 (*const sFuncTable[16])(u32, BOOL) = {
++static void *sub_02014FA4(u32 size);
++static void *sub_02014FD0(u32 size);
++static void *sub_02014FFC(u32 size);
++static void *sub_02015028(u32 size);
++static void *sub_02015054(u32 size);
++static void *sub_02015080(u32 size);
++static void *sub_020150AC(u32 size);
++static void *sub_020150D8(u32 size);
++static void *sub_02015104(u32 size);
++static void *sub_02015130(u32 size);
++static void *sub_0201515C(u32 size);
++static void *sub_02015188(u32 size);
++static void *sub_020151B4(u32 size);
++static void *sub_020151E0(u32 size);
++static void *sub_0201520C(u32 size);
++static void *sub_02015238(u32 size);
++
++static void *(*const sFuncTable[16])(u32) = {
+     sub_02014FA4,
+     sub_02014FD0,
+     sub_02014FFC,
+@@ -286,7 +286,7 @@
+     }
+ }
+ 
+-static u32 sub_02014FA4(u32 size, BOOL is4x4comp) {
++static void *sub_02014FA4(u32 size) {
+     SplSys *sys = sSplState.slots[0];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -297,10 +297,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_02014FD0(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_02014FD0(u32 size) {
+     SplSys *sys = sSplState.slots[1];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -311,10 +311,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_02014FFC(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_02014FFC(u32 size) {
+     SplSys *sys = sSplState.slots[2];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -325,10 +325,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_02015028(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_02015028(u32 size) {
+     SplSys *sys = sSplState.slots[3];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -339,10 +339,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_02015054(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_02015054(u32 size) {
+     SplSys *sys = sSplState.slots[4];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -353,10 +353,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_02015080(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_02015080(u32 size) {
+     SplSys *sys = sSplState.slots[5];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -367,10 +367,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_020150AC(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_020150AC(u32 size) {
+     SplSys *sys = sSplState.slots[6];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -381,10 +381,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_020150D8(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_020150D8(u32 size) {
+     SplSys *sys = sSplState.slots[7];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -395,10 +395,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_02015104(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_02015104(u32 size) {
+     SplSys *sys = sSplState.slots[8];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -409,10 +409,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_02015130(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_02015130(u32 size) {
+     SplSys *sys = sSplState.slots[9];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -423,10 +423,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_0201515C(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_0201515C(u32 size) {
+     SplSys *sys = sSplState.slots[10];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -437,10 +437,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_02015188(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_02015188(u32 size) {
+     SplSys *sys = sSplState.slots[11];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -451,10 +451,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_020151B4(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_020151B4(u32 size) {
+     SplSys *sys = sSplState.slots[12];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -465,10 +465,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_020151E0(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_020151E0(u32 size) {
+     SplSys *sys = sSplState.slots[13];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -479,10 +479,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_0201520C(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_0201520C(u32 size) {
+     SplSys *sys = sSplState.slots[14];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -493,10 +493,10 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
+-}
+-
+-static u32 sub_02015238(u32 size, BOOL is4x4comp) {
++    return old;
++}
++
++static void *sub_02015238(u32 size) {
+     SplSys *sys = sSplState.slots[15];
+     void *old = sys->heapCur;
+     void *p = (u8 *)old + size;
+@@ -507,7 +507,7 @@
+     if (p >= sys->heapEnd) {
+         GF_AssertFail();
+     }
+-    return (u32)old;
++    return old;
+ }
+ 
+ void *sub_02015264(NarcId narcId, int fileId, enum HeapID heapID) {
+@@ -672,9 +672,9 @@
+     }
+ }
+ 
+-void sub_02015484(SPLEmitter *emitter) {
+-    SplSys *sys = (SplSys *)emitter;
+-    sys->activeEmitter = SPL_Create(sys->spl);
++void sub_02015484(SPLEmitter *emitter, int resourceID, const VecFx32 *pos) {
++    SplSys *sys = (SplSys *)emitter;
++    sys->activeEmitter = SPL_Create(sys->spl, resourceID, pos);
+ }
+ 
+ void sub_02015494(SPLEmitter *emitter, int res_no, void (*fp_callback)(struct SPLEmitter *), void *arg) {
+@@ -694,9 +694,9 @@
+     SPL_DeleteAll(sys->spl);
+ }
+ 
+-void sub_020154C4(SPLEmitter *emitter) {
+-    SplSys *sys = (SplSys *)emitter;
+-    SPL_Delete(sys->spl, NULL);
++void sub_020154C4(SPLEmitter *emitter, SPLEmitter *active) {
++    SplSys *sys = (SplSys *)emitter;
++    SPL_Delete(sys->spl, active);
+ }
+ 
+ void *sub_020154D0(SPLEmitter *emitter) {

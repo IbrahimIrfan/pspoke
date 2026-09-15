@@ -1,0 +1,226 @@
+--- a/src/unk_02054648.c
++++ b/src/unk_02054648.c
+@@ -186,34 +186,11 @@
+ }
+ 
+ // clang-format off
+-static asm fx32 sub_020547A4(FieldSystem *fieldSystem, fx32 refHeight, fx32 xFx32, fx32 zFx32, u8 *outSelector) {
+-    push {r3, lr}
+-    asr r1, r2, #0xf
+-    lsr r1, r1, #0x10
+-    add r1, r2, r1
+-    asr r2, r3, #0xf
+-    lsr r2, r2, #0x10
+-    add r2, r3, r2
+-    ldr r0, [r0, #0x2c]
+-    asr r1, r1, #0x10
+-    asr r2, r2, #0x10
+-    mov r3, #0
+-    bl ov01_021F654C
+-    ldr r1, [sp, #8]
+-    cmp r1, #0
+-    beq _020547D2
+-    cmp r0, #0
+-    beq _020547CC
+-    mov r1, #1
+-    b _020547CE
+-_020547CC:
+-    mov r1, #0
+-_020547CE:
+-    ldr r0, [sp, #8]
+-    strb r1, [r0]
+-_020547D2:
+-    mov r0, #0
+-    pop {r3, pc}
++static fx32 sub_020547A4(FieldSystem *fieldSystem, fx32 refHeight, fx32 xFx32, fx32 zFx32, u8 *outSelector) {
++    // ARM's sign correction followed by ASR16 implements truncation toward zero.
++    BOOL hit = ov01_021F654C(fieldSystem->mapLoadManager, xFx32 / 65536, zFx32 / 65536, NULL);
++    if (outSelector != NULL) *outSelector = hit != 0;
++    return 0;
+ }
+ // clang-format on
+ 
+@@ -535,32 +512,13 @@
+ }
+ 
+ // clang-format off
+-asm void sub_02054DC8(int idx, int width, VecFx32 *out) {
+-    push {r4, r5, r6, lr}
+-    add r4, r2, #0
+-    mov r2, #1
+-    lsl r2, r2, #0x14
+-    str r2, [r4, #0]
+-    add r5, r0, #0
+-    add r6, r1, #0
+-    str r2, [r4, #8]
+-    bl _s32_div_f
+-    lsl r1, r1, #0x10
+-    lsr r1, r1, #0x10
+-    ldr r0, [r4, #0]
+-    lsl r1, r1, #0x15
+-    add r0, r0, r1
+-    str r0, [r4, #0]
+-    add r0, r5, #0
+-    add r1, r6, #0
+-    bl _s32_div_f
+-    lsl r0, r0, #0x10
+-    lsr r0, r0, #0x10
+-    ldr r1, [r4, #8]
+-    lsl r0, r0, #0x15
+-    add r0, r1, r0
+-    str r0, [r4, #8]
+-    pop {r4, r5, r6, pc}
++void sub_02054DC8(int idx, int width, VecFx32 *out) {
++    // Preserve ARM wrapping shifts and leave Y untouched.
++    GF_ASSERT(width != 0);
++    s64 q = (s64)idx / width;
++    s64 r = (s64)idx % width;
++    out->x = (fx32)(0x100000u + ((u32)(u16)r << 21));
++    out->z = (fx32)(0x100000u + ((u32)(u16)q << 21));
+ }
+ // clang-format on
+ 
+@@ -589,3 +547,7 @@
+     }
+     return FALSE;
+ }
++
++#ifdef SS_NATIVE_ISLAND_TEST
++fx32 SS_TestHeight(FieldSystem *f, fx32 x, fx32 z, u8 *o) { return sub_020547A4(f, 123, x, z, o); }
++#endif
+--- a/src/unk_020773AC.c
++++ b/src/unk_020773AC.c
+@@ -50,8 +50,8 @@
+ }
+ 
+ void sub_020773D4(void) {
+-    G2x_SetBlendAlpha_(0x04000050, 0, 0xe, 0xb, 7);
+-    G2x_SetBlendAlpha_(0x04001050, 0, 0xe, 7, 8);
++    G2x_SetBlendAlpha_((u32)REG_BLDCNT_ADDR, 0, 0xe, 0xb, 7);
++    G2x_SetBlendAlpha_((u32)REG_DB_BLDCNT_ADDR, 0, 0xe, 7, 8);
+ }
+ 
+ void sub_02077400(enum HeapID heapID) {
+@@ -59,58 +59,17 @@
+ }
+ 
+ // clang-format off
+-static asm void sub_0207741C(void) {
+-	push {r3, lr}
+-	mov r0, #1
+-	add r1, r0, #0
+-	bl GfGfx_EngineATogglePlanes
+-	ldr r0, =0x04000008
+-	mov r1, #3
+-	ldrh r2, [r0, #0]
+-	bic r2, r1
+-	mov r1, #1
+-	orr r1, r2
+-	strh r1, [r0, #0]
+-	add r0, #0x58
+-	ldrh r2, [r0, #0]
+-	ldr r1, =0xFFFFCFFD
+-	and r2, r1
+-	strh r2, [r0, #0]
+-	add r2, r1, #2
+-	ldrh r3, [r0, #0]
+-	add r1, r1, #2
+-	and r3, r2
+-	mov r2, #0x10
+-	orr r2, r3
+-	strh r2, [r0, #0]
+-	ldrh r3, [r0, #0]
+-	ldr r2, =0x0000CFFB
+-	and r3, r2
+-	strh r3, [r0, #0]
+-	ldrh r3, [r0, #0]
+-	sub r2, #0x1c
+-	and r3, r1
+-	mov r1, #8
+-	orr r1, r3
+-	strh r1, [r0, #0]
+-	ldrh r1, [r0, #0]
+-	and r1, r2
+-	strh r1, [r0, #0]
+-	mov r0, #0
+-	add r1, r0, #0
+-	add r2, r0, #0
+-	add r3, r0, #0
+-	bl G3X_SetFog
+-	mov r0, #0
+-	ldr r2, =0x00007FFF
+-	add r1, r0, #0
+-	mov r3, #0x3f
+-	str r0, [sp, #0]
+-	bl G3X_SetClearColor
+-	ldr r1, =0xBFFF0000
+-	ldr r0, =0x04000580
+-	str r1, [r0, #0]
+-	pop {r3, pc}
++static void sub_0207741C(void) {
++    GfGfx_EngineATogglePlanes(1, 1);
++    reg_G2_BG0CNT = (reg_G2_BG0CNT & ~3u) | 1u;
++    reg_G3X_DISP3DCNT &= 0xcffdu;
++    reg_G3X_DISP3DCNT = (reg_G3X_DISP3DCNT & 0xcfffu) | 0x10u;
++    reg_G3X_DISP3DCNT &= 0xcffbu;
++    reg_G3X_DISP3DCNT = (reg_G3X_DISP3DCNT & 0xcfffu) | 8u;
++    reg_G3X_DISP3DCNT &= 0xcfdfu;
++    G3X_SetFog(0, 0, 0, 0);
++    G3X_SetClearColor(0, 0, 0x7fff, 0x3f, 0);
++    G3_ViewPort(0, 0, 255, 191);
+ }
+ // clang-format on
+ 
+@@ -168,39 +127,10 @@
+ }
+ 
+ // clang-format off
+-static asm void sub_020775C4(SPLEmitter *emitter) {
+-	push {r3}
+-	sub sp, #0xc
+-	add r1, sp, #0
+-	mov r2, #0
+-	str r2, [r1, #0]
+-	str r2, [r1, #4]
+-	str r2, [r1, #8]
+-	mov r1, #0x56
+-	lsl r1, r1, #4
+-	str r2, [sp, #0]
+-	str r2, [sp, #8]
+-	str r1, [sp, #4]
+-	ldr r1, [r0, #0x20]
+-	ldr r1, [r1, #0]
+-	ldr r1, [r1, #4]
+-	add r1, r2, r1
+-	str r1, [r0, #0x28]
+-	ldr r1, [r0, #0x20]
+-	ldr r2, [sp, #4]
+-	ldr r1, [r1, #0]
+-	ldr r1, [r1, #8]
+-	add r1, r2, r1
+-	str r1, [r0, #0x2c]
+-	ldr r1, [r0, #0x20]
+-	ldr r2, [sp, #8]
+-	ldr r1, [r1, #0]
+-	ldr r1, [r1, #0xc]
+-	add r1, r2, r1
+-	str r1, [r0, #0x30]
+-	add sp, #0xc
+-	pop {r3}
+-	bx lr
++static void sub_020775C4(SPLEmitter *emitter) {
++    emitter->emtr_pos.x = emitter->p_res->p_base->pos.x;
++    emitter->emtr_pos.y = (fx32)((u32)emitter->p_res->p_base->pos.y + 0x560u);
++    emitter->emtr_pos.z = emitter->p_res->p_base->pos.z;
+ }
+ // clang-format on
+ 
+@@ -281,3 +211,8 @@
+ }
+ // clang-format on
+ #endif
++
++#ifdef SS_NATIVE_ISLAND_TEST
++void SS_TestParticle(SPLEmitter *e) { sub_020775C4(e); }
++void SS_TestGraphics(void) { sub_0207741C(); }
++#endif

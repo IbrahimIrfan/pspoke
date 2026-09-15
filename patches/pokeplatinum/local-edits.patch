@@ -1,0 +1,79 @@
+diff --git a/include/overlay076/struct_ov76_0223BF74.h b/include/overlay076/struct_ov76_0223BF74.h
+index a851a39..a7968bf 100644
+--- a/include/overlay076/struct_ov76_0223BF74.h
++++ b/include/overlay076/struct_ov76_0223BF74.h
+@@ -3,7 +3,7 @@
+ 
+ typedef struct {
+     int unk_00;
+-    #ifdef SDK_BUILD_ARM
++    #if defined(SDK_BUILD_ARM) || defined(SDK_BUILD_PSP)
+     u32 unk_04;
+     #else
+     u64 unk_04;
+diff --git a/src/applications/bag/main.c b/src/applications/bag/main.c
+index cd00cb4..7f1e931 100644
+--- a/src/applications/bag/main.c
++++ b/src/applications/bag/main.c
+@@ -324,7 +324,7 @@ static const u8 sPocketSizes[POCKET_MAX] = {
+     [POCKET_KEY_ITEMS] = KEY_ITEM_POCKET_SIZE
+ };
+ 
+-#ifdef SDK_BUILD_ARM
++#if defined(SDK_BUILD_ARM) || defined(SDK_BUILD_PSP)
+ static const u32 sItemActionFuncs[] = {
+     [ITEM_ACTION_USE] = (u32)ItemActionFunc_Use,
+     [ITEM_ACTION_WALK] = (u32)ItemActionFunc_Use,
+diff --git a/src/overlay076/ov76_0223D338.c b/src/overlay076/ov76_0223D338.c
+index e039c07..1729722 100644
+--- a/src/overlay076/ov76_0223D338.c
++++ b/src/overlay076/ov76_0223D338.c
+@@ -217,7 +217,7 @@ static int ov76_0223D540(UnkStruct_ov76_0223DE00 *param0)
+ }
+ 
+ const UnkStruct_ov76_0223BF74 Unk_ov76_0223EF3C[] = {
+-    #ifdef SDK_BUILD_ARM
++    #if defined(SDK_BUILD_ARM) || defined(SDK_BUILD_PSP)
+     { 0, (const u32)ov76_0223D4FC },
+     { 1, (const u32)ov76_0223D4C4 },
+     { 2, (const u32)ov76_0223D50C },
+diff --git a/src/underground/menus.c b/src/underground/menus.c
+index cf632fd..c4b86c9 100644
+--- a/src/underground/menus.c
++++ b/src/underground/menus.c
+@@ -157,13 +157,13 @@ static const WindowTemplate sYesNoWindowTemplate = {
+ // clang-format off
+ static const struct {
+     u32 bankEntry;
+-    #ifdef SDK_BUILD_ARM
++    #if defined(SDK_BUILD_ARM) || defined(SDK_BUILD_PSP)
+     u32 callback;
+     #else
+     u64 callback;
+     #endif
+ } sUndergroundMenuOptions[] = {
+-    #ifdef SDK_BUILD_ARM
++    #if defined(SDK_BUILD_ARM) || defined(SDK_BUILD_PSP)
+     [UNDERGROUND_START_MENU_OPTION_TRAPS]     = { .bankEntry = UndergroundCommon_Text_Traps,          .callback = (u32)UndergroundMenu_OpenTrapsMenu      },
+     [UNDERGROUND_START_MENU_OPTION_SPHERES]   = { .bankEntry = UndergroundCommon_Text_Spheres,        .callback = (u32)UndergroundMenu_OpenSpheresMenu    },
+     [UNDERGROUND_START_MENU_OPTION_GOODS]     = { .bankEntry = UndergroundCommon_Text_Goods,          .callback = (u32)UndergroundMenu_OpenGoodsMenu      },
+diff --git a/src/underground/player_talk.c b/src/underground/player_talk.c
+index e02f512..c181c85 100644
+--- a/src/underground/player_talk.c
++++ b/src/underground/player_talk.c
+@@ -214,13 +214,13 @@ static ResponseMenu *sCurrentResponseMenu = NULL;
+ 
+ static const struct {
+     u32 bankEntry;
+-    #ifdef SDK_BUILD_ARM
++    #if defined(SDK_BUILD_ARM) || defined(SDK_BUILD_PSP)
+     u32 callback;
+     #else
+     u64 callback;
+     #endif
+ } sTalkOptions[] = {
+-    #ifdef SDK_BUILD_ARM
++    #if defined(SDK_BUILD_ARM) || defined(SDK_BUILD_PSP)
+     { UndergroundCommon_Text_Greet, (u32)UndergroundTalk_OfferExchangeTrainerCases },
+     { UndergroundCommon_Text_Question, (u32)UndergroundTalk_StartAskingQuestions },
+     { UndergroundCommon_Text_GiveGoods, (u32)UndergroundTalk_OpenGiveGiftMenu },

@@ -1,0 +1,56 @@
+--- native-memory-probe/mi_dma.c
++++ native-app/services/mi_dma.c
+@@ -288,7 +288,7 @@
+         }
+         if( callback )
+         {
+-            OSi_EnterDmaCallback(dmaNo, callback, arg);
++            /* Native copy already completed; invoke its callback below. No DS DMA IRQ is scheduled. */
+             MIi_CallCallback(callback, arg);
+         }
+         #else
+@@ -324,7 +324,7 @@
+         memcpy(dest, src, size);
+         if( callback )
+         {
+-            OSi_EnterDmaCallback(dmaNo, callback, arg);
++            /* Native copy already completed; invoke its callback below. No DS DMA IRQ is scheduled. */
+             MIi_CallCallback(callback, arg);
+         }
+         #else
+@@ -360,7 +360,7 @@
+         memcpy( src, dest, size );
+         if( callback )
+         {
+-            OSi_EnterDmaCallback(dmaNo, callback, arg);
++            /* Native copy already completed; invoke its callback below. No DS DMA IRQ is scheduled. */
+             MIi_CallCallback(callback, arg);
+         }
+         #else
+@@ -395,7 +395,7 @@
+             destPtr++;
+         }
+         if( callback ) {
+-            OSi_EnterDmaCallback(dmaNo, callback, arg);
++            /* Native copy already completed; invoke its callback below. No DS DMA IRQ is scheduled. */
+             MIi_CallCallback(callback, arg);
+         }
+         #else
+@@ -431,7 +431,7 @@
+         memcpy(dest, src, size);
+         if( callback )
+         {
+-            OSi_EnterDmaCallback(dmaNo, callback, arg);
++            /* Native copy already completed; invoke its callback below. No DS DMA IRQ is scheduled. */
+             MIi_CallCallback(callback, arg);
+         }
+         #else
+@@ -467,7 +467,7 @@
+         memcpy( dest, src, size );
+         if( callback )
+         {
+-            OSi_EnterDmaCallback(dmaNo, callback, arg);
++            /* Native copy already completed; invoke its callback below. No DS DMA IRQ is scheduled. */
+             MIi_CallCallback(callback, arg);
+         }
+         #else

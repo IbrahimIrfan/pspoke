@@ -1,0 +1,102 @@
+--- render-corrected/render-gu2d.cpp
++++ render-wipes/render-gu2d.cpp
+@@ -35,6 +35,10 @@
+ static unsigned inputKeys=0;static int mode=0,down=0,x=128,y=96;
+ static unsigned bindUs=0,drawUs=0,convertUs=0,displayOffset=0,lastReadbackUs=0,last2DUs=0;
+ static unsigned statFallback[2],statGe[2];
++#include "native_window_rows.h"
++extern "C" int SSNativeCaptureWindowRows(SSNativeWindowRow rows[2][192]) __attribute__((weak));
++static SSNativeWindowRow windowRows[2][192];
++static bool rowWindows;
+ extern "C" char PSPNativeOverlayText[128];
+ char PSPNativeOverlayText[128];
+ static bool overlayInit=false;
+@@ -189,7 +193,7 @@
+ static bool EngineSupported(const GPU2D::Unit&u){
+  u32 d=u.DispCnt;
+  if(((d>>16)&3)!=1)return false;             // only normal graphics display mode
+- if(d&0x6000){                                // WIN0/WIN1: only non-wrapping rectangles on the GE path
++ if(!rowWindows&&(d&0x6000)){                   // WIN0/WIN1: only non-wrapping rectangles on the GE path
+   if(u.Win0Coords[0]>u.Win0Coords[1]||u.Win0Coords[2]>u.Win0Coords[3])return false;
+   if(u.Win1Coords[0]>u.Win1Coords[1]||u.Win1Coords[2]>u.Win1Coords[3])return false;}
+  if((d&7)==6)return false;                   // large bitmap mode
+@@ -360,9 +364,11 @@
+ // region codes (one per pixel): 0x10 outside, 0x0F OBJ window (DECR from 0x10), 0x40 WIN1, 0x20 WIN0.
+ // A layer allowed in a set of regions is tested with NOTEQUAL 0 and the union of the codes' bits.
+ static bool winActive=false;
++static void SetupRowWindows(GPU2D::Unit&u);
+ static void FillRect(int x0,int y0,int x1,int y1){if(x1<=x0||y1<=y0)return;struct C{u32 c;s16 x,y,z;};C*v=(C*)PSPNativeGUGetMemory(2*sizeof(C));v[0]={0,(s16)x0,(s16)y0,0};v[1]={0,(s16)x1,(s16)y1,0};sceGuDrawArray(GU_SPRITES,GU_COLOR_8888|GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,0,v);}
+ static void DrawSprites(GPU2D::Unit&u,int prio,bool blendMode1,bool windowPass);
+ static void SetupWindows(GPU2D::Unit&u){
++ if(rowWindows){SetupRowWindows(u);return;}
+  u32 d=u.DispCnt;winActive=(d&0xE000)!=0;if(!winActive)return;
+  sceGuPixelMask(0x00FFFFFF);                      // stencil (alpha) writes only
+  sceGuEnable(GU_STENCIL_TEST);
+@@ -375,9 +381,42 @@
+  sceGuStencilOp(GU_KEEP,GU_KEEP,GU_KEEP);
+  sceGuEnable(GU_TEXTURE_2D);sceGuEnable(GU_ALPHA_TEST);
+ }
++static bool InWindowY(unsigned y,unsigned bounds){unsigned first=bounds>>8,last=bounds&255;return first<=last?(y>=first&&y<last):(y>=first||y<last);}
++static void FillWindowRow(unsigned bounds,unsigned first,unsigned end){
++ unsigned left=bounds>>8,right=bounds&255;
++ if(left<=right)FillRect(left,first,right,end);
++ else{FillRect(0,first,right,end);FillRect(left,first,256,end);}
++}
++static void SetupRowWindows(GPU2D::Unit&u){
++ winActive=true;
++ // Stencil starts as outside marker 0x80; OBJ windows decrement it to 0x7f.
++ // Both markers are later replaced by exact per-row layer permission bits.
++ sceGuPixelMask(0x00FFFFFF);sceGuEnable(GU_STENCIL_TEST);
++ sceGuDisable(GU_TEXTURE_2D);sceGuDisable(GU_ALPHA_TEST);
++ sceGuStencilFunc(GU_ALWAYS,0x80,255);sceGuStencilOp(GU_REPLACE,GU_REPLACE,GU_REPLACE);FillRect(0,0,256,192);
++ bool anyObj=false;for(unsigned y=0;y<192;y++)anyObj|=(windowRows[u.Num][y].enable&0x8000)!=0;
++ if(anyObj){sceGuEnable(GU_TEXTURE_2D);sceGuEnable(GU_ALPHA_TEST);sceGuStencilFunc(GU_EQUAL,0x80,255);sceGuStencilOp(GU_KEEP,GU_KEEP,GU_DECR);DrawSprites(u,0,false,true);}
++ sceGuDisable(GU_TEXTURE_2D);sceGuDisable(GU_ALPHA_TEST);
++ for(unsigned y=0;y<192;){
++  const SSNativeWindowRow&r=windowRows[u.Num][y];unsigned end=y+1;
++  bool in0=(r.enable&0x2000)&&InWindowY(y,r.reg[2]),in1=(r.enable&0x4000)&&InWindowY(y,r.reg[3]);
++  while(end<192&&!memcmp(&r,&windowRows[u.Num][end],sizeof(r))&&in0==((r.enable&0x2000)&&InWindowY(end,r.reg[2]))&&in1==((r.enable&0x4000)&&InWindowY(end,r.reg[3])))end++;
++  unsigned outside=(r.enable&0xe000)?r.reg[5]&63:63;
++  unsigned obj=(r.enable&0x8000)?(r.reg[5]>>8)&63:outside;
++  sceGuStencilFunc(GU_NOTEQUAL,outside,0x80);sceGuStencilOp(GU_KEEP,GU_KEEP,GU_REPLACE);FillRect(0,y,256,end);
++  sceGuStencilFunc(GU_NOTEQUAL,obj,0x40);FillRect(0,y,256,end);
++  sceGuStencilOp(GU_REPLACE,GU_REPLACE,GU_REPLACE);
++  if(in1){sceGuStencilFunc(GU_ALWAYS,(r.reg[4]>>8)&63,255);FillWindowRow(r.reg[1],y,end);}
++  if(in0){sceGuStencilFunc(GU_ALWAYS,r.reg[4]&63,255);FillWindowRow(r.reg[0],y,end);}
++  y=end;
++ }
++ sceGuPixelMask(0xFF000000);sceGuStencilOp(GU_KEEP,GU_KEEP,GU_KEEP);
++ sceGuEnable(GU_TEXTURE_2D);sceGuEnable(GU_ALPHA_TEST);
++}
+ // allowed-region mask for layer bit `layer` (0-3 BG, 4 OBJ)
+ static void LayerStencil(GPU2D::Unit&u,int layer){
+  if(!winActive){sceGuDisable(GU_STENCIL_TEST);return;}
++ if(rowWindows){sceGuEnable(GU_STENCIL_TEST);sceGuStencilFunc(GU_NOTEQUAL,0,1u<<layer);return;}
+  u32 d=u.DispCnt;u32 m=0;
+  if((d&0x2000)&&(u.WinCnt[0]&(1u<<layer)))m|=0x20;
+  if((d&0x4000)&&(u.WinCnt[1]&(1u<<layer)))m|=0x40;
+@@ -428,7 +467,14 @@
+  if(need3D){const volatile u32*gpu=(volatile u32*)((u8*)sceGeEdramGetAddr()+VRAM_3D);
+   for(unsigned i=0;i<256*192;i++){u32 c=gpu[i];GPU3D::NativeFrame[i]=((c>>2)&0x003f3f3fu)|alphaTo5[c>>24];}}
+  renderer.SetFramebuffer(raw[0],raw[1]);
+- for(unsigned line=0;line<192;line++){GPU::VCount=line;u.CheckWindows(line);renderer.DrawSprites(line,&u);renderer.DrawScanline(line,&u);}
++ for(unsigned line=0;line<192;line++){
++  if(rowWindows){const SSNativeWindowRow&r=windowRows[u.Num][line];
++   u.DispCnt=(u.DispCnt&~0xe000u)|(r.enable&0xe000u);
++   for(unsigned off=0;off<6;off++)u.Write16(0x40+2*off,r.reg[off]);
++   unsigned y0=u.Win0Coords[2],y1=u.Win0Coords[3];u.Win0Active=((y0<=y1?(line>=y0&&line<y1):(line>=y0||line<y1))?1:0)|(u.Win0Coords[0]>u.Win0Coords[1]?2:0);
++   y0=u.Win1Coords[2];y1=u.Win1Coords[3];u.Win1Active=((y0<=y1?(line>=y0&&line<y1):(line>=y0||line<y1))?1:0)|(u.Win1Coords[0]>u.Win1Coords[1]?2:0);
++  }
++  GPU::VCount=line;u.CheckWindows(line);renderer.DrawSprites(line,&u);renderer.DrawScanline(line,&u);}
+  sceKernelDcacheWritebackRange(raw[u.Num],256*192*sizeof(u32));
+ }
+ 
+@@ -455,6 +501,8 @@
+  unsigned t0=sceKernelGetSystemTimeLow();
+  unsigned power=reg16(0x304),a=reg32(0);
+  if((reg32(0x64)&0x80000000u)||((a>>16)&3)==3){printf("[NATIVE-RENDER] unsupported display capture/FIFO\n");return -2;}
++ int snapshot=SSNativeCaptureWindowRows?SSNativeCaptureWindowRows(windowRows):0;
++ if(snapshot<0)return -3;rowWindows=snapshot!=0;
+  mapMemory();engineA.Enabled=(power&2)!=0;engineB.Enabled=(power&512)!=0;bindRegisters(engineA,0);bindRegisters(engineB,0x1000);
+  FrameStart(engineA);FrameStart(engineB);AdvanceAtlasFrame();
+  bindUs=sceKernelGetSystemTimeLow()-t0;unsigned t1=sceKernelGetSystemTimeLow();

@@ -1,0 +1,17 @@
+{
+ "ov01_021FBA00": 1,
+ "sub_02054E20": 1,
+ "NNS_G3dRenderObjInit": 2,
+ "NNS_GfdResetLnkTexVramState": 0,
+ "NNS_GfdResetLnkPlttVramState": 0,
+ "MI_CpuFill8": 3,
+ "MIi_CpuClear32": 3,
+ "MIi_CpuClearFast": 3,
+ "ov00_021EE490": 4,
+ "GBSounds_GetDSSeqNoByGBSeqNo": 1,
+ "SSAsm_G2x_SetBGyAffine_": 6,
+ "SSAsm_G2x_SetBlendAlpha_": 5,
+ "SSAsm_G2x_SetBlendBrightness_": 3,
+ "SSAsm_G2x_SetBlendBrightnessExt_": 6,
+ "SSAsm_G2x_ChangeBlendBrightness_": 2
+}

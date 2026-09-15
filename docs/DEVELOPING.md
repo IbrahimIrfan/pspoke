@@ -1,0 +1,77 @@
+# Developing pspoke
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `build.sh` | Entry point: ROM check, then `scripts/<game>.sh`. |
+| `scripts/` | Build steps (`fetch.sh`, `stage.sh`, `platinum.sh`, ...), `install.sh`, `make_save.py`, `check_native_pbp.py` (PSP loader limits). |
+| `port/` | pspoke's own code, laid out as the build tree expects (`port/<component>/...`). |
+| `patches/` | Patches applied to the downloaded decompilations and to generated per-overlay source copies. |
+| `third_party/melonDS/` | The four melonDS headers the renderer includes (GPL-3.0). |
+| `.cache/upstream/` | Downloaded pinned sources (created by the build). |
+| `.work/tree/` | The staged build tree shared by both games (created by the build; safe to delete). |
+| `dist/` | Built EBOOTs. |
+
+Main components in `port/` (Platinum):
+
+- `native-audio-app/`: the PSP program. `main.c` (boot, ROM and save paths), `frame.c` (frame loop, pacing, DEV logging),
+  `input.c`, `osk.c`/`naming_osk.c` (PSP on-screen keyboard for name entry), `platform.c`, `services/` (file system from
+  the ROM, DMA, locks, power). `overlays/` turns the game's DS overlays into native modules (`generate.py`, `build.py`,
+  `internal.py`, `gen-link.py`). `sdk-g3stack/` holds patched SDK sources (immediate 3D commands without malloc).
+- `native-stack-render/`: the DS 3D-to-PSP-GPU renderer (display-list cache, fixed-point fast paths, pipelined present,
+  texture change detection from VRAM writes: `native-audio-app/vram_dirty.c` + `opttex_redirect.py`).
+- `native-render-opt/`: melonDS-derived 2D engine (`GPU2D_Soft.cpp`, `native_gpu.cpp`).
+- `native-probe/`: header generators, register/memory backing, network/internal library compile scripts, particle fix.
+- `native-audio-sound/`, `native-audio-probe/`: DS sound engine; `sas_out.c` plays its channels through the PSP sceSasCore
+  voice mixer (no CPU mixing).
+- Small services: `native-threads`, `native-alarms`, `native-offline`, `native-sdl-thread`, `native-cadence`,
+  `native-memory-probe`, `native-backup-probe` (save file), `native-sdk-probe` (SDK compile).
+
+SoulSilver components in `port/` (it reuses the SDK, services and renderer core above):
+
+- `soulsilver-native-core/`: `prepare.py`/`finish_headers.py`/`final_compat.py` make a compilable copy of the
+  pokeheartgold-slop sources (then `patches/soulsilver/*.patch` apply pspoke's game changes); `crossprobe.py` +
+  `archive.py` compile all 529 game files. `nitromain-perf/` is the PSP program (`main.c`, `frame.c`, `input.c`,
+  `osk.c`, native ports of hot functions, `linkfile.prx` with the `.native.backing` split for the 32 MiB loader limit).
+- `soulsilver-native-overlays/build_registry.py`: splits game/data objects per DS overlay using your ROM's overlay table.
+- `soulsilver-native-data/`: converts the decompilation's assembly data to PSP objects (`python/` bundles ndspy).
+- `soulsilver-native-codegen/`, `soulsilver-native-play/maploader/`: translate not-yet-decompiled ARM assembly from the
+  decompilation into C (`library.py`, `port.py`; seeds and ABI notes in the JSON files).
+- Smaller native ports: `soulsilver-native-{player-movement,menu-sprites,window,sound-helpers,islands,particles,billboards}`,
+  `soulsilver-native-assets/fade-port/wipe-candidate` (screen wipes) and `render-fastcompare` (SoulSilver renderer variant).
+- `native-sound-audio/`: SoulSilver's sound backend (same sceSasCore output, `sas_out.c`).
+
+Folder names are historical (each started as an isolated proof); build scripts rely on this relative layout.
+
+## Dev vs normal builds
+
+`./build.sh <game> --rom ... --dev` passes `DEV=1` to the renderer and app Makefiles:
+
+- `PSP_NATIVE_DEV`: on-screen counter (`NATIVE xx.x fps game/audio/render ms`), per-30-frame timing collection,
+  `[FPS]`/`[PERF]`/`[GEASYNC]` lines in `native-memlog.txt` every 600 frames.
+- `PSP_NATIVE_GAME_PROF`: `[GPROF]` game-thread buckets and allocator counters (adds link-time wraps).
+- `PSP_NATIVE_G3_HWPROF` (Platinum renderer): sampled `[G3HW]` 3D profile.
+
+Normal builds define none of these; error and startup lines are still logged. Use `#ifdef PSP_NATIVE_DEV` for any new
+debug output. printf is invisible on real hardware, so log through `PSPNativeMemLog`.
+
+## Iterating
+
+After a full build, edit files directly in `.work/tree/test_out/...` and rerun `./build.sh`: finished phases are
+skipped via `.work/tree/.stamp-*` files (delete a stamp to redo that phase), and the renderer and app are always
+relinked. Copy changes back into `port/` (or turn decompilation changes into a patch in `patches/`) before committing.
+If you edit `port/` directly instead, run `./build.sh clean` before rebuilding (downloads in `.cache` are kept): staging
+copies `port/` with its original timestamps, so an already-built object can look newer than your change and be reused.
+
+Useful checks:
+- `python3 scripts/check_native_pbp.py dist/.../EBOOT.PBP`: the retail PSP loader rejects EBOOTs with a section ending
+  past 32 MiB (error 80020148). Every build runs this.
+- Headless PPSSPP: `port/native-audio-app/run_probe.py` stages a throwaway memory stick and runs the EBOOT
+  (`PPSSPP_HEADLESS=/path/to/PPSSPPHeadless`, `--rom`, `--save`, `--seconds`). Emulator timings do not reflect PSP speed.
+
+## Rules for contributions
+
+- Never commit ROMs, saves, extracted game data, compiled objects or EBOOTs (`.gitignore` covers them).
+- Decompilation changes go in `patches/`, not as copied source files.
+- Keep melonDS/libntr license headers in derived files.

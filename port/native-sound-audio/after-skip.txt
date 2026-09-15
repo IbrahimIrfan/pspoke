@@ -1,0 +1,18 @@
+I Printf: stdout: [STARTUP] enter InitSystem
+I Printf: stdout: [STARTUP] OS arena initialized 6MiB in main backing
+I Printf: stdout: [STARTUP] CARD cache thresholds 1280/9216; synchronous stdio backend
+I Printf: stdout: [STARTUP] InitSystem returned
+I Printf: stdout: [STARTUP] InitVRAM returned
+I Printf: stdout: [STARTUP] heap0 free=106904
+I Printf: stdout: [STARTUP] heap1 free=269240
+I Printf: stdout: [STARTUP] heap3 free=2207672
+I Printf: stdout: [INPUT-RTC] failures=0 timestamp=842481277 date=2026-9-11 22:34:37
+I Printf: stdout: [SAVE] enter SaveData_Init
+I Printf: stdout: [SAVE] initialized failures=0 bytes=131788 loadStatus=0
+I Printf: stdout: [SOUND] enter SoundSystem_Init
+I Printf: stdout: [SOUND] init returned
+I Printf: stdout: [AUDIO] lists=2 commands=7 pumps=200 channelSteps=1091200 energy=236753473 players=00000000
+I Printf: stdout: [AUDIO-STATE] activeSeen=d800 tickPeak=60 pumpMicros=217802 averageUs=1089
+I Printf: stdout: [AUDIO-HASH] samples=6e50d4e1 state=b4b74fcf
+I Printf: stdout: [SOUND] 200 ticks returned
+I Printf: stdout: [STARTUP] validation failures=0 VBlankTasks=1 frame=1 FS=1

@@ -1,0 +1,7 @@
+{
+  "src/screen_fade.c": "791afcbc98e0ce4c08ac5912ddf7ec43161f1c18b9c447b36c15dd3a452f72d0",
+  "src/screen_fade_funcs.c": "4c55120060b1dd6052430d2762732523e0b3a56a756709aeacb605613edbc023",
+  "src/hardware_window.c": "f8f2ecb2d42a395ed24435341f87bd9db29628f5f3f753d53332cab0d45e3762",
+  "include/screen_fade.h": "11850fffd348b18664449ff338734c09bc4ad038226c8e931c922606d0b9db4d",
+  "include/hardware_window.h": "ef22c4af1fc19631517a7315f7b105136ee902c07bef784e827c2458a1587ddb"
+}

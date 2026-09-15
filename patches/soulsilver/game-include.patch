@@ -1,0 +1,24 @@
+diff -ruN a/game-include/field/overlay_01_02204004.h b/game-include/field/overlay_01_02204004.h
+--- a/game-include/field/overlay_01_02204004.h	2026-09-14 18:28:55
++++ b/game-include/field/overlay_01_02204004.h	2026-09-12 14:55:07
+@@ -111,7 +111,7 @@
+ void ov01_0220463C(FieldSystemUnkSubCC *unkCC, int fileID);        // UnkCC_Load
+ void ov01_02204678(FieldSystemUnkSubCC *unkCC, NNSG3dRenderObj *renderObj);
+ void ov01_02204688(FieldSystemUnkSubCC *unkCC, NNSG3dRenderObj *renderObj);
+-void ov01_02204698(FieldSystemUnkSubCC *unkCC);
++u16 ov01_02204698(FieldSystemUnkSubCC *unkCC); // returns loaded-animation count (PSP port fix)
+ FieldSystemUnkSub104 *ov01_02204744(enum HeapID heapID);
+ void ov01_02204764(FieldSystemUnkSub104 *unk104);
+ void ov01_0220476C(FieldSystemUnkSub104 *unk104, NNSG3dRenderObj *renderObj, MapPropAnimation **animation, int count);
+diff -ruN a/game-include/unk_020632B0.h b/game-include/unk_020632B0.h
+--- a/game-include/unk_020632B0.h	2026-09-14 18:06:26
++++ b/game-include/unk_020632B0.h	2026-09-13 04:09:30
+@@ -5,7 +5,7 @@
+ 
+ BOOL TryGetSeenByNpcTrainers(FieldSystem *fieldSystem, BOOL doublesEligible);
+ int sub_0206457C(FieldSystem *fieldSystem, LocalMapObject *localMapObject, PlayerAvatar *playerAvatar, int a3, int a4, int a5, int a6, u16 trainerNum);
+-BOOL sub_02064598(void);
++BOOL sub_02064598(int a0); /* PSP port: r0 = engaged trainer SysTask (asm asserts non-NULL, reads SysTask_GetData()->4); the decomp prototype dropped the argument */
+ void sub_020645AC(int a0);
+ 
+ #endif // POKEHEARTGOLD_UNK_020632B0_H

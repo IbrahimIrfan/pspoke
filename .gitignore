@@ -1,0 +1,15 @@
+# Build outputs and downloads: never commit these (they contain game code/data built from your ROM).
+.work/
+.cache/
+dist/
+*.nds
+*.sav
+*.PBP
+*.o
+*.a
+*.elf
+*.prx
+!port/**/*linkfile.prx
+__pycache__/
+.DS_Store
+_old/
