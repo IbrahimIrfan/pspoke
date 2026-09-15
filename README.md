@@ -1,5 +1,7 @@
 # pspoke
 
+![Status: beta](https://img.shields.io/badge/status-beta-yellow) ![Platform: PSP](https://img.shields.io/badge/platform-PSP-blue) [![Release](https://img.shields.io/github/v/release/IbrahimIrfan/pspoke?include_prereleases&label=release)](https://github.com/IbrahimIrfan/pspoke/releases) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
+
 Pokémon Platinum and SoulSilver running **natively on a PSP**. The game is compiled into a real PSP program
 (it is not an emulator), so it runs at close to full speed on real hardware (tested on a PSP-3001).
 
