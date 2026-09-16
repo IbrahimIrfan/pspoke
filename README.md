@@ -46,9 +46,9 @@ build time.
 ## What you need
 
 - A PSP-2000, 3000, Go or E1000, or a PS Vita/PSTV running Adrenaline, with custom firmware that can launch
-  homebrew (tested: PSP-3001 on ARK-4). **The PSP-1000 does not work:** it has 32 MB of RAM and pspoke needs
-  about 38 MB. That comes from the port's memory layout, not a setting; making it fit is an open issue
-  ([#10](https://github.com/IbrahimIrfan/pspoke/issues/10)).
+  homebrew (tested: PSP-3001 on ARK-4). **The PSP-1000 does not work** (see
+  [issue #10](https://github.com/IbrahimIrfan/pspoke/issues/10)): it has 32 MB of RAM and pspoke needs about 38 MB,
+  and that comes from the port's memory layout, not a setting. Making it fit is an open issue.
 - Your own ROM dump of the game (the build checks the SHA1 above).
 - A Mac or a Linux PC with about 3 GB of free disk space and an internet connection.
 
