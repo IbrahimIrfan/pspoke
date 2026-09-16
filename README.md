@@ -61,47 +61,38 @@ build time.
 You don't need to install the PSP toolchain or any libraries yourself: the build downloads a pinned copy of the
 PSP compiler ([PSPDEV](https://github.com/pspdev/pspdev), about 150 MB) into the project folder the first time.
 
-## Getting started (step by step)
+## Building
 
-**1. Open a terminal.**
-- Mac: press ⌘ Space, type `Terminal`, press Enter.
-- Linux: open your Terminal app.
+Prerequisites (one time):
 
-**2. Install the basic tools (one time).**
-- Mac: run `xcode-select --install` and click **Install** in the window that appears (Apple's free command line
-  tools; if you skip this step, the build opens the same window for you).
+- macOS: `xcode-select --install` (Apple's command line tools; the build prompts for this if they're missing).
 - Ubuntu/Debian: `sudo apt install git python3 make patch rsync curl build-essential`
 - Fedora: `sudo dnf install git python3 make patch rsync curl gcc`
+- Windows: use WSL2 (Ubuntu) and follow the Linux steps. Clone inside the WSL Linux filesystem (not `/mnt/c`) so the
+  scripts keep LF line endings. Toolchain setup is confirmed on WSL2; the game builds themselves are untested there.
 
-**3. Download pspoke.**
+Then:
 
 ```sh
 git clone https://github.com/IbrahimIrfan/pspoke.git
 cd pspoke
+./build.sh platinum   --rom "/path/to/Platinum.nds"
+./build.sh soulsilver --rom "/path/to/SoulSilver.nds"
 ```
 
-**4. Build.** Type the command below, then drag your ROM file from Finder (or your file manager) into the terminal
-window to fill in its path, and press Enter:
+`build.sh` verifies the ROM's SHA1 (see the table above), and on the first run downloads the pinned toolchain
+(about 150 MB) and the decompilation sources (about 1 GB), so the first build takes 10-20 minutes; incremental
+builds are much faster. The output is `dist/platinum/NativePlatinum/EBOOT.PBP` or
+`dist/soulsilver/NativeSoulSilver/EBOOT.PBP`. A Platinum ROM is not needed to build SoulSilver.
 
-```sh
-./build.sh platinum --rom 
-```
+Options:
 
-For SoulSilver use `./build.sh soulsilver --rom ` the same way.
-
-The first build downloads the toolchain and the decompilation sources (about 1 GB) and takes roughly 10-20 minutes.
-Later builds are much faster. When it finishes you get `dist/platinum/NativePlatinum/EBOOT.PBP` (or
-`dist/soulsilver/NativeSoulSilver/EBOOT.PBP`). You don't need a Platinum ROM to build SoulSilver.
-
-Useful extras:
-- Menu icon and background: put `ICON0.PNG` (144x80) and `PIC1.PNG` (480x272) in `art/platinum/` or
+- `./build.sh setup` checks the requirements and fetches the toolchain without building.
+- `./build.sh clean` removes the build output (downloads are kept).
+- `PSPDEV=/path/to/pspdev` uses an existing toolchain instead of the downloaded one.
+- `--dev` builds the instrumented version described under [Developer builds](#developer-builds).
+- For a menu icon and background, put `ICON0.PNG` (144x80) and `PIC1.PNG` (480x272) in `art/platinum/` or
   `art/soulsilver/` before building (see [art/README.md](art/README.md)).
-- `./build.sh setup` checks the requirements and downloads the toolchain without building anything.
-- `./build.sh clean` removes the build output and starts over (downloads are kept).
-- Already have your own PSPDEV install? Set `PSPDEV=/path/to/pspdev` and the build uses it instead.
-- Windows: use WSL2 (Ubuntu) and follow the Linux steps. Clone into the WSL Linux filesystem (not a `/mnt/c` path)
-  so the scripts keep Unix line endings. `./build.sh setup` has been confirmed working on WSL2; the game builds
-  themselves are still untested there.
 
 ## Quality of Life changes
 
