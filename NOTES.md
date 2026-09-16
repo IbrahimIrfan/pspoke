@@ -118,6 +118,12 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
   nitromain-perf/romfs.c`), keyed on absolute ROM offset. ROM is read-only so blocks never go stale (cleared on
   `FS_End`). 32×16 KiB = 512 KiB static BSS. Emulator read-count: ~93% fewer ROM reads, 98% hit rate. Any repeated
   ROM read benefits, not just the bag. `-DNO_ROM_CACHE` disables it.
+- The same cache **silenced SoulSilver audio on hardware** while Platinum was fine. SS's original `FS_ReadFile`
+  called `clearerr(romStream)` before every read; the cached path returned before that line, so a sticky EOF/error
+  flag (set by real Memory-Stick I/O) made `fread` return 0 and the cache stored that block as valid with length 0.
+  Sound banks loaded as nothing; graphics unaffected. The silent build keys voices normally in headless PPSSPP --
+  the host `fread` never sets the flag -- so this does not reproduce off-hardware. Fix: `clearerr` before each block
+  read and never cache a block where `got != want`. Rule: any change to the ROM read path is hardware-test-only.
 
 ## 5. Audio
 
@@ -130,6 +136,19 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
 - The older CPU mixer stepped samples at 524 clock units per output sample for a 16 kHz output: that is an octave low
   (1047 is right). It is kept only as a fallback; the CPU mixer costs ~6x more main-thread time than sceSas.
 - See §1.7 for the double-buffering bug.
+- Battle BGM "dragging" while sound effects stayed in sync was not a latency/buffering problem. The audio thread
+  plays a fixed number of pumps behind the game and holds its clock when it runs out of snapshots; battle frames
+  were running long enough (40-45 ms) for it to run dry constantly. The long frames came from synchronous ROM reads
+  (asset loads) on the game thread; the ROM block cache removed them and the BGM held tempo. Raising
+  `LATENCY_PUMPS` would only have hidden it (and adds SFX latency) -- leave it at 10. Rule: when BGM drags but SFX
+  are on time, look at frame time, not the mixer.
+- Hand-assembled DEV diagnostic EBOOTs (rebuilding single objects with `make DEV=1` in individual work-tree
+  directories, swapping `sas_out.o`, etc.) came out **silent on hardware** while playing normally in the emulator; the
+  same tree built with the official `./build.sh platinum --dev` had sound. Never hand-mix objects for a build that
+  goes on a card; use the official entry point so every object is built with one consistent flag set.
+- Headless PPSSPP reports `[AUDIO-SAS] ... keyed N` even without audio output, which is a good logic check -- but a
+  build that keys voices in the emulator can still be silent on the PSP (both the hand-built diagnostics and the
+  SoulSilver cache bug were like this). Audio changes are hardware-test-only; the emulator only proves the logic.
 
 ## 6. Testing loop
 
@@ -162,3 +181,30 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
 - Before deleting anything on a card or in a workspace, list exactly what will go and check it against what must stay;
   `ls` output with trailing slashes once defeated a keep-list and deleted folders that should have stayed.
 - Keep a card log backup before every install; the previous EBOOT too.
+
+## 8. Memory
+
+- Measure with `psp-size` on the linked ELF (text/data/bss) and `psp-nm --size-sort -S` for the biggest symbols; the
+  `--dev` build's `[MEM]` log lines give heap peak on hardware. Do not trust `sceKernelTotalFreeMemSize` alone: it
+  reports what is left inside the 8 MB malloc partition, not the whole picture.
+- After trimming, each game is ~6 MB code + ~23 MB BSS, plus an 8 MB malloc heap (`PSP_HEAP_SIZE_KB 8192`, measured
+  peak use ~3.5 MB), ~1 MB thread stacks and 2 MB GE VRAM (separate). About 38 MB of main RAM on a PSP-2000+/3000.
+  The BSS is dominated by the emulated DS memory map the port keeps as native shadows: `s_HW_MAIN_MEM` 8 MB,
+  `s_HW_MAIN_MEM_SUB` 4 MB, the VRAM banks ~1.7 MB, 2 MB of GE display lists, 1.5 MB sound system, ~1.3 MB
+  renderer caches, 0.5 MB ROM block cache.
+- `s_HW_MAIN_MEM_EX` (8 MB) was dead: it is the DSi/TWL extended main RAM, these are NTR (`SDK_4M`) games, and
+  nothing referenced the buffer -- only the `HW_MAIN_MEM_EX_SIZE` constant, in an nvram bounds check. It came from
+  reusing libntr's PC-simulator memory map (`hw/X86/mmap_global.h`, sized for the debug/DSi case) instead of retail
+  sizes. Removed in the backing generator (`native-probe/backing/generate.py`) rather than shrunk, so any real
+  reference fails at link. Check for this class of waste with `psp-nm -A` over every archive: a defined symbol with
+  no `U` reference anywhere is a candidate.
+- `s_HW_MAIN_MEM` at 8 MB is **not** waste even though retail main RAM is 4 MB: the nvram DMA validator accepts any
+  address in `[HW_MAIN_MEM, HW_MAIN_MEM + 8 MB)`, i.e. the DS main-RAM mirror region. Shrinking the buffer without
+  changing that validator lets DMA target memory past the buffer and corrupt whatever follows -- silently, and only
+  on hardware. Any change to the memory map must be hardware-tested; the emulator's memory layout tolerates what a
+  real PSP does not.
+- `PSP_LARGE_MEMORY = 1` (both Makefiles) is what grants the 64 MB model; a PSP-1000 has 32 MB total and no such
+  region. With the 6 MB code image fixed and ~12 MB of DS memory shadows that the game code addresses directly,
+  the realistic floor is ~32 MB, so a PSP-1000 port is a memory-map re-architecture, not a diet. See issue #10.
+- Keeping the old EBOOTs from every card install (DSonPSP/native-archive/hardware-logs/card-*) turned a mystery
+  regression into a three-step hardware bisect. Archive before every install.
