@@ -83,20 +83,20 @@ Options:
 
 ## Quality of Life changes
 
-pspoke makes a few small changes to both games. They are all **on by default** and each one can be left out with a
-build flag (`./build.sh platinum --rom ... --no-trade-evos`, for example). They change how the game behaves in RAM
-only; your ROM and the save format are untouched, so a save moves between builds with different switches.
+Both games get a few small changes. They are all on by default, and each can be turned off with a build flag
+(`./build.sh platinum --rom ... --no-trade-evos`, for example). They only change how the game behaves in RAM; your
+ROM and the save format are untouched, so a save moves between builds with different flags.
 
-| Change | Flag to turn it off | Platinum | SoulSilver |
-|---|---|---|---|
-| **Instant text.** Dialogue prints a whole page at once at every text-speed setting; button prompts, scrolling and timed pauses still wait as before. | `--no-instant-text` | yes | yes |
-| **Trade evolutions without trading.** Kadabra, Machoke, Graveler and Haunter evolve at level 36. Pokémon that need a held item and a trade (Onix, Scyther, Seadra, Slowpoke, Poliwhirl, Porygon, Porygon2, Rhydon, Electabuzz, Magmar, Dusclops, Clamperl) evolve by using that item from the Bag like an evolution stone. Budew, Chingling and Riolu evolve from happiness at any time of day. Platinum also gives the baby Pokémon (Pichu, Cleffa, Igglybuff, Togepi, Azurill, Budew, Chingling, Happiny) a base happiness of 180 and lets Eevee evolve with the Sun, Moon and Leaf Stones. Based on Drayano's Renegade Platinum / Sacred Gold changes. | `--no-trade-evos` | yes | yes |
-| **Repel re-use prompt.** When a Repel wears off and you have another of the same kind, the game asks "Use another?" (as later games do). | `--no-repel-prompt` | yes | yes |
-| **HM moves can be forgotten** like any other move (no Move Deleter trip). | `--no-forget-hms` | yes | yes |
-| **Field-move buffs.** Cut 60 power / 100% accuracy, Rock Smash 60 power, Whirlpool 35 power / 85% (its Black/White values), so HM moves are less of a dead slot. | `--no-move-buffs` | yes | yes |
+| Change | Flag to turn it off |
+|---|---|
+| Instant text | `--no-instant-text` |
+| Trade evolutions without trading | `--no-trade-evos` |
+| "Use another?" prompt when a Repel wears off | `--no-repel-prompt` |
+| HM moves can be forgotten | `--no-forget-hms` |
+| Cut, Rock Smash and Whirlpool buffed | `--no-move-buffs` |
 
-[docs/QOL.md](docs/QOL.md) lists every change in detail (each affected Pokémon and item, and what differs between the
-two games). Changing a flag only rebuilds the handful of files it touches, so switching is quick.
+[docs/QOL.md](docs/QOL.md) has the details: every affected Pokémon and item, and what differs between the two games.
+Changing a flag only rebuilds the handful of files it touches, so switching is quick.
 
 ## Install on the PSP
 
