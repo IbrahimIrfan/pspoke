@@ -7,6 +7,10 @@ s=re.sub(r'^REGType\w+\s+s_reg_(?:G2|G2S|G3|G3X|GX|GXS)_\w+;\s*$', '',s,flags=re
 s=re.sub(r'^u32 SDK_AUTOLOAD_DTCM_START\[2\];','',s,flags=re.M)
 for name in ['s_HW_BG_PLTT','s_HW_OBJ_PLTT','s_HW_DB_BG_PLTT','s_HW_DB_OBJ_PLTT']:
  s=re.sub(r'^u8 '+name+r'\[[^\]]+\];','',s,flags=re.M)
+# s_HW_MAIN_MEM_EX is the DSi (TWL) extended main RAM. These are NTR (SDK_4M) games and nothing references
+# the buffer -- only the HW_MAIN_MEM_EX_SIZE macro (a constant) is used, in nvram bounds checks -- so drop its
+# 8 MiB reservation. Removed, not shrunk, so any real reference fails at link instead of silently corrupting.
+s=re.sub(r'^u8 s_HW_MAIN_MEM_EX\[[^\]]+\];','',s,flags=re.M)
 # Ensure base memory buffers and OSArenaInfo have at least cache-line alignment.
 s=re.sub(r'^(u8 s_HW_\w+\[[^\]]+\]);',r'\1 __attribute__((aligned(64)));',s,flags=re.M)
 (b/'storage.c').write_text('/* Generated from actual libntr simvariables.h; see README. */\n#include <nitro.h>\n'+s+'\nGXVRamTex s_SIM_GXVRamTex;\nGXVRamTexPltt s_SIM_GXVRamTexPltt;\nGXVRamBGExtPltt s_SIM_GXBgExtPltt;\nGXVRamSubBGExtPltt s_SIM_GXSubBgExtPltt;\n')

@@ -41,50 +41,6 @@ static unsigned char *tables,*fat,*fnt;
 static u32 romSize,fatSize,fntSize,dirCount,currentDir,dma;
 static BOOL ready;
 static FILE *romStream;
-/* ---- ROM block cache (see the identical cache in native-audio-app/services/romfs.c) --------------
- * SoulSilver reloads NARC members (e.g. the Bag item icon per cursor step) from the shared ROM handle,
- * re-reading each NARC's BTAF/BTNF/GMIF header every time. This LRU of 16 KiB ROM-aligned blocks turns
- * repeated reads into memcpy. ROM is read-only so blocks never go stale (cleared on FS_End). Absolute
- * offset keyed. SSRaw_FS_ReadFile runs under SSRomLock, so the cache needs no extra locking. Build with
- * -DNO_ROM_CACHE to disable. */
-#ifndef NO_ROM_CACHE
-#define OPT_ROM_CACHE 1
-#define ROM_CACHE_BLOCK  0x4000u
-#define ROM_CACHE_BLOCKS 32
-static unsigned char romCache[ROM_CACHE_BLOCKS][ROM_CACHE_BLOCK] __attribute__((aligned(16)));
-static u32 romCacheTag[ROM_CACHE_BLOCKS];
-static u32 romCacheLen[ROM_CACHE_BLOCKS];
-static u32 romCacheLRU[ROM_CACHE_BLOCKS];
-static u32 romCacheClock;
-static int romCacheInit;
-#define CACHE_EMPTY 0xffffffffu
-static s32 RomCachedRead(u32 pos,void*dst,u32 len){
- if(!romCacheInit){for(int i=0;i<ROM_CACHE_BLOCKS;i++)romCacheTag[i]=CACHE_EMPTY;romCacheInit=1;}
- unsigned char*out=dst;u32 done=0;
- while(done<len){
-  u32 p=pos+done,base=p&~(ROM_CACHE_BLOCK-1);
-  int slot=-1;
-  for(int i=0;i<ROM_CACHE_BLOCKS;i++)if(romCacheTag[i]==base){slot=i;break;}
-  if(slot<0){
-   slot=0;for(int i=1;i<ROM_CACHE_BLOCKS;i++)if(romCacheLRU[i]<romCacheLRU[slot])slot=i;
-   u32 want=ROM_CACHE_BLOCK;if((uint64_t)base+want>romSize)want=romSize>base?romSize-base:0;
-   if(fseek(romStream,(long)base,SEEK_SET)){romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}
-   size_t got=want?fread(romCache[slot],1,want,romStream):0;
-   if(want&&ferror(romStream)){clearerr(romStream);romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}
-   romCacheTag[slot]=base;romCacheLen[slot]=(u32)got;
-  }
-  romCacheLRU[slot]=++romCacheClock;
-  u32 off=p-base;
-  if(off>=romCacheLen[slot])break;
-  u32 avail=romCacheLen[slot]-off,chunk=len-done;
-  if(chunk>avail)chunk=avail;
-  memcpy(out+done,romCache[slot]+off,chunk);
-  done+=chunk;
-  if(romCacheLen[slot]<ROM_CACHE_BLOCK)break;
- }
- return (s32)done;
-}
-#endif
 static u32 streamPos;
 typedef struct RomHandle {struct RomHandle *next;FSFile *owner;} RomHandle;
 static RomHandle *handles;
@@ -94,11 +50,7 @@ static void DropHandle(FSFile*f){RomHandle**p=&handles;while(*p){RomHandle*h=*p;
 static u16 U16(const void*p){const u8*b=p;return b[0]|((u16)b[1]<<8);}
 static u32 U32(const void*p){const u8*b=p;return U16(b)|((u32)U16(b+2)<<16);}
 BOOL PSPNativeRomFS_SetPath(const char*path){if(ready||!path||strlen(path)>=sizeof(romPath))return FALSE;strcpy(romPath,path);return TRUE;}
-void FS_End(void){while(handles){RomHandle*h=handles;handles=h->next;free(h);}if(romStream)fclose(romStream);romStream=NULL;streamPos=0;free(tables);tables=fat=fnt=NULL;ready=FALSE;
-#ifdef OPT_ROM_CACHE
- for(int i=0;i<ROM_CACHE_BLOCKS;i++)romCacheTag[i]=CACHE_EMPTY;
-#endif
- memset(&archive,0,sizeof(archive));}
+void FS_End(void){while(handles){RomHandle*h=handles;handles=h->next;free(h);}if(romStream)fclose(romStream);romStream=NULL;streamPos=0;free(tables);tables=fat=fnt=NULL;ready=FALSE;memset(&archive,0,sizeof(archive));}
 void FS_Init(u32 channel){
  dma=channel;if(ready)return;
  FILE*stream=fopen(romPath,"rb");if(!stream)return;
@@ -167,18 +119,10 @@ s32 FS_ReadFile(FSFile*f,void*dst,s32 len){
  if(!ready||!FindHandle(f)||!dst||len<0)return -1;
  if(f->prop.file.pos<f->prop.file.top||f->prop.file.pos>f->prop.file.bottom)return -1;
  u32 rest=f->prop.file.bottom-f->prop.file.pos;if((u32)len>rest)len=rest;
- #ifdef OPT_ROM_CACHE
- /* Absolute-offset cache; leaves romStream's real position wherever the last block read ended, so mark
-    streamPos unknown (every RomCachedRead miss fseeks anyway). */
- { s32 n=RomCachedRead(f->prop.file.pos,dst,(u32)len); streamPos=0xffffffffu;
-   if(n<0){f->error=FS_RESULT_FAILURE;return -1;}
-   f->prop.file.pos+=(u32)n; f->error=FS_RESULT_SUCCESS; return n; }
-#else
  clearerr(romStream);
  if(streamPos!=f->prop.file.pos){if(fseek(romStream,(long)f->prop.file.pos,SEEK_SET)){f->error=FS_RESULT_FAILURE;return -1;}streamPos=f->prop.file.pos;}
  size_t n=fread(dst,1,len,romStream);f->prop.file.pos+=n;streamPos+=n;
  if(ferror(romStream)){f->error=FS_RESULT_FAILURE;return -1;}f->error=FS_RESULT_SUCCESS;return n;
-#endif
 }
 s32 FS_ReadFileAsync(FSFile*f,void*dst,s32 len){return FS_ReadFile(f,dst,len);}
 BOOL FS_WaitAsync(FSFile*f){return ready&&FindHandle(f)&&f->error==FS_RESULT_SUCCESS;}
