@@ -37,24 +37,19 @@ build time.
 - **Wi-Fi and online features:** GTS, Wi-Fi Plaza, online trades and battles, Mystery Gift over the internet.
 - **DS wireless:** local trades and battles with another DS, Union Room, DS Download Play.
 - **Microphone** features.
-- **Pokéwalker** (SoulSilver): the PSP has no infrared port.
-- **Pal Park migration** (Platinum): there is no GBA cartridge slot.
 - **Other versions and regions:** only the two US ROMs listed above build (no HeartGold, Diamond/Pearl or
   non-English releases).
 - **Touch screen:** there is no real touchscreen, so touch input uses the on-screen cursor (see Controls).
 - **Performance:** SoulSilver can dip below 30 fps in busy areas.
-- **PSP-1000 (phat, 32 MB):** does not run, and is not planned. The build uses `PSP_LARGE_MEMORY` and needs about
-  38 MB of main RAM (≈29 MB of code and DS-memory buffers plus an 8 MB heap), which only the PSP-2000 and later
-  (64 MB) have. After removing the unused memory we could find, what remains is the emulated DS memory map the game
-  code addresses directly, so fitting a 1000 would mean re-architecting that map, not tuning constants. The analysis
-  is in [issue #10](https://github.com/IbrahimIrfan/pspoke/issues/10). Targets: PSP-2000/3000/Go/E1000, PS Vita or
-  PSTV (Adrenaline).
 - **Tested hardware and computers:** only a PSP-3001 on ARK-4 has been tested. Building works on macOS and Linux;
   Windows is untested for building the games and running them, though the toolchain setup has been confirmed on WSL2 (Ubuntu).
 
 ## What you need
 
-- A PSP running custom firmware that can launch homebrew (tested: PSP-3001 on ARK-4).
+- A PSP-2000, 3000, Go or E1000, or a PS Vita/PSTV running Adrenaline, with custom firmware that can launch
+  homebrew (tested: PSP-3001 on ARK-4). **The PSP-1000 does not work:** it has 32 MB of RAM and pspoke needs
+  about 38 MB. That comes from the port's memory layout, not a setting, so it isn't planned; the details are in
+  [issue #10](https://github.com/IbrahimIrfan/pspoke/issues/10).
 - Your own ROM dump of the game (the build checks the SHA1 above).
 - A Mac or a Linux PC with about 3 GB of free disk space and an internet connection.
 
