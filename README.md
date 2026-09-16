@@ -48,8 +48,8 @@ build time.
 
 - A PSP-2000, 3000, Go or E1000, or a PS Vita/PSTV running Adrenaline, with custom firmware that can launch
   homebrew (tested: PSP-3001 on ARK-4). **The PSP-1000 does not work:** it has 32 MB of RAM and pspoke needs
-  about 38 MB. That comes from the port's memory layout, not a setting, so it isn't planned; the details are in
-  [issue #10](https://github.com/IbrahimIrfan/pspoke/issues/10).
+  about 38 MB. That comes from the port's memory layout, not a setting; making it fit is an open issue
+  ([#10](https://github.com/IbrahimIrfan/pspoke/issues/10)).
 - Your own ROM dump of the game (the build checks the SHA1 above).
 - A Mac or a Linux PC with about 3 GB of free disk space and an internet connection.
 
@@ -58,11 +58,14 @@ PSP compiler ([PSPDEV](https://github.com/pspdev/pspdev), about 150 MB) into the
 
 ## Building
 
-Prerequisites (one time):
+Prerequisites: git, python3, make, patch, rsync and curl. `build.sh` checks for them and, if any are missing,
+offers to install them for you: on Linux through apt, dnf, pacman or zypper (with `sudo`, after asking; set
+`PSPPOKE_ASSUME_YES=1` to skip the question), and on macOS by opening the installer for Apple's command line
+tools, which include all of them. To install them yourself instead:
 
-- macOS: `xcode-select --install` (Apple's command line tools; the build prompts for this if they're missing).
-- Ubuntu/Debian: `sudo apt install git python3 make patch rsync curl build-essential`
-- Fedora: `sudo dnf install git python3 make patch rsync curl gcc`
+- macOS: `xcode-select --install`
+- Ubuntu/Debian: `sudo apt install git python3 make patch rsync curl`
+- Fedora: `sudo dnf install git python3 make patch rsync curl`
 - Windows: use WSL2 (Ubuntu) and follow the Linux steps. Clone inside the WSL Linux filesystem (not `/mnt/c`) so the
   scripts keep LF line endings. Toolchain setup is confirmed on WSL2; the game builds themselves are untested there.
 

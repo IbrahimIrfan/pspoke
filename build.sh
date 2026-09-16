@@ -31,8 +31,7 @@ if [ "$(uname -s)" = Darwin ] && ! xcode-select -p >/dev/null 2>&1; then
   xcode-select --install >/dev/null 2>&1 || true
   die "macOS needs Apple's free command line tools. An installer window should have opened: finish it, then run this command again."
 fi
-need git "Install git."; need python3 "Install Python 3.9+."; need make "Install make (Xcode command line tools / build-essential)."
-need patch "Install patch."; need rsync "Install rsync."
+bash "$ROOT/scripts/prereqs.sh"   # git, python3, make, patch, rsync, curl, tar; offers to install what is missing
 if [ "$PSPPOKE_OWN_TOOLCHAIN" = 1 ]; then
   [ -x "$PSPDEV/bin/psp-gcc" ] || die "PSP toolchain not found at \$PSPDEV=$PSPDEV (unset PSPDEV to use the automatic download)."
 else
