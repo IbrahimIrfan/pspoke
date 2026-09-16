@@ -148,7 +148,8 @@ errors. See [docs/DEVELOPING.md](docs/DEVELOPING.md).
 
 ## Bug reports and contributing
 
-pspoke is a beta, so reports and help are very welcome.
+pspoke is a beta, so reports and help are very welcome. Check the [open issues](https://github.com/IbrahimIrfan/pspoke/issues)
+first; known bugs are tracked there.
 
 **Found a bug?** Open an issue at [github.com/IbrahimIrfan/pspoke/issues](https://github.com/IbrahimIrfan/pspoke/issues) with:
 - the game and what happened (what you did right before, and whether it happens again),
