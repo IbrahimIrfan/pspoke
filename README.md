@@ -41,6 +41,10 @@ build time.
   non-English releases).
 - **Touch screen:** there is no real touchscreen, so touch input uses the on-screen cursor (see Controls).
 - **Performance:** SoulSilver can dip below 30 fps in busy areas.
+- **PSP-1000 (phat, 32 MB):** does not run. The build uses `PSP_LARGE_MEMORY` and needs ~45 MB of RAM, which only
+  the PSP-2000 and later (64 MB) have. It is a PSP-2000/3000/Go/E1000, PS Vita or PSTV (Adrenaline) target. Fitting
+  a 1000 would take a substantial memory diet and is not proven possible — see
+  [issue #9](https://github.com/IbrahimIrfan/pspoke/issues/9) if you want to try.
 - **Tested hardware and computers:** only a PSP-3001 on ARK-4 has been tested. Building works on macOS and Linux;
   Windows is untested for building the games and running them, though the toolchain setup has been confirmed on WSL2 (Ubuntu).
 
