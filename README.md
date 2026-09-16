@@ -134,12 +134,14 @@ cartridge dump by renaming it (it must be exactly 524,288 bytes). Back it up bef
 ## Developer builds
 
 ```sh
-./build.sh platinum --rom "/path/to/Platinum.nds" --dev
+./build.sh platinum   --rom "/path/to/Platinum.nds"   --dev
+./build.sh soulsilver --rom "/path/to/SoulSilver.nds" --dev
 ```
 
-`--dev` builds `dist/platinum-dev/` with an on-screen FPS/timing counter and detailed performance lines written to
-`native-memlog.txt` next to the EBOOT (frame timing, 3D renderer profile, game-thread profile, GPU sync stats).
-Normal builds have no on-screen counter and only log errors. See [docs/DEVELOPING.md](docs/DEVELOPING.md).
+`--dev` builds `dist/platinum-dev/` or `dist/soulsilver-dev/` with an on-screen fps counter and performance lines
+written to `native-memlog.txt` next to the EBOOT: frame timing and GPU sync stats for both games, plus a
+game-thread profile and a 3D renderer profile on Platinum. Normal builds have no on-screen counter and only log
+errors. See [docs/DEVELOPING.md](docs/DEVELOPING.md).
 
 ## Bug reports and contributing
 

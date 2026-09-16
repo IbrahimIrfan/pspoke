@@ -53,7 +53,8 @@ Folder names are historical (each started as an isolated proof); build scripts r
 
 - `PSP_NATIVE_DEV`: on-screen counter (`NATIVE xx.x fps game/audio/render ms`), per-30-frame timing collection,
   `[FPS]`/`[PERF]`/`[GEASYNC]` lines in `native-memlog.txt` every 600 frames.
-- `PSP_NATIVE_GAME_PROF`: `[GPROF]` game-thread buckets and allocator counters (adds link-time wraps).
+- `PSP_NATIVE_GAME_PROF`: `[GPROF]` game-thread buckets and allocator counters (adds link-time wraps). Platinum
+  only: the SoulSilver Makefile has no `GAME_PROF`.
 - `PSP_NATIVE_G3_HWPROF` (Platinum renderer): sampled `[G3HW]` 3D profile.
 
 Normal builds define none of these; error and startup lines are still logged. Use `#ifdef PSP_NATIVE_DEV` for any new
