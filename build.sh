@@ -27,9 +27,19 @@ case "$GAME" in
   *) die "usage: ./build.sh platinum|soulsilver --rom <file.nds> [--dev] [--no-instant-text] [--no-trade-evos] [--no-repel-prompt] [--no-forget-hms] [--no-move-buffs]   (or ./build.sh setup, ./build.sh clean)";;
 esac
 
-if [ "$(uname -s)" = Darwin ] && ! xcode-select -p >/dev/null 2>&1; then
-  xcode-select --install >/dev/null 2>&1 || true
-  die "macOS needs Apple's free command line tools. An installer window should have opened: finish it, then run this command again."
+if [ "$(uname -s)" = Darwin ]; then
+  if ! xcode-select -p >/dev/null 2>&1; then
+    xcode-select --install >/dev/null 2>&1 || true
+    die "macOS needs Apple's free command line tools. An installer window should have opened: finish it, then run this command again."
+  fi
+  # Xcode.app installed but its license not accepted: git/make exist but refuse to run (exit 69).
+  # Capture the message first; a `git | grep` pipe would report git's failure under pipefail, not the match.
+  if ! git --version >/dev/null 2>&1; then
+    xcmsg=$(git --version 2>&1 || true)
+    case "$xcmsg" in *"Xcode license"*)
+      die "Apple's developer tools won't run until the Xcode license is accepted. Run:  sudo xcodebuild -license accept   (or use the command line tools instead:  sudo xcode-select --switch /Library/Developer/CommandLineTools), then run this command again.";;
+    esac
+  fi
 fi
 bash "$ROOT/scripts/prereqs.sh"   # git, python3, make, patch, rsync, curl, tar; offers to install what is missing
 if [ "$PSPPOKE_OWN_TOOLCHAIN" = 1 ]; then
