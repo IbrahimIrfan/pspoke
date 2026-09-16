@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <pspkernel.h>
 #include <stdlib.h>
+#include <string.h>
 #include <malloc.h>
 #ifndef PSP_NATIVE_PROBE_FRAMES
 #define PSP_NATIVE_PROBE_FRAMES 0
@@ -28,6 +29,11 @@ extern void PSPNativeMemPoll(void);
 extern void PSPNativeMemLog(const char*,...);
 /* [PERF] accumulators: one card-log line per 600 frames (20 s at 30 fps). Everything here
    is a counter that the renderer already maintains; the only per-frame cost is a few adds. */
+#ifdef PSP_NATIVE_DEV
+/* Frame-length histogram in 60 Hz periods (1,2,3,4,5+) and VBlank waits per game frame (1,2,3,4+): a 30 fps
+   game should show every frame in bucket 2 with 2 waits. Printed on the [PERF] line. */
+static unsigned frHist[5],waitHist[4],frMaxUs;
+#endif
 static struct{unsigned long long game,idle,audio,render,g3,ge3d,ge2d,bind,draw2d;unsigned texBinds,texHits,texMisses,texCmp,texEvict,fences,heapHigh,listHits,listRec,listHitVerts;unsigned long long winStart;}perf;
 static void PerfLine(void){
  unsigned n=600;unsigned long long now=sceKernelGetSystemTimeWide(),win=now-perf.winStart;perf.winStart=now;
@@ -35,12 +41,20 @@ static void PerfLine(void){
  PSPNativeMemLog("[PERF] frames=%u fps=%.2f game_busy_us=%llu idle_us=%llu audio_us=%llu render_us=%llu g3_us=%llu ge3d_wait_us=%llu ge2d_wait_us=%llu bind_us=%llu draw2d_us=%llu tex_binds=%u tex_hits=%u tex_decodes=%u tex_evict=%u tex_fences=%u tex_cmp_kb=%u tex_cache=%u/%u list_hits=%u list_rec=%u list_hit_verts=%u list_cache=%u/%u list_high=%u list_volatile=%u list_broken=%u heap_used_high=%u",
   frames,win?n*1000000.0/win:0.0,(perf.game-perf.idle)/n,perf.idle/n,perf.audio/n,perf.render/n,perf.g3/n,perf.ge3d/n,perf.ge2d/n,perf.bind/n,perf.draw2d/n,
   perf.texBinds,perf.texHits,perf.texMisses,perf.texEvict,perf.fences,perf.texCmp/1024,tEnt,tBytes,perf.listHits,perf.listRec,perf.listHitVerts,lEnt,lBytes,lHigh,lVol&0xffff,lVol>>16,perf.heapHigh);
+#ifdef PSP_NATIVE_DEV
+ PSPNativeMemLog("[FRAMES] periods 1/2/3/4/5+=%u/%u/%u/%u/%u waits 1/2/3/4+=%u/%u/%u/%u max_us=%u",frHist[0],frHist[1],frHist[2],frHist[3],frHist[4],waitHist[0],waitHist[1],waitHist[2],waitHist[3],frMaxUs);
+ memset(frHist,0,sizeof frHist);memset(waitHist,0,sizeof waitHist);frMaxUs=0;
+#endif
  perf.game=perf.idle=perf.audio=perf.render=perf.g3=perf.ge3d=perf.ge2d=perf.bind=perf.draw2d=0;
  perf.texBinds=perf.texHits=perf.texMisses=perf.texCmp=perf.texEvict=perf.fences=0;perf.heapHigh=0;perf.listHits=perf.listRec=perf.listHitVerts=0;
 }
 void PSPNativeFrameInit(void){start=sceKernelGetSystemTimeWide();perf.winStart=start;int result=PSPNativeRenderInit();if(result){printf("[NATIVE] renderer init failed %d\n",result);abort();}if(PSPNativeRenderBegin())abort();PSPNativeMemReport("frame init");}
 void PSPNativeFrameComplete(void){
  unsigned long long now=sceKernelGetSystemTimeWide();if(last)gameUs+=now-last;
+#ifdef PSP_NATIVE_DEV
+ {static unsigned long long prevEnd;if(prevEnd){unsigned d=(unsigned)(now-prevEnd);unsigned p=(d+8333)/16667;frHist[p<1?0:p>5?4:p-1]++;if(d>frMaxUs)frMaxUs=d;}prevEnd=now;
+  extern unsigned PSPNativeVBlankWaitsTake(void);unsigned w=PSPNativeVBlankWaitsTake();waitHist[w<1?0:w>4?3:w-1]++;}
+#endif
  /* Real elapsed time, not a fixed 1/30 s: the PSP runs this game at 25-27 fps,
     and sound paced off a nominal frame would starve the sceAudio ring by ~12%.
     Clamped so a long load cannot turn into a burst of pumps. */
