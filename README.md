@@ -165,7 +165,7 @@ Please don't attach or link ROMs, saves from someone else's game, or prebuilt EB
 collects the hardware, porting and testing lessons learned so far (read it before debugging on a real PSP). Keep the same rules as the
 project: no ROM data, game assets or prebuilt EBOOTs in commits (changes to the decompilations go in `patches/`).
 
-## How it works (short version)
+## How it works
 
 1. `build.sh` checks your ROM and downloads the decompilation and NitroSDK-replacement sources at pinned commits
    (`third_party.lock`).
