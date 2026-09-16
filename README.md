@@ -12,7 +12,7 @@ Fan project, unaffiliated with Nintendo, Game Freak, Creatures or The Pokémon C
 
 The code, patches, tests and documentation here were written by AI.
 
-It's a beta. Keep backups of your saves.
+This is still a beta, so expect some rough edges, and keep a backup of your saves just in case.
 
 ## Status
 
