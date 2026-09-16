@@ -5,7 +5,7 @@
 | Path | What it is |
 |---|---|
 | `build.sh` | Entry point: ROM check, then `scripts/<game>.sh`. |
-| `scripts/` | Build steps (`fetch.sh`, `stage.sh`, `platinum.sh`, ...), `install.sh`, `make_save.py`, `check_native_pbp.py` (PSP loader limits). |
+| `scripts/` | Build steps (`fetch.sh`, `stage.sh`, `platinum.sh`, ...), `prereqs.sh` (checks git/python3/make/patch/rsync/curl/tar and offers to install what is missing; `PSPPOKE_ASSUME_YES=1` skips the prompt), `install.sh`, `make_save.py`, `check_native_pbp.py` (PSP loader limits). |
 | `port/` | pspoke's own code, laid out as the build tree expects (`port/<component>/...`). |
 | `patches/` | Patches applied to the downloaded decompilations and to generated per-overlay source copies. |
 | `docs/QOL.md` | Every quality-of-life change, per Pokémon/item, and its build flag. |
