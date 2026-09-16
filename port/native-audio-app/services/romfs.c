@@ -24,10 +24,65 @@ static unsigned char header[512] __attribute__((aligned(4)));
 static unsigned char *tables,*fat,*fnt;
 static u32 romSize,fatSize,fntSize,dirCount,currentDir,dma;
 static BOOL ready;
+
+/* ---- ROM block cache -------------------------------------------------------------------------
+ * Every FS_ReadFile is an fseek()+fread() on the one shared 128 MB ROM handle. On a real Memory
+ * Stick a seek dominates, and the game re-reads the same bytes constantly: each NARC member load
+ * re-parses that NARC's BTAF/BTNF/GMIF header with 5-6 tiny (2-4 byte) reads at fixed offsets, so
+ * scrolling the Bag (one item-icon NARC member per cursor step) costs ~6-8 seeks per step, most of
+ * them re-reading the same header bytes. This LRU cache of 16 KiB ROM-aligned blocks turns those
+ * repeated reads into memcpy: the NARC header lands in one block, and a small archive (item icons)
+ * fits in a handful of blocks, so a revisited item needs no ROM access at all. Absolute-offset
+ * keyed, independent of any FSFile position; all ROM access is on the game thread (the SAS audio
+ * thread only mixes), so no new locking is needed. Build with -DNO_ROM_CACHE to disable. */
+#ifndef NO_ROM_CACHE
+#define OPT_ROM_CACHE 1
+#define ROM_CACHE_BLOCK  0x4000u                   /* 16 KiB, aligned to absolute ROM offset */
+#define ROM_CACHE_BLOCKS 32                         /* 32 * 16 KiB = 512 KiB, static */
+static unsigned char romCache[ROM_CACHE_BLOCKS][ROM_CACHE_BLOCK] __attribute__((aligned(16)));
+static u32 romCacheTag[ROM_CACHE_BLOCKS];
+static u32 romCacheLen[ROM_CACHE_BLOCKS];
+static u32 romCacheLRU[ROM_CACHE_BLOCKS];
+static u32 romCacheClock;
+static int romCacheInit;
+#define CACHE_EMPTY 0xffffffffu
+static unsigned st_readCalls,st_blockHit,st_blockMiss;
+static unsigned long long st_readBytes;
+static s32 RomCachedRead(u32 pos,void*dst,u32 len){
+ if(!romCacheInit){for(int i=0;i<ROM_CACHE_BLOCKS;i++)romCacheTag[i]=CACHE_EMPTY;romCacheInit=1;}
+ unsigned char*out=dst;u32 done=0;
+ while(done<len){
+  u32 p=pos+done,base=p&~(ROM_CACHE_BLOCK-1);
+  int slot=-1;
+  for(int i=0;i<ROM_CACHE_BLOCKS;i++)if(romCacheTag[i]==base){slot=i;break;}
+  if(slot<0){
+   slot=0;for(int i=1;i<ROM_CACHE_BLOCKS;i++)if(romCacheLRU[i]<romCacheLRU[slot])slot=i;
+   u32 want=ROM_CACHE_BLOCK;if((uint64_t)base+want>romSize)want=romSize>base?romSize-base:0;
+   if(fseek(romStream,(long)base,SEEK_SET)){romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}
+   size_t got=want?fread(romCache[slot],1,want,romStream):0;
+   if(want&&ferror(romStream)){clearerr(romStream);romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}
+   romCacheTag[slot]=base;romCacheLen[slot]=(u32)got;st_blockMiss++;
+  }else st_blockHit++;
+  romCacheLRU[slot]=++romCacheClock;
+  u32 off=p-base;
+  if(off>=romCacheLen[slot])break;
+  u32 avail=romCacheLen[slot]-off,chunk=len-done;
+  if(chunk>avail)chunk=avail;
+  memcpy(out+done,romCache[slot]+off,chunk);
+  done+=chunk;
+  if(romCacheLen[slot]<ROM_CACHE_BLOCK)break;
+ }
+ return (s32)done;
+}
+#endif
 static u16 U16(const void*p){const u8*b=p;return b[0]|((u16)b[1]<<8);}
 static u32 U32(const void*p){const u8*b=p;return U16(b)|((u32)U16(b+2)<<16);}
 BOOL PSPNativeRomFS_SetPath(const char*path){if(ready||!path||strlen(path)>=sizeof(romPath))return FALSE;strcpy(romPath,path);return TRUE;}
-void FS_End(void){free(tables);tables=fat=fnt=NULL;ready=FALSE;if(romStream){fclose(romStream);romStream=NULL;}memset(&archive,0,sizeof(archive));}
+void FS_End(void){free(tables);tables=fat=fnt=NULL;ready=FALSE;if(romStream){fclose(romStream);romStream=NULL;}
+#ifdef OPT_ROM_CACHE
+ for(int i=0;i<ROM_CACHE_BLOCKS;i++)romCacheTag[i]=CACHE_EMPTY;
+#endif
+ memset(&archive,0,sizeof(archive));}
 void FS_Init(u32 channel){
  dma=channel;if(ready)return;
  FILE*stream=fopen(romPath,"rb");if(!stream)return;
@@ -96,6 +151,18 @@ BOOL FS_CloseFile(FSFile*f){if(!f)return FALSE;if(f->pcFilePtr&&openFiles)openFi
 s32 FS_ReadFile(FSFile*f,void*dst,s32 len){
  if(!f||!f->pcFilePtr||!dst||len<0)return -1;
  u32 rest=f->prop.file.bottom-f->prop.file.pos;if((u32)len>rest)len=rest;
+#ifdef OPT_ROM_CACHE
+ st_readCalls++;st_readBytes+=(unsigned)len;
+#ifdef ROMFS_MEASURE
+ if((st_readCalls%500)==0)PSPNativeMemLog("[ROMFS-CACHE] calls=%u romreads=%u hits=%u bytes=%llu",st_readCalls,st_blockMiss,st_blockHit,st_readBytes);
+#endif
+ /* The handle is shared, so a byte range is only valid by absolute offset; the cache keys on that. */
+ s32 n=RomCachedRead(f->prop.file.pos,dst,(u32)len);
+ if(n<0){readFailures++;PSPNativeMemLog("[ROMFS] read failed pos=%u (failure #%u)",(unsigned)f->prop.file.pos,readFailures);f->error=FS_RESULT_FAILURE;return -1;}
+ f->prop.file.pos+=(u32)n;
+ if(n!=len){readFailures++;PSPNativeMemLog("[ROMFS] short read %u/%d at %u (failure #%u)",(unsigned)n,(int)len,(unsigned)(f->prop.file.pos-n),readFailures);}
+ f->error=FS_RESULT_SUCCESS;return n;
+#else
  /* The handle is shared, so this file's position is only true right now. */
  if(fseek(f->pcFilePtr,(long)f->prop.file.pos,SEEK_SET)){readFailures++;PSPNativeMemLog("[ROMFS] seek failed pos=%u (failure #%u)",(unsigned)f->prop.file.pos,readFailures);f->error=FS_RESULT_FAILURE;return -1;}
  size_t n=fread(dst,1,len,f->pcFilePtr);f->prop.file.pos+=n;
@@ -103,6 +170,7 @@ s32 FS_ReadFile(FSFile*f,void*dst,s32 len){
   readFailures++;PSPNativeMemLog("[ROMFS] short read %u/%d at %u err=%d (failure #%u)",(unsigned)n,(int)len,(unsigned)(f->prop.file.pos-n),ferror(f->pcFilePtr),readFailures);clearerr(f->pcFilePtr);}
  if(ferror(f->pcFilePtr)){f->error=FS_RESULT_FAILURE;return -1;}
  f->error=FS_RESULT_SUCCESS;return n;
+#endif
 }
 s32 FS_ReadFileAsync(FSFile*f,void*dst,s32 len){return FS_ReadFile(f,dst,len);}
 BOOL FS_WaitAsync(FSFile*f){return f&&f->error==FS_RESULT_SUCCESS;}
@@ -138,3 +206,10 @@ BOOL CARD_IsPulledOut(void){struct stat st;return stat(romPath,&st)!=0||st.st_si
 
 void PSPNativeRomFSStats(unsigned*open,unsigned*high,unsigned*openFail,unsigned*readFail){
  if(open)*open=openFiles;if(high)*high=openFilesHigh;if(openFail)*openFail=openFailures;if(readFail)*readFail=readFailures;}
+void PSPNativeRomFSCacheStats(unsigned*calls,unsigned*hits,unsigned*misses){
+#ifdef OPT_ROM_CACHE
+ if(calls)*calls=st_readCalls;if(hits)*hits=st_blockHit;if(misses)*misses=st_blockMiss;
+#else
+ if(calls)*calls=0;if(hits)*hits=0;if(misses)*misses=0;
+#endif
+}

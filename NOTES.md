@@ -110,6 +110,15 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
   without clipping is still valid. Anything inherited from a PC simulator that "works on PC" may only work because
   the PC build never depended on the answer.
 
+- Menu/Bag scroll lag on hardware: every list-cursor step reloads that item's icon from the ROM, and the NARC
+  reader re-parses the archive's BTAF/BTNF/GMIF header (5-6 tiny reads at fixed offsets) *every* member load, so
+  one bag step is ~6-8 `fseek`+`fread`s on the 128 MB ROM on the Memory Stick — seek-dominated, invisible on the
+  emulator (fast host reads) but a visible stutter on hardware. Fix: a bounded LRU of 16 KiB ROM-aligned blocks in
+  the romfs `FS_ReadFile` (`native-audio-app/services/romfs.c`; SoulSilver has its own `soulsilver-native-core/
+  nitromain-perf/romfs.c`), keyed on absolute ROM offset. ROM is read-only so blocks never go stale (cleared on
+  `FS_End`). 32×16 KiB = 512 KiB static BSS. Emulator read-count: ~93% fewer ROM reads, 98% hit rate. Any repeated
+  ROM read benefits, not just the bag. `-DNO_ROM_CACHE` disables it.
+
 ## 5. Audio
 
 - The DS sound engine (sequencer, channels) runs fully on the CPU; output goes through `sceSasCore`, the PSP's own
