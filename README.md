@@ -116,8 +116,8 @@ two games). Changing a flag only rebuilds the handful of files it touches, so sw
 Connect the memory stick (USB mode) and run:
 
 ```sh
-scripts/install.sh platinum   "/Volumes/<your memory stick>" "/path/to/your/Pokemon Platinum.nds"
-scripts/install.sh soulsilver "/Volumes/<your memory stick>" "/path/to/your/Pokemon SoulSilver.nds"
+scripts/install.sh platinum   "/Volumes/<memory stick>" "/path/to/Platinum.nds"
+scripts/install.sh soulsilver "/Volumes/<memory stick>" "/path/to/SoulSilver.nds"
 ```
 
 This creates `PSP/GAME/NativePlatinum/` (or `NativeSoulSilver/`) with the EBOOT, a copy of your ROM and, only if you
