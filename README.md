@@ -40,7 +40,6 @@ build time.
 - **Other versions and regions:** only the two US ROMs listed above build (no HeartGold, Diamond/Pearl or
   non-English releases).
 - **Touch screen:** there is no real touchscreen, so touch input uses the on-screen cursor (see Controls).
-- **Performance:** SoulSilver can dip below 30 fps in busy areas.
 - **Tested hardware and computers:** only a PSP-3001 on ARK-4 has been tested. Building works on macOS and Linux;
   Windows is untested for building the games and running them, though the toolchain setup has been confirmed on WSL2 (Ubuntu).
 
