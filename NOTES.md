@@ -149,6 +149,22 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
 - Headless PPSSPP reports `[AUDIO-SAS] ... keyed N` even without audio output, which is a good logic check -- but a
   build that keys voices in the emulator can still be silent on the PSP (both the hand-built diagnostics and the
   SoulSilver cache bug were like this). Audio changes are hardware-test-only; the emulator only proves the logic.
+- **Platinum audio can be silent on hardware for particular memory layouts, with no code change at all** (2026-09-16).
+  A fresh clone in a long directory built an EBOOT that was silent on the PSP-3001 while the repo-path build of the
+  same commit had sound. The only difference was 11 `__FILE__` strings (SDK assert messages compiled from absolute
+  paths) growing by 84 bytes each, shifting `.data`/`.bss` by 0x380. Facts established on hardware, all with
+  otherwise byte-identical code: a synthetic 0x390 `.rodata` pad reproduces the silence; shifts of 0x180, 0x200,
+  0x500 have sound, 0x300 and 0x380 are silent; a 4 KB smaller heap (moving only post-heap kernel allocations)
+  stays silent; allocating the SAS sample blocks with `PSP_SMEM_High` instead of `PSP_SMEM_Low` cures the silent
+  layout; the same EBOOT keys voices normally in PPSSPP; poisoning all free memory at boot does not reproduce it in
+  the emulator; a DEV build with the layout shifted by exactly one page and sample-integrity checks (cached and
+  uncached re-checksums of every playing sample) had sound and no mismatches. `sceSasCore` runs on the main CPU
+  (sc_sascore.prx), so it is not a Media Engine reach problem. Root cause still open (tracked in the issues).
+  Mitigation: the SDK/overlay compile scripts now map the work-tree root to a fixed same-length token
+  (`-ffile-prefix-map`), so every clone builds the byte-identical program that was hardware-tested. Rule: any
+  Platinum code change re-rolls the layout, so each release needs one hardware sound check; and when a build is
+  silent on hardware but fine in PPSSPP, compare section tables and symbol addresses against the last good build
+  before suspecting the diff. The hand-built DEV silence above was probably this same thing.
 
 ## 6. Testing loop
 
