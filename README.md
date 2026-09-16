@@ -42,7 +42,7 @@ build time.
 - **Touch screen:** there is no real touchscreen, so touch input uses the on-screen cursor (see Controls).
 - **Performance:** SoulSilver can dip below 30 fps in busy areas.
 - **Tested hardware and computers:** only a PSP-3001 on ARK-4 has been tested. Building works on macOS and Linux;
-  Windows (WSL) has not been tested.
+  Windows is untested for building the games and running them, though the toolchain setup has been confirmed on WSL2 (Ubuntu).
 
 ## What you need
 
@@ -91,7 +91,9 @@ Useful extras:
 - `./build.sh setup` checks the requirements and downloads the toolchain without building anything.
 - `./build.sh clean` removes the build output and starts over (downloads are kept).
 - Already have your own PSPDEV install? Set `PSPDEV=/path/to/pspdev` and the build uses it instead.
-- Windows: not tested. It may work inside WSL (Ubuntu) by following the Linux steps.
+- Windows: use WSL2 (Ubuntu) and follow the Linux steps. Clone into the WSL Linux filesystem (not a `/mnt/c` path)
+  so the scripts keep Unix line endings. `./build.sh setup` has been confirmed working on WSL2; the game builds
+  themselves are still untested there.
 
 ## Quality of Life changes
 

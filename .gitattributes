@@ -1,0 +1,13 @@
+# Keep shell and Python scripts LF on every platform. Git-for-Windows defaults to
+# core.autocrlf=true, which otherwise checks build.sh/scripts/*.sh out with CRLF and breaks
+# the `source` in common.sh before setup runs (reported on Windows/WSL). LF-only fixes it
+# without the user changing any Git setting.
+*.sh  text eol=lf
+*.py  text eol=lf
+
+# Tracked binaries: never apply line-ending conversion.
+*.prx binary
+*.sav binary
+
+# Vendored third-party sources (bundled ndspy): keep exactly as committed upstream.
+port/soulsilver-native-data/python/** -text
