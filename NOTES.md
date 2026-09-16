@@ -125,6 +125,19 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
   the host `fread` never sets the flag -- so this does not reproduce off-hardware. Fix: `clearerr` before each block
   read and never cache a block where `got != want`. Rule: any change to the ROM read path is hardware-test-only.
 
+- **Draw order matters: the DS renders every opaque polygon of a frame first, then the translucent ones in
+  submission order, and translucent polygons write depth only when polygon attribute bit 11 asks.** Both renderer
+  copies drew in submission order with depth writes on, so a translucent prop submitted before the ground under it
+  (Floaroma's south gate, signs) blended against the black clear and then occluded the ground: a solid black block
+  instead of a soft shade (worse in evening light, where the DS shade is darker). Fixed by parking translucent
+  batches with their GE state and drawing them at the end of the 3D frame in Present (2026-09-16, both games,
+  hardware-confirmed). The `floaroma-gate` scenario captures the spot. Rule: when a translucent thing is solid black
+  or missing, check ordering and depth writes before suspecting blending.
+- The SoulSilver-only build used to fail at `ss-services` because the shared services include the overlay-id header
+  that only the Platinum pipeline generated (and that generator reads the Platinum ROM). `generate.py
+  --headers-only` writes just the headers and `soulsilver.sh` runs it when they are missing. Fresh-clone builds of
+  each game alone are part of the release check now.
+
 ## 5. Audio
 
 - The DS sound engine (sequencer, channels) runs fully on the CPU; output goes through `sceSasCore`, the PSP's own

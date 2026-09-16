@@ -63,6 +63,7 @@ for trying a build on a PSP.
 |---|---|
 | `boot` (Platinum) | Blank save through the title and intro for 60 s of game time; sound engine ready, no traps. |
 | `oreburgh-belts` (Platinum, needs `--platinum-save`) | Warps to the south end of Oreburgh City and walks toward the Mine; the long conveyor belts (bounding boxes larger than the view) must still be drawn ten steps in. Caught the box-test bug. |
+| `floaroma-gate` (Platinum, needs `--platinum-save`) | Warps to Floaroma Town's south gate. Its translucent arch and shade are submitted before the ground; drawn in submission order they were a solid black block. Screenshot check by eye (`.work/tests/floaroma-gate.png`). |
 | `smoke` | Violet City: continue a save and walk around. |
 | `pc`, `easychat`, `pokedex`, `apricorn`, `vs-recorder`, `trainer-card`, `options*` | Menus and sub-applications, each from the same Violet City save; the `options-*` variants leave the Options screen every possible way. |
 | `catch` | Route 31 wild battle and a catch (battle overlay 12); also checks the field-move buffs are in the loaded move table. |
