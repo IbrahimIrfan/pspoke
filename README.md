@@ -181,11 +181,12 @@ At runtime the game reads its data files (graphics, maps, sound) from your ROM o
 
 pspoke would not exist without the work of other people. It is a thin layer on top of years of reverse engineering
 and tooling by others, and the people behind that work deserve the credit far more than this project does. In
-particular: **[cybervisi0n](https://github.com/cybervisi0n)**, whose PC port of Platinum and libntr SDK replacement
-are the foundation pspoke builds on; **[antonsynd](https://github.com/antonsynd)** for the HeartGold/SoulSilver
-decompilation fork that made SoulSilver possible; **[RoadrunnerWMC](https://github.com/RoadrunnerWMC)** for ndspy;
-**[lhearachel](https://github.com/lhearachel)** for metang; and the contributors to
-[pret](https://github.com/pret), [melonDS](https://github.com/melonDS-emu/melonDS) and [PSPDEV](https://github.com/pspdev).
+particular: **[pret](https://github.com/pret)** and its contributors, whose Platinum and HeartGold/SoulSilver
+decompilations are what everything here is built on; **[cybervisi0n](https://github.com/cybervisi0n)**, whose PC
+port of Platinum and libntr SDK replacement are the foundation pspoke builds on; **[antonsynd](https://github.com/antonsynd)**
+for the HeartGold/SoulSilver decompilation fork that made SoulSilver possible; **[RoadrunnerWMC](https://github.com/RoadrunnerWMC)**
+for ndspy; **[lhearachel](https://github.com/lhearachel)** for metang; and the
+[melonDS](https://github.com/melonDS-emu/melonDS) and [PSPDEV](https://github.com/pspdev) contributors.
 If you find pspoke useful, their projects are the ones to thank and support.
 
 - [pret](https://github.com/pret) and contributors: the Pokémon decompilation projects.
