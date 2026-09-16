@@ -36,6 +36,8 @@ if ! done_ soulsilver-game; then
   step ss-particles    bash -c "cd '$T/soulsilver-native-particles' && python3 build.py"
   step ss-billboards   bash -c "cd '$T/soulsilver-native-billboards' && python3 build.py && make bootstrap.o"
   # Service objects shared with Platinum (same sources and flags), plus SoulSilver's own sound backend.
+  # Overlay-id headers normally come from the Platinum pipeline (ov-generate); a SoulSilver-only build makes them here.
+  step ss-overlay-ids  bash -c "cd '$T/native-audio-app/overlays' && [ -f include/nitro/fs/native_overlay_ids.h ] || python3 generate.py --headers-only"
   step ss-services     make -C "$T/native-audio-app" owner_lock.o backup.o audio_bank.o audio_loader.o audio_seq.o audio_exchannel.o audio_channel.o offline.o gx_dma.o threads.o alarms.o mi_memory.o mi_dma.o backing.o graphics_registers.o power.o mic_pm.o os_sync.o sdl_threads.o ctrdg_absent.o
   step ss-sound-engine make -C "$T/native-sound-audio" audio_backend.o audio_engine.o sas_out.o
   for o in owner_lock backup audio_bank audio_loader audio_seq audio_exchannel audio_channel offline gx_dma threads alarms mi_memory mi_dma backing graphics_registers power mic_pm os_sync sdl_threads ctrdg_absent; do cp -f "$T/native-audio-app/$o.o" "$P/"; done

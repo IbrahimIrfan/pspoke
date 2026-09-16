@@ -11,6 +11,10 @@ h=p/'include/nitro/fs';h.mkdir(parents=True,exist_ok=True)
 s=(p.parent.parent/'native-graphics/libntr/include/nitro/fs/overlay.h').read_text().replace('#define\tFS_OVERLAY_ID(name)\t(0)','#include "native_overlay_ids.h"\n#define FS_OVERLAY_ID(name) (PSP_OVERLAY_ID_ ## name)')
 (h/'overlay.h').write_text(s)
 (h/'native_overlay_ids.h').write_text('\n'.join(f'#define PSP_OVERLAY_ID_{m["name"]} {m["id"]}u' for m in modules)+'\n')
+# --headers-only: the SoulSilver build needs the overlay-id headers (shared services include nitro.h)
+# but has no Platinum ROM; everything below reads the ROM.
+import sys
+if '--headers-only' in sys.argv: sys.exit(0)
 # ROM is read only; only original segment bounds/file IDs retained as metadata.
 rom=Path('@PLATINUM_ROM@')
 with rom.open('rb') as f:

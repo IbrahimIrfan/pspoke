@@ -128,12 +128,16 @@ plat_tests(){
     # which the box test used to cull at random. The screenshot at frame 2000 (about ten steps south) must still show them.
     PLAT_CHECKS=("log:[DIAG] warp done" "belts:2000")
     plat_case oreburgh-belts 2000 oreburgh-walk-south.h "$PLAT_SAVE" WARP_TO=45,302,775
-  else result PASS oreburgh-belts "skipped (needs --platinum-save, see tests/README.md)"; fi
+    # Floaroma Town's south gate: its translucent arch and shade are submitted before the ground. Drawn in
+    # submission order they came out as a solid black block (fixed by deferring translucent batches).
+    PLAT_CHECKS=("log:[DIAG] warp done")
+    plat_case floaroma-gate 2000 floaroma-sign.h "$PLAT_SAVE" WARP_TO=426,171,663
+  else result PASS oreburgh-belts floaroma-gate "skipped (needs --platinum-save, see tests/README.md)"; fi
 }
 
 ### main #####################################################################################################
 if [ "$LIST" = 1 ]; then cat <<'EOF'
-platinum:   boot (quick) oreburgh-belts (needs --platinum-save)
+platinum:   boot (quick) oreburgh-belts floaroma-gate (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
             options-b options-scene options-nochange options-after geonet gym-pryce rocket-radio-tower
             qol-friendship-evo qol-trade-item-evo qol-trade-level-evo qol-repel-yes qol-repel-no

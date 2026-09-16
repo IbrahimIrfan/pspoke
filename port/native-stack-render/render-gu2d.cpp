@@ -616,8 +616,9 @@ static void AsyncLogWindow(){
  sceKernelSignalSema(flipLock,1);
 }
 #endif
+extern "C" void G3SIM_FlushDeferred();
 static int Present(bool waitForVblank){
- if(!openFrame)return -1;G3SIM_FlushArray();if(frames%300==0)printf("[GU-LIST] frame=%u high_water=%u capacity=%u\n",frames,highWater,(unsigned)sizeof(list));GuFinishCounted();GeSyncTimed(geSync3DUs);PSPNativeG3TexturesComplete();G3ListPendingFreeDrain();openFrame=false;
+ if(!openFrame)return -1;G3SIM_FlushArray();G3SIM_FlushDeferred();if(frames%300==0)printf("[GU-LIST] frame=%u high_water=%u capacity=%u\n",frames,highWater,(unsigned)sizeof(list));GuFinishCounted();GeSyncTimed(geSync3DUs);PSPNativeG3TexturesComplete();G3ListPendingFreeDrain();openFrame=false;
 #ifdef OPT_GE_ASYNC
  AsyncSettle();
 #ifdef OPT_GE_ASYNC_VERIFY
