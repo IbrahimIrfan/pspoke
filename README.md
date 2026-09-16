@@ -2,167 +2,214 @@
 
 ![Status: beta](https://img.shields.io/badge/status-beta-yellow) ![Platform: PSP](https://img.shields.io/badge/platform-PSP-blue) [![Release](https://img.shields.io/github/v/release/IbrahimIrfan/pspoke?include_prereleases&label=release)](https://github.com/IbrahimIrfan/pspoke/releases) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
 
-Pokémon Platinum and SoulSilver as native PSP programs. Not an emulator: the game is compiled for the PSP and runs
-at close to full speed on real hardware.
+Pokémon Platinum and SoulSilver running **natively on a PSP**. The game is compiled into a real PSP program
+(it is not an emulator), so it runs at close to full speed on real hardware (tested on a PSP-3001).
 
-This repository contains no game code, assets, ROMs, saves or prebuilt EBOOTs. It is build scripts, PSP platform
-code and patches. You build the EBOOT yourself from the community decompilations and your own cartridge dump.
-Not affiliated with or endorsed by Nintendo, Game Freak, Creatures or The Pokémon Company. No warranty; see
-[LICENSE](LICENSE) (GPL-3.0, sections 15 and 16). Please don't ask for, or share, ROMs or prebuilt EBOOTs in the issues.
+> **Beta.** pspoke is still in beta: expect bugs, and keep backups of your saves. Bug reports and contributions are
+> very welcome, see [Bug reports and contributing](#bug-reports-and-contributing).
 
-The code, patches, tests and documentation here were written by AI.
+> **Bring your own ROM.** This repository contains **no** game code, graphics, music, text, ROMs, saves or prebuilt
+> EBOOTs. It is a set of build scripts, PSP platform code and patches. You build the EBOOT yourself, on your own
+> computer, from the community decompilation projects and **your own legally dumped cartridge**.
+>
+> pspoke is not associated with or endorsed by Nintendo, Game Freak, Creatures or The Pokémon Company. Please
+> don't ask for, or post links to, ROMs or prebuilt builds in issues.
 
-This is still a beta, so expect some rough edges, and keep a backup of your saves just in case.
+> **No warranty.** pspoke is provided as is, without warranty of any kind. Use it at your own risk: the author is not
+> liable for anything that happens to your PSP, memory stick, saves or computer, and building it yourself is your
+> responsibility. It is your responsibility to comply with the laws that apply to you, including only using a dump
+> of a game you own. See the [LICENSE](LICENSE) (GPL-3.0, sections 15 and 16).
+
+> **Written by AI.** The code, patches, tests and documentation in this repository were written by AI.
 
 ## Status
 
-| Game | ROM (SHA1) | State |
+| Game | ROM the build accepts (SHA1) | State |
 |---|---|---|
-| Platinum (US, Rev 1) | `0862ec35b24de5c7e2dcb88c9eea0873110d755c` | Playable. 30 fps; 26-30 in the heaviest city. |
-| SoulSilver (US) | `f8dc38ea20c17541a43b58c5e6d18c1732c7e582` | Playable. 29-30 fps in towns, lower in busy areas. |
+| Pokémon Platinum (US, Rev 1) | `0862ec35b24de5c7e2dcb88c9eea0873110d755c` | Playable. ~26-30 fps in the heaviest city on a PSP-3001, 30 fps elsewhere. |
+| Pokémon SoulSilver (US) | `f8dc38ea20c17541a43b58c5e6d18c1732c7e582` | Playable. ~29-30 fps in towns on a PSP-3001. |
 
-Sound works. Tested on a PSP-3001 running ARK-4; builds on macOS and Linux.
+Sound works. Both games include a few [quality-of-life changes](#quality-of-life-changes); each can be turned off at
+build time.
 
-### Not supported
+## Not supported yet
 
-- Wi-Fi and online features (GTS, Wi-Fi Plaza, online trades and battles, Mystery Gift over the internet).
-- DS-to-DS wireless: local trades and battles, Union Room, Download Play.
-- Microphone, Pokéwalker, Pal Park.
-- Other regions or languages, and other games (HeartGold, Diamond/Pearl).
-- A real touch screen: touch input uses a cursor instead (see Controls).
-- PSP-1000 (32 MB). It won't run there, and that isn't planned: the port needs about 38 MB of RAM, and what's left is
-  the DS memory map the game addresses directly rather than tunable buffers
-  ([issue #10](https://github.com/IbrahimIrfan/pspoke/issues/10)). It does run on the PSP-2000/3000/Go/E1000 and
-  on Vita/PSTV under Adrenaline.
+- **Wi-Fi and online features:** GTS, Wi-Fi Plaza, online trades and battles, Mystery Gift over the internet.
+- **DS wireless:** local trades and battles with another DS, Union Room, DS Download Play.
+- **Microphone** features.
+- **Pokéwalker** (SoulSilver): the PSP has no infrared port.
+- **Pal Park migration** (Platinum): there is no GBA cartridge slot.
+- **Other versions and regions:** only the two US ROMs listed above build (no HeartGold, Diamond/Pearl or
+  non-English releases).
+- **Touch screen:** there is no real touchscreen, so touch input uses the on-screen cursor (see Controls).
+- **Performance:** SoulSilver can dip below 30 fps in busy areas.
+- **PSP-1000 (phat, 32 MB):** does not run, and is not planned. The build uses `PSP_LARGE_MEMORY` and needs about
+  38 MB of main RAM (≈29 MB of code and DS-memory buffers plus an 8 MB heap), which only the PSP-2000 and later
+  (64 MB) have. After removing the unused memory we could find, what remains is the emulated DS memory map the game
+  code addresses directly, so fitting a 1000 would mean re-architecting that map, not tuning constants. The analysis
+  is in [issue #10](https://github.com/IbrahimIrfan/pspoke/issues/10). Targets: PSP-2000/3000/Go/E1000, PS Vita or
+  PSTV (Adrenaline).
+- **Tested hardware and computers:** only a PSP-3001 on ARK-4 has been tested. Building works on macOS and Linux;
+  Windows is untested for building the games and running them, though the toolchain setup has been confirmed on WSL2 (Ubuntu).
 
-## Building
+## What you need
 
-You need:
+- A PSP running custom firmware that can launch homebrew (tested: PSP-3001 on ARK-4).
+- Your own ROM dump of the game (the build checks the SHA1 above).
+- A Mac or a Linux PC with about 3 GB of free disk space and an internet connection.
 
-- a PSP with custom firmware,
-- your own ROM dump (checked against the SHA1s above),
-- a Mac or Linux machine with about 3 GB free and an internet connection.
+You don't need to install the PSP toolchain or any libraries yourself: the build downloads a pinned copy of the
+PSP compiler ([PSPDEV](https://github.com/pspdev/pspdev), about 150 MB) into the project folder the first time.
 
-The build downloads a pinned PSP toolchain into the project folder the first time (~150 MB), so the only things to
-install by hand are the basics:
+## Getting started (step by step)
 
-- macOS: `xcode-select --install`
+**1. Open a terminal.**
+- Mac: press ⌘ Space, type `Terminal`, press Enter.
+- Linux: open your Terminal app.
+
+**2. Install the basic tools (one time).**
+- Mac: run `xcode-select --install` and click **Install** in the window that appears (Apple's free command line
+  tools; if you skip this step, the build opens the same window for you).
 - Ubuntu/Debian: `sudo apt install git python3 make patch rsync curl build-essential`
 - Fedora: `sudo dnf install git python3 make patch rsync curl gcc`
-- Windows: use WSL2 (Ubuntu), clone inside the Linux filesystem (not `/mnt/c`), and follow the Linux steps. Toolchain
-  setup is confirmed on WSL2; the game builds themselves are untested there.
 
-Then:
+**3. Download pspoke.**
 
 ```sh
 git clone https://github.com/IbrahimIrfan/pspoke.git
 cd pspoke
-./build.sh platinum   --rom "/path/to/Platinum.nds"
-./build.sh soulsilver --rom "/path/to/SoulSilver.nds"
 ```
 
-The first build downloads the toolchain and decompilation sources (~1 GB) and takes 10-20 minutes; later builds are
-fast. Output is `dist/platinum/NativePlatinum/EBOOT.PBP` or `dist/soulsilver/NativeSoulSilver/EBOOT.PBP`.
-
-Other options:
-
-- `./build.sh setup` downloads the toolchain without building anything.
-- `./build.sh clean` starts over (downloads are kept).
-- `PSPDEV=/path/to/pspdev` uses your own toolchain instead of the downloaded one.
-- `--dev` builds a version with an on-screen fps counter and performance logging to `native-memlog.txt`
-  ([docs/DEVELOPING.md](docs/DEVELOPING.md)).
-- Menu icon and background: put `ICON0.PNG` (144x80) and `PIC1.PNG` (480x272) in `art/platinum/` or
-  `art/soulsilver/` before building ([art/README.md](art/README.md)).
-
-## Quality-of-life changes
-
-Both games get a few changes, all on by default and each switchable off at build time. They only change what runs
-in RAM; the ROM and save format are untouched, so saves move between builds with different flags.
-
-| Change | Off with |
-|---|---|
-| Instant text | `--no-instant-text` |
-| Trade evolutions without trading (level 36 or the held item from the Bag; happiness evolutions at any hour) | `--no-trade-evos` |
-| "Use another?" prompt when a Repel wears off | `--no-repel-prompt` |
-| HM moves can be forgotten | `--no-forget-hms` |
-| Cut, Rock Smash and Whirlpool buffed | `--no-move-buffs` |
-
-The full list, per Pokémon and item, is in [docs/QOL.md](docs/QOL.md).
-
-## Installing on the PSP
-
-With the memory stick connected in USB mode:
+**4. Build.** Type the command below, then drag your ROM file from Finder (or your file manager) into the terminal
+window to fill in its path, and press Enter:
 
 ```sh
-scripts/install.sh platinum   "/Volumes/<memory stick>" "/path/to/Platinum.nds"
-scripts/install.sh soulsilver "/Volumes/<memory stick>" "/path/to/SoulSilver.nds"
+./build.sh platinum --rom 
 ```
 
-This creates `PSP/GAME/NativePlatinum/` (or `NativeSoulSilver/`) with the EBOOT, a copy of your ROM, and a blank
-save if none exists. It never overwrites a save. By hand, the layout is:
+For SoulSilver use `./build.sh soulsilver --rom ` the same way.
+
+The first build downloads the toolchain and the decompilation sources (about 1 GB) and takes roughly 10-20 minutes.
+Later builds are much faster. When it finishes you get `dist/platinum/NativePlatinum/EBOOT.PBP` (or
+`dist/soulsilver/NativeSoulSilver/EBOOT.PBP`). You don't need a Platinum ROM to build SoulSilver.
+
+Useful extras:
+- Menu icon and background: put `ICON0.PNG` (144x80) and `PIC1.PNG` (480x272) in `art/platinum/` or
+  `art/soulsilver/` before building (see [art/README.md](art/README.md)).
+- `./build.sh setup` checks the requirements and downloads the toolchain without building anything.
+- `./build.sh clean` removes the build output and starts over (downloads are kept).
+- Already have your own PSPDEV install? Set `PSPDEV=/path/to/pspdev` and the build uses it instead.
+- Windows: use WSL2 (Ubuntu) and follow the Linux steps. Clone into the WSL Linux filesystem (not a `/mnt/c` path)
+  so the scripts keep Unix line endings. `./build.sh setup` has been confirmed working on WSL2; the game builds
+  themselves are still untested there.
+
+## Quality of Life changes
+
+pspoke makes a few small changes to both games. They are all **on by default** and each one can be left out with a
+build flag (`./build.sh platinum --rom ... --no-trade-evos`, for example). They change how the game behaves in RAM
+only; your ROM and the save format are untouched, so a save moves between builds with different switches.
+
+| Change | Flag to turn it off | Platinum | SoulSilver |
+|---|---|---|---|
+| **Instant text.** Dialogue prints a whole page at once at every text-speed setting; button prompts, scrolling and timed pauses still wait as before. | `--no-instant-text` | yes | yes |
+| **Trade evolutions without trading.** Kadabra, Machoke, Graveler and Haunter evolve at level 36. Pokémon that need a held item and a trade (Onix, Scyther, Seadra, Slowpoke, Poliwhirl, Porygon, Porygon2, Rhydon, Electabuzz, Magmar, Dusclops, Clamperl) evolve by using that item from the Bag like an evolution stone. Budew, Chingling and Riolu evolve from happiness at any time of day. Platinum also gives the baby Pokémon (Pichu, Cleffa, Igglybuff, Togepi, Azurill, Budew, Chingling, Happiny) a base happiness of 180 and lets Eevee evolve with the Sun, Moon and Leaf Stones. Based on Drayano's Renegade Platinum / Sacred Gold changes. | `--no-trade-evos` | yes | yes |
+| **Repel re-use prompt.** When a Repel wears off and you have another of the same kind, the game asks "Use another?" (as later games do). | `--no-repel-prompt` | yes | yes |
+| **HM moves can be forgotten** like any other move (no Move Deleter trip). | `--no-forget-hms` | yes | yes |
+| **Field-move buffs.** Cut 60 power / 100% accuracy, Rock Smash 60 power, Whirlpool 35 power / 85% (its Black/White values), so HM moves are less of a dead slot. | `--no-move-buffs` | yes | yes |
+
+[docs/QOL.md](docs/QOL.md) lists every change in detail (each affected Pokémon and item, and what differs between the
+two games). Changing a flag only rebuilds the handful of files it touches, so switching is quick.
+
+## Install on the PSP
+
+Connect the memory stick (USB mode) and run:
+
+```sh
+scripts/install.sh platinum   "/Volumes/<your memory stick>" "/path/to/your/Pokemon Platinum.nds"
+scripts/install.sh soulsilver "/Volumes/<your memory stick>" "/path/to/your/Pokemon SoulSilver.nds"
+```
+
+This creates `PSP/GAME/NativePlatinum/` (or `NativeSoulSilver/`) with the EBOOT, a copy of your ROM and, only if you
+don't already have one there, a blank save. It never overwrites an existing save. To do it by hand:
 
 ```
-PSP/GAME/NativePlatinum/EBOOT.PBP               dist/platinum/NativePlatinum/EBOOT.PBP
-PSP/GAME/NativePlatinum/Platinum.nds            your ROM
-PSP/GAME/NativePlatinum/Platinum.native.sav     python3 scripts/make_save.py Platinum.native.sav
+PSP/GAME/NativePlatinum/EBOOT.PBP                <- dist/platinum/NativePlatinum/EBOOT.PBP
+PSP/GAME/NativePlatinum/Platinum.nds             <- your ROM
+PSP/GAME/NativePlatinum/Platinum.native.sav      <- python3 scripts/make_save.py Platinum.native.sav (new game)
+
+PSP/GAME/NativeSoulSilver/EBOOT.PBP              <- dist/soulsilver/NativeSoulSilver/EBOOT.PBP
+PSP/GAME/NativeSoulSilver/SoulSilver.nds         <- your ROM
+PSP/GAME/NativeSoulSilver/SoulSilver.native.sav  <- python3 scripts/make_save.py SoulSilver.native.sav
 ```
 
-(SoulSilver: `NativeSoulSilver/`, `SoulSilver.nds`, `SoulSilver.native.sav`.) Launch it from the Game menu, and leave
-the CPU clock at default; the game sets 333 MHz itself.
+Then launch it from the PSP's Game menu. Keep the CPU at the default speed; the game sets 333 MHz itself.
 
-Saves are plain 512 KB DS saves (exactly 524,288 bytes). A save from an emulator or cartridge dump works if you rename it.
+**Controls:** the PSP buttons map to the DS buttons (○ = A, ✕ = B, △ = X, □ = Y, L/R, START, SELECT, D-pad).
+The touch screen is emulated with a cursor:
 
-### Controls
+- **R** (or SELECT + ✕) toggles stylus mode.
+- In stylus mode the **analog stick** moves the cursor (push further to move faster) and **L** taps the screen.
+  The D-pad and the other buttons keep working normally, so you can mix touch and button input.
+- Platinum only: SELECT + □ toggles sound.
 
-- PSP buttons map to the DS: ○ A, ✕ B, △ X, □ Y, L/R, START, SELECT, D-pad.
-- R (or SELECT+✕) toggles stylus mode. In stylus mode the analog stick moves the cursor and L taps; the D-pad and
-  buttons keep working.
-- Platinum only: SELECT+□ toggles sound.
+**Saves:** `Platinum.native.sav` / `SoulSilver.native.sav` are normal 512 KB DS saves. You can bring over a save from a DS emulator or
+cartridge dump by renaming it (it must be exactly 524,288 bytes). Back it up before experimenting.
 
-## Bugs and contributing
+## Developer builds
 
-If you hit a bug, open an issue with:
+```sh
+./build.sh platinum --rom "/path/to/Platinum.nds" --dev
+```
 
-- the game, what happened, and whether it repeats,
-- your PSP model and firmware (or your OS, if the build failed),
+`--dev` builds `dist/platinum-dev/` with an on-screen FPS/timing counter and detailed performance lines written to
+`native-memlog.txt` next to the EBOOT (frame timing, 3D renderer profile, game-thread profile, GPU sync stats).
+Normal builds have no on-screen counter and only log errors. See [docs/DEVELOPING.md](docs/DEVELOPING.md).
+
+## Bug reports and contributing
+
+pspoke is a beta, so reports and help are very welcome.
+
+**Found a bug?** Open an issue at [github.com/IbrahimIrfan/pspoke/issues](https://github.com/IbrahimIrfan/pspoke/issues) with:
+- the game and what happened (what you did right before, and whether it happens again),
+- your PSP model and firmware, and your computer's OS if the build failed,
 - the pspoke version (`git log -1 --oneline`),
-- if possible, `native-memlog.txt` from the game's folder on the memory stick.
+- if you can, `native-memlog.txt` from the game's folder on the memory stick (a `--dev` build logs more detail).
 
-Please don't attach ROMs, other people's saves, or EBOOTs.
+Please don't attach or link ROMs, saves from someone else's game, or prebuilt EBOOTs.
 
-Pull requests are welcome; run `tests/run.sh` first ([tests/README.md](tests/README.md)). Most wanted:
+**Want to contribute?** Pull requests are welcome (run `tests/run.sh` first; see [tests/README.md](tests/README.md)), especially for:
+- **Windows support** (building natively or confirming WSL works),
+- **other games:** Diamond/Pearl, HeartGold, and other regions or languages of Platinum/SoulSilver,
+- anything under [Not supported yet](#not-supported-yet), and performance (SoulSilver's busy areas in particular),
+- testing on other PSP models and firmware.
 
-- Windows builds,
-- other games and regions,
-- SoulSilver performance in busy areas,
-- testing on other PSP models.
+[docs/DEVELOPING.md](docs/DEVELOPING.md) explains how the build and the code are laid out, and [NOTES.md](NOTES.md)
+collects the hardware, porting and testing lessons learned so far (read it before debugging on a real PSP). Keep the same rules as the
+project: no ROM data, game assets or prebuilt EBOOTs in commits (changes to the decompilations go in `patches/`).
 
-[docs/DEVELOPING.md](docs/DEVELOPING.md) explains the layout, and [NOTES.md](NOTES.md) collects what we learned the
-hard way (read it before debugging on a real PSP). Same rules as the project: no game data in commits, and changes
-to the decompilations go in `patches/`.
-
-## How it works
+## How it works (short version)
 
 1. `build.sh` checks your ROM and downloads the decompilation and NitroSDK-replacement sources at pinned commits
    (`third_party.lock`).
-2. It applies the patches in `patches/` and generates headers from the decompilation's data.
-3. It compiles the game, the SDK libraries and pspoke's PSP platform layer (`port/`: memory and register emulation,
-   threads, audio, file system, save, input, on-screen keyboard) for the PSP's MIPS CPU.
-4. DS 2D and 3D drawing is translated to the PSP GPU by a renderer derived from melonDS.
-5. Everything is linked into `EBOOT.PBP` and checked against the firmware loader's limits.
+2. It applies pspoke's patches (`patches/`) and generates headers from the decompilation's data files.
+3. It compiles the game's C code, the SDK libraries and pspoke's PSP platform layer (`port/`: memory/register
+   emulation, threads, audio, file system, save, input, on-screen keyboard) for the PSP's MIPS CPU.
+4. The DS 3D and 2D graphics commands are translated to the PSP GPU by pspoke's renderer (derived from melonDS).
+5. Everything is linked into `EBOOT.PBP`, which is checked against the PSP firmware loader's limits.
 
-At runtime the game reads its assets from your ROM on the memory stick.
+At runtime the game reads its data files (graphics, maps, sound) from your ROM on the memory stick.
 
 ## Credits and licenses
 
-- [pret](https://github.com/pret) and contributors: the decompilation projects.
+- [pret](https://github.com/pret) and contributors: the Pokémon decompilation projects.
 - [cybervisi0n/pokeplatinum](https://github.com/cybervisi0n/pokeplatinum), [libntr](https://github.com/cybervisi0n/libntr)
   (MIT), libntrsystem, libntrdwc, libntrwifi, libvct: Platinum port base and NitroSDK replacement.
 - [antonsynd/pokeheartgold-slop](https://github.com/antonsynd/pokeheartgold-slop): HeartGold/SoulSilver decompilation fork.
-- [melonDS](https://github.com/melonDS-emu/melonDS) (GPL-3.0): the DS 2D renderer ours is derived from.
-- [pret/pokeheartgold](https://github.com/pret/pokeheartgold): SoulSilver asset ordering.
-- [ndspy](https://github.com/RoadrunnerWMC/ndspy) (GPL-3.0, bundled): reads the overlay table from the SoulSilver ROM.
+- [melonDS](https://github.com/melonDS-emu/melonDS) (GPL-3.0): the DS 2D renderer pspoke's renderer is derived from.
+- [pret/pokeheartgold](https://github.com/pret/pokeheartgold): used to check SoulSilver asset ordering.
+- [ndspy](https://github.com/RoadrunnerWMC/ndspy) (GPL-3.0, bundled): reads the overlay table from your SoulSilver ROM.
 - [metang](https://github.com/lhearachel/metang), [PSPDEV](https://github.com/pspdev).
 
-pspoke is GPL-3.0 (`LICENSE`) because the renderer is derived from melonDS. Third-party sources keep their own
-licenses and are downloaded at build time. The games belong to their owners.
+pspoke is licensed under the **GNU General Public License v3.0** (`LICENSE`) because its renderer is derived from
+melonDS. Third-party sources keep their own licenses and are downloaded at build time, not included here.
+The games are the property of their respective owners.
