@@ -83,7 +83,7 @@ for trying a build on a PSP.
 
 ## Platinum scenarios and `--platinum-save`
 
-Platinum has no committed save fixture yet (issue #7), so scenarios that need the overworld take a save you supply:
+Platinum has no committed save fixture yet, so scenarios that need the overworld take a save you supply:
 `--platinum-save path/to/copy.sav` (or `PLATINUM_SAVE=...`). Only a copy is ever staged; the file is never modified.
 Any save that continues into the overworld works, because the scenario warps where it needs to go with the
 `WARP_TO=<mapHeaderId>,<x>,<z>` diagnostic (`port/native-audio-app/diag_warp.c`; map ids are the decompilation's
