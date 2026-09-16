@@ -8,6 +8,7 @@
 | `scripts/` | Build steps (`fetch.sh`, `stage.sh`, `platinum.sh`, ...), `install.sh`, `make_save.py`, `check_native_pbp.py` (PSP loader limits). |
 | `port/` | pspoke's own code, laid out as the build tree expects (`port/<component>/...`). |
 | `patches/` | Patches applied to the downloaded decompilations and to generated per-overlay source copies. |
+| `docs/QOL.md` | Every quality-of-life change, per Pokémon/item, and its build flag. |
 | `tests/` | Regression suite (`run.sh`), synthetic save fixtures, `tests/README.md`. |
 | `third_party/melonDS/` | The four melonDS headers the renderer includes (GPL-3.0). |
 | `.cache/upstream/` | Downloaded pinned sources (created by the build). |
