@@ -57,25 +57,15 @@ PSP compiler ([PSPDEV](https://github.com/pspdev/pspdev), about 150 MB) into the
 
 ## Building
 
-Prerequisites: git, python3, make, patch, rsync and curl. `build.sh` checks for them and, if any are missing,
-offers to install them for you: on Linux through apt, dnf, pacman or zypper (with `sudo`, after asking; set
-`PSPPOKE_ASSUME_YES=1` to skip the question), and on macOS by opening the installer for Apple's command line
-tools, which include all of them. To install them yourself instead:
-
-- macOS: `xcode-select --install`
-- Ubuntu/Debian: `sudo apt install git python3 make patch rsync curl`
-- Fedora: `sudo dnf install git python3 make patch rsync curl`
-- Windows: use WSL2 (Ubuntu) and follow the Linux steps. Clone inside the WSL Linux filesystem (not `/mnt/c`) so the
-  scripts keep LF line endings. Toolchain setup is confirmed on WSL2; the game builds themselves are untested there.
-
-Then:
-
 ```sh
 git clone https://github.com/IbrahimIrfan/pspoke.git
 cd pspoke
 ./build.sh platinum   --rom "/path/to/Platinum.nds"
 ./build.sh soulsilver --rom "/path/to/SoulSilver.nds"
 ```
+
+`build.sh` checks for the few tools it needs (git, python3, make, patch, rsync, curl) and offers to install any that
+are missing. Details and per-platform notes (macOS, Linux, Windows/WSL) are in [docs/INSTALL.md](docs/INSTALL.md).
 
 `build.sh` verifies the ROM's SHA1 (see the table above), and on the first run downloads the pinned toolchain
 (about 150 MB) and the decompilation sources (about 1 GB), so the first build takes 10-20 minutes; incremental
@@ -168,7 +158,7 @@ Please don't attach or link ROMs, saves from someone else's game, or prebuilt EB
 **Want to contribute?** Pull requests are welcome (run `tests/run.sh` first; see [tests/README.md](tests/README.md)), especially for:
 - **Windows support** (building natively or confirming WSL works),
 - **other games:** Diamond/Pearl, HeartGold, and other regions or languages of Platinum/SoulSilver,
-- anything under [Not supported yet](#not-supported-yet), and performance (SoulSilver's busy areas in particular),
+- anything under [Not supported yet](#not-supported-yet),
 - testing on other PSP models and firmware.
 
 [docs/DEVELOPING.md](docs/DEVELOPING.md) explains how the build and the code are laid out, and [NOTES.md](NOTES.md)
