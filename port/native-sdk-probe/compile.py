@@ -5,7 +5,7 @@ roots=[top/'native-graphics/libntr',top/'native-probe/libntrsystem']
 inc=[top/'native-probe/generated']+[r/'include' for r in roots]
 for r in roots:
  inc.extend(p for p in (r/'libraries').glob('*/include') if p.is_dir())
-flags=['-O2','-G0','-std=gnu99','-ffunction-sections','-fdata-sections','-DSDK_VERSION_MAJOR=4','-include',str(roots[0]/'include/pch/nitro_pch.h'),'-DSDK_PORT','-DSDK_X86','-DSDK_TS','-DSDK_4M','-DSDK_FINALROM','-DNNS_FINALROM','-D_NITRO','-DSDL_MAIN_HANDLED']+['-I'+str(p) for p in inc]
+flags=['-ffile-prefix-map='+str(top)+'=/pspoke/build/tree/test-out/deterministic-path-token-----','-O2','-G0','-std=gnu99','-ffunction-sections','-fdata-sections','-DSDK_VERSION_MAJOR=4','-include',str(roots[0]/'include/pch/nitro_pch.h'),'-DSDK_PORT','-DSDK_X86','-DSDK_TS','-DSDK_4M','-DSDK_FINALROM','-DNNS_FINALROM','-D_NITRO','-DSDL_MAIN_HANDLED']+['-I'+str(p) for p in inc]
 entries=[]
 for root in roots:
  for manifest in sorted((root/'libraries').glob('*/src/meson.build')):
