@@ -58,9 +58,14 @@ static s32 RomCachedRead(u32 pos,void*dst,u32 len){
   if(slot<0){
    slot=0;for(int i=1;i<ROM_CACHE_BLOCKS;i++)if(romCacheLRU[i]<romCacheLRU[slot])slot=i;
    u32 want=ROM_CACHE_BLOCK;if((uint64_t)base+want>romSize)want=romSize>base?romSize-base:0;
+   /* A sticky EOF/error flag left by an earlier read must not short-circuit this one (the original
+      per-read code cleared it; on SoulSilver dropping this silenced the sound banks). */
+   clearerr(romStream);
    if(fseek(romStream,(long)base,SEEK_SET)){romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}
    size_t got=want?fread(romCache[slot],1,want,romStream):0;
-   if(want&&ferror(romStream)){clearerr(romStream);romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}
+   /* Error OR an unexpected short read: never cache a poisoned block (want is already clamped at the
+      ROM end, so a full read always has got == want). */
+   if(want&&(ferror(romStream)||got!=want)){clearerr(romStream);romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}
    romCacheTag[slot]=base;romCacheLen[slot]=(u32)got;st_blockMiss++;
   }else st_blockHit++;
   romCacheLRU[slot]=++romCacheClock;
