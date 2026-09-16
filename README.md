@@ -70,7 +70,7 @@ are missing. Details and per-platform notes (macOS, Linux, Windows/WSL) are in [
 `build.sh` verifies the ROM's SHA1 (see the table above), and on the first run downloads the pinned toolchain
 (about 150 MB) and the decompilation sources (about 1 GB), so the first build takes 10-20 minutes; incremental
 builds are much faster. The output is `dist/platinum/NativePlatinum/EBOOT.PBP` or
-`dist/soulsilver/NativeSoulSilver/EBOOT.PBP`. A Platinum ROM is not needed to build SoulSilver.
+`dist/soulsilver/NativeSoulSilver/EBOOT.PBP`.
 
 Options:
 
