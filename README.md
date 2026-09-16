@@ -26,8 +26,8 @@ Pokémon Platinum and SoulSilver running **natively on a PSP**. The game is comp
 
 | Game | ROM the build accepts (SHA1) | State |
 |---|---|---|
-| Pokémon Platinum (US, Rev 1) | `0862ec35b24de5c7e2dcb88c9eea0873110d755c` | Playable. ~26-30 fps in the heaviest city on a PSP-3001, 30 fps elsewhere. |
-| Pokémon SoulSilver (US) | `f8dc38ea20c17541a43b58c5e6d18c1732c7e582` | Playable. ~29-30 fps in towns on a PSP-3001. |
+| Pokémon Platinum (US, Rev 1) | `0862ec35b24de5c7e2dcb88c9eea0873110d755c` | Playable. Around 30 fps most of the time, dropping during heavier action. |
+| Pokémon SoulSilver (US) | `f8dc38ea20c17541a43b58c5e6d18c1732c7e582` | Playable. Around 30 fps most of the time, dropping during heavier action. |
 
 Sound works. Both games include a few [quality-of-life changes](#quality-of-life-changes); each can be turned off at
 build time.
@@ -39,8 +39,8 @@ build time.
 - **Microphone** features.
 - **Other versions and regions:** only the two US ROMs listed above build (no HeartGold, Diamond/Pearl or
   non-English releases).
-- **Tested hardware and computers:** only a PSP-3001 on ARK-4 has been tested. Building works on macOS and Linux;
-  Windows is untested for building the games and running them, though the toolchain setup has been confirmed on WSL2 (Ubuntu).
+- **Windows:** untested for building and running the games; the toolchain setup is confirmed on WSL2 (Ubuntu).
+  Building works on macOS and Linux.
 
 ## What you need
 
@@ -121,12 +121,14 @@ PSP/GAME/NativeSoulSilver/SoulSilver.native.sav  <- python3 scripts/make_save.py
 
 Then launch it from the PSP's Game menu. Keep the CPU at the default speed; the game sets 333 MHz itself.
 
-**Controls:** the PSP buttons map to the DS buttons (○ = A, ✕ = B, △ = X, □ = Y, L/R, START, SELECT, D-pad).
-The touch screen is emulated with a cursor:
+**Controls:** the PSP buttons map to the DS buttons (○ = A, ✕ = B, △ = X, □ = Y, L, START, SELECT, D-pad). R is
+the stylus toggle, so the DS R button is not available (the games barely use it). The touch screen is emulated with
+a cursor:
 
 - **R** (or SELECT + ✕) toggles stylus mode.
 - In stylus mode the **analog stick** moves the cursor (push further to move faster) and **L** taps the screen.
   The D-pad and the other buttons keep working normally, so you can mix touch and button input.
+- **L + R + SELECT** quits the game back to the PSP menu.
 
 **Saves:** `Platinum.native.sav` / `SoulSilver.native.sav` are normal 512 KB DS saves. You can bring over a save from a DS emulator or
 cartridge dump by renaming it (it must be exactly 524,288 bytes). Back it up before experimenting.
@@ -162,8 +164,8 @@ Please don't attach or link ROMs, saves from someone else's game, or prebuilt EB
 - testing on other PSP models and firmware.
 
 [docs/DEVELOPING.md](docs/DEVELOPING.md) explains how the build and the code are laid out, and [NOTES.md](NOTES.md)
-collects the hardware, porting and testing lessons learned so far (read it before debugging on a real PSP). Keep the same rules as the
-project: no ROM data, game assets or prebuilt EBOOTs in commits (changes to the decompilations go in `patches/`).
+collects the hardware, porting and testing lessons learned so far (read it before debugging on a real PSP). The same rules apply to
+contributions: no ROM data, game assets or prebuilt EBOOTs in commits (changes to the decompilations go in `patches/`).
 
 ## How it works
 

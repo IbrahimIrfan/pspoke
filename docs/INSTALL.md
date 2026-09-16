@@ -10,3 +10,6 @@ tools, which include all of them. To install them yourself instead:
 - Fedora: `sudo dnf install git python3 make patch rsync curl`
 - Windows: use WSL2 (Ubuntu) and follow the Linux steps. Clone inside the WSL Linux filesystem (not `/mnt/c`) so the
   scripts keep LF line endings. Toolchain setup is confirmed on WSL2; the game builds themselves are untested there.
+
+The toolchain and source downloads live under `.cache/` in the project folder. To share them between checkouts or
+keep them somewhere else, set `PSPPOKE_CACHE=/path/to/cache`.
