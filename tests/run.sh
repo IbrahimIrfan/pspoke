@@ -8,10 +8,11 @@
 #   tests/run.sh --list                                             # scenario names
 #   options: --skip-build (use the existing .work tree), PPSSPP_HEADLESS=/path/to/PPSSPPHeadless (emulator scenarios)
 source "$(dirname "$0")/../scripts/phases.sh"
-PLAT_ROM="${PLATINUM_ROM:-}"; SS_ROM="${SOULSILVER_ROM:-}"; QUICK=0; ONLY=""; SKIP_BUILD=0; LIST=0
+PLAT_ROM="${PLATINUM_ROM:-}"; SS_ROM="${SOULSILVER_ROM:-}"; PLAT_SAVE="${PLATINUM_SAVE:-}"; QUICK=0; ONLY=""; SKIP_BUILD=0; LIST=0
 while [ $# -gt 0 ]; do case "$1" in
   --platinum-rom) PLAT_ROM="$2"; shift 2;;
   --soulsilver-rom) SS_ROM="$2"; shift 2;;
+  --platinum-save) PLAT_SAVE="$2"; shift 2;;   # a copy of a save in the overworld (never modified); see tests/README.md
   --quick) QUICK=1; shift;;
   --only) ONLY=",$2,"; shift 2;;
   --skip-build) SKIP_BUILD=1; shift;;
@@ -35,6 +36,7 @@ judge(){ local name=$1 log=$2; shift 2; local why="" n
   for c in "$@"; do case "$c" in
     overlay:*) grep -a -q -E "SS-OVERLAY\] native load id=${c#overlay:}([^0-9]|$)" "$log" || why="$why missing-overlay-${c#overlay:}";;
     log:*) grep -a -q -F -- "${c#log:}" "$log" || why="$why missing-log:'${c#log:}'";;
+    belts:*) python3 "$ROOT/tests/platinum/count_belt_pixels.py" "$OUT/$name.png" >/dev/null || why="$why belts-not-drawn";;
   esac; done
   local fps; fps=$(grep -a -o 'average_fps=[0-9.]*' "$log" | tail -1 | cut -d= -f2 || true); [ -z "$fps" ] || fps="emulator fps $fps"
   if [ -z "$why" ]; then result PASS "$name" "$fps"; else result FAIL "$name" "${why# } (see .work/tests/$name.log and .png)"; fi; }
@@ -102,23 +104,36 @@ ss_tests(){
 
 ### Platinum #################################################################################################
 A="$T/native-audio-app"
-# plat_build TAG FRAMES : relink with a frame bound (Platinum reads no probe-frame-limit.txt; the bound is compiled in).
-# Platinum has no save fixtures or replays yet (see tests/README.md), so its only scenario is a bounded boot.
-plat_build(){ printf '    %-28s' "relink platinum ($1)"
-  if (cd "$A" && rm -f frame.o input.o osk.o naming_osk.o main.o native-app.elf native-app.prx EBOOT.PBP PARAM.SFO \
-      && make DEV=0 EXTRA_CFLAGS="-DPSP_NATIVE_PROBE_FRAMES=$2") > "$OUT/build-platinum-$1.log" 2>&1; then echo ok
+# plat_build TAG FRAMES [SCRIPT.h] [MAKEVARS...] : relink with a frame bound (Platinum reads no probe-frame-limit.txt;
+# the bound is compiled in), optionally a scripted input header (tests/platinum/*.h) and diagnostic make variables
+# such as WARP_TO=<map>,<x>,<z> (see port/native-audio-app/diag_warp.c).
+plat_build(){ local tag=$1 frames=$2 script=${3:-}; shift 2; [ $# -gt 0 ] && shift; local cf="-DPSP_NATIVE_PROBE_FRAMES=$frames"
+  [ -z "$script" ] || cf="$cf -DPSP_NATIVE_SCRIPTED_INPUT -DPSP_NATIVE_INPUT_SCRIPT=\\\"$ROOT/tests/platinum/$script\\\""
+  printf '    %-28s' "relink platinum ($tag)"
+  if (cd "$A" && rm -f frame.o input.o osk.o naming_osk.o main.o diag_warp.o native-app.elf native-app.prx EBOOT.PBP PARAM.SFO \
+      && make DEV=0 "$@" EXTRA_CFLAGS="$cf") > "$OUT/build-platinum-$tag.log" 2>&1; then echo ok
   else echo "FAILED (see .work/tests/build-platinum-$1.log)"; tail -5 "$OUT/build-platinum-$1.log"; exit 1; fi; }
+# plat_case NAME FRAMES SCRIPT SAVE MAKEVARS... : relink, run, judge (the CHECKS are taken from PLAT_CHECKS).
+plat_case(){ local name=$1 frames=$2 script=$3 save=$4; shift 4; want "$name" || return 0
+  plat_build "$name" "$frames" "$script" "$@"
+  (cd "$A" && python3 run_probe.py --rom "$PLAT_ROM" --ppsspp "$PPSSPP" --seconds 600 ${save:+--save "$save"}) > "$OUT/$name.probe.txt" 2>&1 || true
+  keep_run "$name" "$A"; judge "$name" "$OUT/$name.log" "${PLAT_CHECKS[@]}"; }
 plat_tests(){
-  want boot || return 0
   cp -f "$ROOT/port/native-audio-app/run_probe.py" "$A/"
-  plat_build boot 1800   # blank save: title, intro and the first prompt; 60 s of game time
-  (cd "$A" && python3 run_probe.py --rom "$PLAT_ROM" --ppsspp "$PPSSPP" --seconds 600) > "$OUT/boot.probe.txt" 2>&1 || true
-  keep_run boot "$A"; judge boot "$OUT/boot.log" "log:[AUDIO-SAS] ready: sceSasCore"
+  PLAT_CHECKS=("log:[AUDIO-SAS] ready: sceSasCore")
+  plat_case boot 1800 "" ""   # blank save: title, intro and the first prompt; 60 s of game time
+  [ "$QUICK" = 1 ] && return
+  if [ -n "$PLAT_SAVE" ]; then
+    # Oreburgh City south end into the Mine: the long conveyor belts have bounding boxes larger than the view,
+    # which the box test used to cull at random. The screenshot at frame 2000 (about ten steps south) must still show them.
+    PLAT_CHECKS=("log:[DIAG] warp done" "belts:2000")
+    plat_case oreburgh-belts 2000 oreburgh-walk-south.h "$PLAT_SAVE" WARP_TO=45,302,775
+  else result PASS oreburgh-belts "skipped (needs --platinum-save, see tests/README.md)"; fi
 }
 
 ### main #####################################################################################################
 if [ "$LIST" = 1 ]; then cat <<'EOF'
-platinum:   boot (quick)
+platinum:   boot (quick) oreburgh-belts (needs --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
             options-b options-scene options-nochange options-after geonet gym-pryce rocket-radio-tower
             qol-friendship-evo qol-trade-item-evo qol-trade-level-evo qol-repel-yes qol-repel-no

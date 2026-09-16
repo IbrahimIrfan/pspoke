@@ -102,6 +102,14 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
   117x88 panel on the right, swapped into the big slot in stylus mode. The firmware OSK and the DEV fps counter draw
   with `pspDebugScreen` onto the published buffer.
 
+- The DS box test (G3X_BoxTest) decides whether the game draws a map prop at all. The libntr PC simulator this
+  port descends from ships `ClipSegment` commented out inside the box test's polygon clipper, so any bounding box
+  with no corner inside the view (a conveyor belt longer than the screen) got a verdict from uninitialised stack
+  data: Oreburgh City's belts vanished for a few steps and came back. Small props never showed it. Enabling the
+  real interpolation (it was already in the file) fixed it; the fast path that answers the unambiguous cases
+  without clipping is still valid. Anything inherited from a PC simulator that "works on PC" may only work because
+  the PC build never depended on the answer.
+
 ## 5. Audio
 
 - The DS sound engine (sequencer, channels) runs fully on the CPU; output goes through `sceSasCore`, the PSP's own

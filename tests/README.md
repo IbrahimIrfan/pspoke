@@ -8,7 +8,8 @@ traps, missing overlays and the events each scenario is expected to reach.
 # build + loader audit only (no emulator needed)
 tests/run.sh --platinum-rom "path/to/Platinum.nds" --soulsilver-rom "path/to/SoulSilver.nds"
 
-# with the emulator scenarios (about 25 minutes for everything, 5 for --quick)
+# with the emulator scenarios (about 25 minutes for everything, 5 for --quick); add --platinum-save <copy.sav>
+# for the Platinum overworld scenarios (see below)
 export PPSSPP_HEADLESS=/path/to/PPSSPPHeadless
 tests/run.sh --soulsilver-rom "path/to/SoulSilver.nds"                 # every SoulSilver scenario
 tests/run.sh --soulsilver-rom "path/to/SoulSilver.nds" --quick         # smoke scenarios only
@@ -61,6 +62,7 @@ for trying a build on a PSP.
 | Name | What it covers |
 |---|---|
 | `boot` (Platinum) | Blank save through the title and intro for 60 s of game time; sound engine ready, no traps. |
+| `oreburgh-belts` (Platinum, needs `--platinum-save`) | Warps to the south end of Oreburgh City and walks toward the Mine; the long conveyor belts (bounding boxes larger than the view) must still be drawn ten steps in. Caught the box-test bug. |
 | `smoke` | Violet City: continue a save and walk around. |
 | `pc`, `easychat`, `pokedex`, `apricorn`, `vs-recorder`, `trainer-card`, `options*` | Menus and sub-applications, each from the same Violet City save; the `options-*` variants leave the Options screen every possible way. |
 | `catch` | Route 31 wild battle and a catch (battle overlay 12). |
@@ -79,10 +81,21 @@ for trying a build on a PSP.
    and check the run's `screen.png` shows what you meant.
 3. Add an `ss_case` line to `tests/run.sh` with the events the log must contain, and list it here.
 
+## Platinum scenarios and `--platinum-save`
+
+Platinum has no committed save fixture yet (issue #7), so scenarios that need the overworld take a save you supply:
+`--platinum-save path/to/copy.sav` (or `PLATINUM_SAVE=...`). Only a copy is ever staged; the file is never modified.
+Any save that continues into the overworld works, because the scenario warps where it needs to go with the
+`WARP_TO=<mapHeaderId>,<x>,<z>` diagnostic (`port/native-audio-app/diag_warp.c`; map ids are the decompilation's
+`MAP_HEADER_*` enum values, e.g. Oreburgh City 45, Oreburgh Mine B1F 198). Platinum inputs are compiled in from
+`tests/platinum/*.h` (`struct ScriptEvent{first,last,bits,x,y,down}`, PSP button bits, optional touch point).
+Without `--platinum-save` these scenarios are reported as skipped.
+
 ## Not covered yet
 
-- Platinum has no save fixtures or input replays: the old scripted new-game replay (`input_script.h`) predates the
-  instant-text change and no longer lines up with the intro. Recording a new one (the intro needs touch presses,
-  which the script format supports) and saving a fixture from it would let Platinum get the same scenario set.
+- A committed Platinum fixture: the old scripted new-game replay (`input_script.h`) predates the instant-text
+  change and no longer lines up with the intro. Recording a new one (the intro needs touch presses, which the
+  script format supports) and saving a synthetic fixture from it would let the Platinum scenarios run without
+  `--platinum-save`.
 - Nothing here measures performance or sound on the real PSP; see `docs/DEVELOPING.md` for the `--dev` build's
   on-card logging.

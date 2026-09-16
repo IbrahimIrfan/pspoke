@@ -26,6 +26,11 @@ ifneq ($(QOL_TEST),)
 OBJS += qol_test.o
 CFLAGS += -DPSP_NATIVE_QOL_TEST_MODE=$(QOL_TEST)
 endif
+# TEST ONLY: WARP_TO=<mapHeaderId>,<x>,<z>[,<dir>] links diag_warp.o (FieldTask_Run wrap, see diag_warp.c).
+ifneq ($(WARP_TO),)
+OBJS += diag_warp.o
+CFLAGS += -DWARP_TO=\"$(WARP_TO)\"
+endif
 # PSP_NATIVE_GAME_PROF: coarse game-thread CPU buckets + allocator counters ([GPROF] card-log lines
 # every 600 frames). On with DEV=1, or `make GAME_PROF=1` (adds the define, gameprof.o and the wraps).
 ifneq ($(GAME_PROF),)
@@ -130,4 +135,7 @@ search_disabled.o: services/search_disabled.c
 LDFLAGS += -Wl,--wrap=G3X_GetClipMtx -Wl,--wrap=ApplicationManager_New -Wl,--wrap=CTRDG_Init,--wrap=CommManager_InitializeSearchParty,--wrap=CommManager_GetAvailableConnections
 ifneq ($(QOL_TEST),)
 LDFLAGS += -Wl,--wrap=Repel_UpdateSteps
+endif
+ifneq ($(WARP_TO),)
+LDFLAGS += -Wl,--wrap=FieldTask_Run
 endif

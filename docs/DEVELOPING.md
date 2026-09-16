@@ -75,6 +75,9 @@ request; `tests/README.md` explains the scenarios, fixtures and how to add one.
 Other checks:
 - `python3 scripts/check_native_pbp.py dist/.../EBOOT.PBP`: the retail PSP loader rejects EBOOTs with a section ending
   past 32 MiB (error 80020148). Every build runs this; PPSSPP does not enforce it.
+- Diagnostic make variables (test links only, never in `./build.sh` output): Platinum `WARP_TO=<map>,<x>,<z>`
+  (`diag_warp.c`) and `QOL_TEST`; SoulSilver `WARP_TO`, `NO_WILD`, `GIVE_SPECIES`, `REPEL_STEPS`, ... (see its
+  Makefile). `tests/run.sh` uses them to set scenes up.
 - One-off emulator runs: `run_probe.py` in `port/native-audio-app/` and `port/soulsilver-native-core/nitromain-perf/`
   stage a throwaway memory stick and run the EBOOT (`--ppsspp`, `--rom`, `--save`/`--fixture`, `--seconds`;
   SoulSilver also takes `--input-script` and `--frames`). Emulator timings say nothing about PSP speed.

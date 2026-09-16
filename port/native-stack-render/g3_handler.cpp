@@ -153,13 +153,13 @@ static int ClipAgainstPlane(fx32 verts[][4], int nVerts, int clipStart, int comp
 
             fx32 * vprev = verts[prev];
             if(vprev[comp] <= vprev[3]) {
-                //ClipSegment((fx32*)&temp[c], &vtx[0], vprev, comp, 1, attribs);
+                ClipSegment((fx32*)&temp[c], &vtx[0], vprev, comp, 1, attribs);
                 c++;
             }
 
             fx32 * vnext = verts[next];
             if(vnext[comp] <= vnext[3]) {
-                //ClipSegment((fx32*)&temp[c], &vtx[0], vnext, comp, 1, attribs);
+                ClipSegment((fx32*)&temp[c], &vtx[0], vnext, comp, 1, attribs);
                 c++;
             }
         } else {
@@ -178,13 +178,13 @@ static int ClipAgainstPlane(fx32 verts[][4], int nVerts, int clipStart, int comp
         if(vtx[comp] < -vtx[3]) {
             fx32 * vprev = temp[prev];
             if(vprev[comp] >= -vprev[3]) {
-                //ClipSegment((fx32*)&verts[c], &vtx[0], vprev, comp, -1, attribs);
+                ClipSegment((fx32*)&verts[c], &vtx[0], vprev, comp, -1, attribs);
                 c++;
             }
 
             fx32 * vnext = temp[next];
             if(vnext[comp] >= -vnext[3]) {
-                //ClipSegment((fx32*)&verts[c], &vtx[0], vnext, comp, -1, attribs);
+                ClipSegment((fx32*)&verts[c], &vtx[0], vnext, comp, -1, attribs);
                 c++;
             }
         } else {
@@ -485,9 +485,10 @@ void G3SIM_Begin(GXBegin type)
 }
 
 #ifdef OPT_MATH_BOX
-/* Exact per-face outcome of G3SIM_ClipPolygon(face,4,0,FALSE) where it does not depend on the
-   (uninitialised) entries the stubbed ClipSegment leaves behind: 1 = count>0, 0 = count 0,
-   -1 = undetermined. A vertex inside all three axes is copied by every pass. A plane whose
+/* Per-face outcome of G3SIM_ClipPolygon(face,4,0,FALSE) decided without running the clipper:
+   1 = count>0, 0 = count 0, -1 = undetermined (run the real clipper). ClipSegment used to be
+   stubbed, which left the undetermined case reading uninitialised vertices: map props whose
+   bounding box is larger than the view (long conveyor belts) then vanished at random. A vertex inside all three axes is copied by every pass. A plane whose
    vertices are all beyond +w yields 0 in the first pass; all beyond -w (and none beyond +w)
    yields 0 in the second. Planes before that must keep all four vertices unchanged. */
 static int BoxFaceClass(const fx32*v[4]){
