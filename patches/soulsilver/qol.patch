@@ -338,3 +338,94 @@
  };
  const u32 sNumScriptCmds = NELEMS(gScriptCmdTable);
  
+--- a/src/item.c
++++ b/src/item.c
+@@ -973,6 +973,12 @@
+ 
+ BOOL MoveIsHM(u16 moveId) {
+     u8 i;
++#if PSPOKE_QOL_FORGET_HMS
++    // SS QoL: HM moves can be forgotten like any other move (summary screen, level-up and TM prompts all
++    // ask here). The party menu's "do not consume an HM" check uses the item id instead (party_menu_items.c).
++    (void)i; (void)moveId;
++    return FALSE;
++#endif
+ 
+     for (i = 0; i < NUM_HMS; i++) {
+         if (sTMHMMoves[i + ITEM_HM01 - ITEM_TM01] == moveId) {
+--- a/src/party_menu_items.c
++++ b/src/party_menu_items.c
+@@ -1,4 +1,5 @@
+ #include "party_menu_items.h"
++#include "pspoke_qol.h"
+ 
+ #include "global.h"
+ 
+@@ -901,7 +902,11 @@
+     data = GetMoveMaxPP(partyMenu->args->moveId, 0);
+     SetMonData(mon, MON_DATA_MOVE1_PP + moveIdx, &data);
+     if (partyMenu->args->itemId != ITEM_NONE) {
++#if PSPOKE_QOL_FORGET_HMS
++        if (partyMenu->args->itemId < ITEM_HM01 || partyMenu->args->itemId > ITEM_HM08) { // SS QoL: MoveIsHM is always FALSE
++#else
+         if (!MoveIsHM(partyMenu->args->moveId)) {
++#endif
+             Bag_TakeItem(partyMenu->args->bag, partyMenu->args->itemId, 1, HEAP_ID_PARTY_MENU);
+         }
+         MonApplyFriendshipMod(mon, FRIENDSHIP_EVENT_LEARN_TMHM, PartyMenu_GetCurrentMapSec(partyMenu));
+--- a/src/move.c
++++ b/src/move.c
+@@ -1,4 +1,5 @@
+ #include "move.h"
++#include "pspoke_qol.h"
+ 
+ #include "global.h"
+ 
+@@ -6,8 +7,26 @@
+ 
+ #include "filesystem.h"
+ 
++#if PSPOKE_QOL_MOVE_BUFFS
++/* SS QoL: field-move buffs, applied to the in-RAM copy of the move table (the ROM is untouched).
++   Cut 50 -> 60 power, 95 -> 100 accuracy; Rock Smash 40 -> 60 power; Whirlpool 15 -> 35 power,
++   70 -> 85 accuracy (Whirlpool = its Black/White values). Move ids are the same in every Gen 4 game. */
++static void PSPQoL_ApplyMoveBuffs(u16 moveId, MoveTbl *moveTbl) {
++    switch (moveId) {
++    case MOVE_CUT:        moveTbl->power = 60; moveTbl->accuracy = 100; break;
++    case MOVE_ROCK_SMASH: moveTbl->power = 60; break;
++    case MOVE_WHIRLPOOL:  moveTbl->power = 35; moveTbl->accuracy = 85; break;
++    }
++}
++#endif
++
+ void LoadMoveTbl(MoveTbl *dest) {
+     ReadFromNarcMemberByIdPair(dest, NARC_poketool_waza_waza_tbl, 0, 0, (NUM_MOVES + 1) * sizeof(MoveTbl));
++#if PSPOKE_QOL_MOVE_BUFFS
++    for (u16 moveId = 0; moveId <= NUM_MOVES; moveId++) {
++        PSPQoL_ApplyMoveBuffs(moveId, &dest[moveId]);
++    }
++#endif
+ }
+ 
+ u32 GetMoveAttr(u16 moveId, MoveAttr attrno) {
+@@ -58,4 +77,20 @@
+ 
+ void LoadMoveEntry(u16 moveId, MoveTbl *moveTbl) {
+     ReadWholeNarcMemberByIdPair(moveTbl, NARC_poketool_waza_waza_tbl, moveId);
++#if PSPOKE_QOL_MOVE_BUFFS
++    PSPQoL_ApplyMoveBuffs(moveId, moveTbl);
++    {
++        static int logged;
++        if (!logged) {
++            extern void PSPNativeMemLog(const char *fmt, ...);
++            MoveTbl cut, smash, pool;
++            logged = 1;
++            ReadWholeNarcMemberByIdPair(&cut, NARC_poketool_waza_waza_tbl, MOVE_CUT);
++            ReadWholeNarcMemberByIdPair(&smash, NARC_poketool_waza_waza_tbl, MOVE_ROCK_SMASH);
++            ReadWholeNarcMemberByIdPair(&pool, NARC_poketool_waza_waza_tbl, MOVE_WHIRLPOOL);
++            PSPQoL_ApplyMoveBuffs(MOVE_CUT, &cut); PSPQoL_ApplyMoveBuffs(MOVE_ROCK_SMASH, &smash); PSPQoL_ApplyMoveBuffs(MOVE_WHIRLPOOL, &pool);
++            PSPNativeMemLog("[SS-QOL] move buffs: Cut %d/%d Rock Smash %d/%d Whirlpool %d/%d", cut.power, cut.accuracy, smash.power, smash.accuracy, pool.power, pool.accuracy);
++        }
++    }
++#endif
+ }

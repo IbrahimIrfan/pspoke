@@ -104,6 +104,8 @@ only; your ROM and the save format are untouched, so a save moves between builds
 | **Instant text.** Dialogue prints a whole page at once at every text-speed setting; button prompts, scrolling and timed pauses still wait as before. | `--no-instant-text` | yes | yes |
 | **Trade evolutions without trading.** Kadabra, Machoke, Graveler and Haunter evolve at level 36. Pokémon that need a held item and a trade (Onix, Scyther, Seadra, Slowpoke, Poliwhirl, Porygon, Porygon2, Rhydon, Electabuzz, Magmar, Dusclops, Clamperl) evolve by using that item from the Bag like an evolution stone. Budew, Chingling and Riolu evolve from happiness at any time of day. Platinum also gives the baby Pokémon (Pichu, Cleffa, Igglybuff, Togepi, Azurill, Budew, Chingling, Happiny) a base happiness of 180 and lets Eevee evolve with the Sun, Moon and Leaf Stones. Based on Drayano's Renegade Platinum / Sacred Gold changes. | `--no-trade-evos` | yes | yes |
 | **Repel re-use prompt.** When a Repel wears off and you have another of the same kind, the game asks "Use another?" (as later games do). | `--no-repel-prompt` | yes | yes |
+| **HM moves can be forgotten** like any other move (no Move Deleter trip). | `--no-forget-hms` | yes | yes |
+| **Field-move buffs.** Cut 60 power / 100% accuracy, Rock Smash 60 power, Whirlpool 35 power / 85% (its Black/White values), so HM moves are less of a dead slot. | `--no-move-buffs` | yes | yes |
 
 [docs/QOL.md](docs/QOL.md) lists every change in detail (each affected Pokémon and item, and what differs between the
 two games). Changing a flag only rebuilds the handful of files it touches, so switching is quick.

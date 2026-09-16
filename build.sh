@@ -3,7 +3,7 @@
 #   ./build.sh platinum   --rom "path/to/Platinum.nds"   [--dev]
 #   ./build.sh soulsilver --rom "path/to/SoulSilver.nds" [--dev]
 #   ./build.sh setup     (optional: check requirements and download the PSP toolchain now)
-#   Quality-of-life switches (all on by default): --no-instant-text --no-trade-evos --no-repel-prompt
+#   Quality-of-life switches (all on by default): --no-instant-text --no-trade-evos --no-repel-prompt --no-forget-hms --no-move-buffs
 #   ./build.sh clean
 source "$(dirname "$0")/scripts/common.sh"
 GAME="${1:-}"; shift || true
@@ -14,6 +14,8 @@ while [ $# -gt 0 ]; do case "$1" in
   --no-instant-text) export PSPOKE_QOL_INSTANT_TEXT=0; shift;;
   --no-trade-evos) export PSPOKE_QOL_TRADE_EVOS=0; shift;;
   --no-repel-prompt) export PSPOKE_QOL_REPEL_PROMPT=0; shift;;
+  --no-forget-hms) export PSPOKE_QOL_FORGET_HMS=0; shift;;
+  --no-move-buffs) export PSPOKE_QOL_MOVE_BUFFS=0; shift;;
   *) die "unknown option $1";;
 esac; done
 
@@ -22,7 +24,7 @@ case "$GAME" in
   clean) rm -rf "$ROOT/.work" "$ROOT/dist"; log "Removed .work and dist (downloads in .cache kept)"; exit 0;;
   platinum)   EXPECT=0862ec35b24de5c7e2dcb88c9eea0873110d755c; NAME="Pokémon Platinum (US, Rev 1)";;
   soulsilver) EXPECT=f8dc38ea20c17541a43b58c5e6d18c1732c7e582; NAME="Pokémon SoulSilver (US)";;
-  *) die "usage: ./build.sh platinum|soulsilver --rom <file.nds> [--dev] [--no-instant-text] [--no-trade-evos] [--no-repel-prompt]   (or ./build.sh setup, ./build.sh clean)";;
+  *) die "usage: ./build.sh platinum|soulsilver --rom <file.nds> [--dev] [--no-instant-text] [--no-trade-evos] [--no-repel-prompt] [--no-forget-hms] [--no-move-buffs]   (or ./build.sh setup, ./build.sh clean)";;
 esac
 
 if [ "$(uname -s)" = Darwin ] && ! xcode-select -p >/dev/null 2>&1; then

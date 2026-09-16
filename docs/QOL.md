@@ -8,10 +8,12 @@ name, and can be left out at build time:
 | [Instant text](#instant-text) | `--no-instant-text` | yes | yes |
 | [Trade evolutions without trading](#trade-evolutions-without-trading) | `--no-trade-evos` | yes | yes |
 | [Repel re-use prompt](#repel-re-use-prompt) | `--no-repel-prompt` | yes | yes |
+| [HM moves can be forgotten](#hm-moves-can-be-forgotten) | `--no-forget-hms` | yes | yes |
+| [Field-move buffs](#field-move-buffs) | `--no-move-buffs` | yes | yes |
 
 ```sh
 ./build.sh soulsilver --rom "path/to/SoulSilver.nds" --no-trade-evos                 # one change off
-./build.sh platinum   --rom "path/to/Platinum.nds" --no-instant-text --no-trade-evos --no-repel-prompt   # the original game
+./build.sh platinum   --rom "path/to/Platinum.nds" --no-instant-text --no-trade-evos --no-repel-prompt --no-forget-hms --no-move-buffs   # the original game
 ```
 
 The flags only change code that runs in RAM: your ROM is never modified and the save format is the same, so a save
@@ -86,8 +88,28 @@ When a Repel wears off and the Bag has another of the same kind, the game asks "
 later games do). Yes uses one and starts a new effect; No leaves the Bag alone. The message is added to the existing
 "Repel's effect wore off..." script; nothing else about Repels changes.
 
+## HM moves can be forgotten
+
+A Pokémon can forget an HM move the same way as any other move: in the summary screen, when learning a new move
+on level-up or from a TM, and in battle. No Move Deleter visit needed. Teaching an HM still does not use up the
+HM. (On SoulSilver the Bag's "Booted up an HM!" line now reads "Booted up a TM!"; cosmetic.)
+
+## Field-move buffs
+
+Applied to the move table when it is read from your ROM (the ROM is untouched):
+
+| Move | Was | Now |
+|---|---|---|
+| Cut | 50 power, 95% accuracy | 60 power, 100% accuracy |
+| Rock Smash | 40 power | 60 power |
+| Whirlpool | 15 power, 70% accuracy | 35 power, 85% accuracy (Black/White values) |
+
+Strength, Surf, Waterfall, Fly, Rock Climb, Defog and Flash are unchanged. These are pspoke's own numbers, chosen
+so the early HMs are not a wasted move slot; edit them in `PSPQoL_ApplyMoveBuffs` (both patches) if you prefer
+different values.
+
 ## Reporting a problem with a QoL change
 
 If something misbehaves, try the build with that change turned off; if the problem goes away, say so in the issue.
-The regression suite (`tests/README.md`) covers the Chingling, Onix and Kadabra evolutions and both answers to the
-repel prompt on SoulSilver.
+The regression suite (`tests/README.md`) covers the Chingling, Onix and Kadabra evolutions (the Kadabra one goes
+through the forget-a-move summary screen), both answers to the repel prompt, and the move buffs on SoulSilver.

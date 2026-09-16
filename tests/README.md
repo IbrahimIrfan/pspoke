@@ -65,7 +65,7 @@ for trying a build on a PSP.
 | `oreburgh-belts` (Platinum, needs `--platinum-save`) | Warps to the south end of Oreburgh City and walks toward the Mine; the long conveyor belts (bounding boxes larger than the view) must still be drawn ten steps in. Caught the box-test bug. |
 | `smoke` | Violet City: continue a save and walk around. |
 | `pc`, `easychat`, `pokedex`, `apricorn`, `vs-recorder`, `trainer-card`, `options*` | Menus and sub-applications, each from the same Violet City save; the `options-*` variants leave the Options screen every possible way. |
-| `catch` | Route 31 wild battle and a catch (battle overlay 12). |
+| `catch` | Route 31 wild battle and a catch (battle overlay 12); also checks the field-move buffs are in the loaded move table. |
 | `geonet` | Pokégear globe (the 1024x512 texture that must be downscaled; overlay 69). |
 | `gym-pryce` | Mahogany Gym battle at Lv100 with particle-heavy moves. |
 | `rocket-radio-tower` | Team Rocket grunt sight line in the Radio Tower (overlay 117) into a battle. |

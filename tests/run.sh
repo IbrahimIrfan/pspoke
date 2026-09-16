@@ -71,7 +71,7 @@ ss_tests(){
   ss_case smoke            violet-center-postrod input-smoke-clean.txt 600
   [ "$QUICK" = 1 ] && return
   ss_case pc               violet-center-postrod input-reg-pc.txt      600
-  ss_case catch            route31-west          input-catch5.txt      900 overlay:12
+  ss_case catch            route31-west          input-catch5.txt      900 overlay:12 "log:[SS-QOL] move buffs: Cut 60/100 Rock Smash 60/"
   ss_case easychat         violet-center-postrod input-easychat2.txt   600
   ss_case pokedex          violet-center-postrod input-dexmid2.txt     600
   ss_case apricorn         violet-center-postrod input-key3.txt        600

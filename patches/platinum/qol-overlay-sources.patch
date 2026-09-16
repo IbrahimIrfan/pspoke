@@ -511,3 +511,100 @@
  
      switch (evoClass) {
      case EVO_CLASS_BY_LEVEL: {
+--- a/move_table.c
++++ b/move_table.c
+@@ -1,4 +1,5 @@
+ #include "move_table.h"
++#include "pspoke_qol.h"
+ 
+ #include <nitro.h>
+ #include <string.h>
+@@ -9,9 +10,28 @@
+ 
+ static void LoadMoveEntry(int move, MoveTable *entry);
+ 
++#if PSPOKE_QOL_MOVE_BUFFS
++/* PSP QoL: field-move buffs, applied to the in-RAM copy of the move table (the ROM is untouched).
++   Cut 50 -> 60 power, 95 -> 100 accuracy; Rock Smash 40 -> 60 power; Whirlpool 15 -> 35 power,
++   70 -> 85 accuracy (Whirlpool = its Black/White values). Move ids are the same in every Gen 4 game. */
++static void PSPQoL_ApplyMoveBuffs(int move, MoveTable *entry)
++{
++    switch (move) {
++    case 15:  entry->power = 60; entry->accuracy = 100; break; /* Cut */
++    case 249: entry->power = 60; break;                        /* Rock Smash */
++    case 250: entry->power = 35; entry->accuracy = 85; break;  /* Whirlpool */
++    }
++}
++#endif
++
+ void MoveTable_Load(void *buf)
+ {
+     NARC_ReadFromMemberByIndexPair(buf, NARC_INDEX_POKETOOL__WAZA__PL_WAZA_TBL, 0, 0, sizeof(MoveTable) * MAX_MOVES);
++#if PSPOKE_QOL_MOVE_BUFFS
++    for (int move = 0; move < MAX_MOVES; move++) {
++        PSPQoL_ApplyMoveBuffs(move, &((MoveTable *)buf)[move]);
++    }
++#endif
+ }
+ 
+ u32 MoveTable_LoadParam(int move, enum MoveAttribute param)
+@@ -83,4 +103,20 @@
+ static void LoadMoveEntry(int move, MoveTable *entry)
+ {
+     NARC_ReadWholeMemberByIndexPair(entry, NARC_INDEX_POKETOOL__WAZA__PL_WAZA_TBL, move);
++#if PSPOKE_QOL_MOVE_BUFFS
++    PSPQoL_ApplyMoveBuffs(move, entry);
++    {
++        static int logged;
++        if (!logged) {
++            extern void PSPNativeMemLog(const char *fmt, ...);
++            MoveTable cut, smash, pool;
++            logged = 1;
++            NARC_ReadWholeMemberByIndexPair(&cut, NARC_INDEX_POKETOOL__WAZA__PL_WAZA_TBL, 15);
++            NARC_ReadWholeMemberByIndexPair(&smash, NARC_INDEX_POKETOOL__WAZA__PL_WAZA_TBL, 249);
++            NARC_ReadWholeMemberByIndexPair(&pool, NARC_INDEX_POKETOOL__WAZA__PL_WAZA_TBL, 250);
++            PSPQoL_ApplyMoveBuffs(15, &cut); PSPQoL_ApplyMoveBuffs(249, &smash); PSPQoL_ApplyMoveBuffs(250, &pool);
++            PSPNativeMemLog("[QOL] move buffs: Cut %d/%d Rock Smash %d/%d Whirlpool %d/%d", cut.power, cut.accuracy, smash.power, smash.accuracy, pool.power, pool.accuracy);
++        }
++    }
++#endif
+ }
+--- a/applications__pokemon_summary_screen__main.c
++++ b/applications__pokemon_summary_screen__main.c
+@@ -1,4 +1,5 @@
+ #include "applications/pokemon_summary_screen/main.h"
++#include "pspoke_qol.h"
+ 
+ #include <nitro.h>
+ #include <string.h>
+@@ -812,7 +813,8 @@
+         Sound_PlayEffect(SEQ_SE_DP_DECIDE_sseq);
+ 
+         if (summaryScreen->cursor != LEARNED_MOVES_MAX) {
+-            if (Item_IsHMMove(summaryScreen->monData.moves[summaryScreen->cursor]) == TRUE && summaryScreen->data->move != MOVE_NONE) {
++            /* PSP QoL: HM moves can be forgotten like any other move. */
++            if (!PSPOKE_QOL_FORGET_HMS && Item_IsHMMove(summaryScreen->monData.moves[summaryScreen->cursor]) == TRUE && summaryScreen->data->move != MOVE_NONE) {
+                 Sprite_SetDrawFlag2(summaryScreen->sprites[SUMMARY_SPRITE_MOVE_CATEGORY_ICON], FALSE);
+                 DrawEmptyHearts(summaryScreen);
+                 PokemonSummaryScreen_PrintHMMovesCantBeForgotten(summaryScreen);
+--- a/battle_sub_menus__battle_party.c
++++ b/battle_sub_menus__battle_party.c
+@@ -1,4 +1,5 @@
+ #include "battle_sub_menus/battle_party.h"
++#include "pspoke_qol.h"
+ 
+ #include "constants/contests.h"
+ #include "constants/moves.h"
+@@ -1731,7 +1732,12 @@
+         move = battleParty->partyPokemon[battleParty->context->selectedPartyIndex].moves[battleParty->context->selectedMoveSlot].move;
+     }
+ 
++#if PSPOKE_QOL_FORGET_HMS
++    (void)move;
++    return FALSE; /* PSP QoL: HM moves can be forgotten like any other move. */
++#else
+     return Item_IsHMMove(move);
++#endif
+ }
+ 
+ static void ClearMoveStats(BattleParty *battleParty)

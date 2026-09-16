@@ -36,7 +36,9 @@ extern u32 PSPNativeSasStartGen[16];      /* sim_audio.cpp: bumped by SIM_Audio_
 #define SYS_CLOCK        33514000u        /* OS_SYSTEM_CLOCK: units of the snapshot time stamps (174592 = one 5.2 ms pump) */
 #define SNAP_RING        256              /* power of two; one snapshot per 10.4 ms pump */
 #define SNAP_MASK        (SNAP_RING - 1)
+#ifndef LATENCY_PUMPS                     /* overridable: make EXTRA_CFLAGS=-DLATENCY_PUMPS=16 (audio A/B builds) */
 #define LATENCY_PUMPS    10               /* start playback this many pumps behind the newest snapshot (> one 33 ms frame of pumps, so the game refills before playback catches up) */
+#endif
 #define CACHE_BUDGET     (3u << 20)       /* bytes of converted samples kept (LRU) */
 #define PCM_MAX_SAMPLES  0x10000          /* sceSasSetVoicePCM limit */
 
