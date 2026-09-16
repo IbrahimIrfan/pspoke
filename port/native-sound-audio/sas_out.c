@@ -408,10 +408,3 @@ void PSPNativeSasStatsLine(char *buf, unsigned len)
              st_grains ? st_threadUs / st_grains : 0, st_coreErr);
 }
 
-static int s_muted;
-int PSPNativeSasToggleMute(void)
-{
-    s_muted = !s_muted;
-    for (int v = 0; v < 16; v++) if (s_cur[v].keyed) __sceSasSetVolume(&s_core, v, s_muted ? 0 : s_cur[v].vl, s_muted ? 0 : s_cur[v].vr, 0, 0);
-    return !s_muted;
-}

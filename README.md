@@ -128,7 +128,6 @@ The touch screen is emulated with a cursor:
 - **R** (or SELECT + ✕) toggles stylus mode.
 - In stylus mode the **analog stick** moves the cursor (push further to move faster) and **L** taps the screen.
   The D-pad and the other buttons keep working normally, so you can mix touch and button input.
-- Platinum only: SELECT + □ toggles sound.
 
 **Saves:** `Platinum.native.sav` / `SoulSilver.native.sav` are normal 512 KB DS saves. You can bring over a save from a DS emulator or
 cartridge dump by renaming it (it must be exactly 524,288 bytes). Back it up before experimenting.

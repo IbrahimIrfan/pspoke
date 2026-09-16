@@ -101,22 +101,10 @@ void PSPNativeSoundInit(void){if(initialized)return;SND_ExChannelInit();SND_SeqI
  PSPNativeSoundSilent = outputReady ? 0 : 1;
 #else
  /* Default OFF: on real hardware the first audio build dropped the game from ~26 to
-    ~21 fps (cause not yet isolated; PPSSPP predicted +0.4 ms). Sound is one hotkey away
-    (SELECT+SQUARE, see input.c) so the player chooses. */
+    ~21 fps (cause not yet isolated; PPSSPP predicted +0.4 ms). */
  PSPNativeSoundSilent = 1;
 #endif
  PSPNativeMemLog("[AUDIO] init output=%s sound=%s", outputReady ? "ready" : "unavailable", PSPNativeSoundSilent ? "off" : "on");
-}
-/* Runtime hotkey. Returns the new state: 1 = sound on. */
-int PSPNativeSoundToggle(void){
- extern int PSPNativeSoundSilent;
- if(!outputReady){PSPNativeMemLog("[AUDIO] toggle ignored: output unavailable");return 0;}
-#ifdef PSP_NATIVE_SAS
- { extern int PSPNativeSasToggleMute(void); int on=PSPNativeSasToggleMute(); PSPNativeMemLog("[AUDIO] sceSas sound %s", on ? "on" : "off"); return on; }
-#endif
- PSPNativeSoundSilent=!PSPNativeSoundSilent;
- PSPNativeMemLog("[AUDIO] sound %s", PSPNativeSoundSilent ? "off" : "on");
- return !PSPNativeSoundSilent;
 }
 void PXI_InitFifo(void){PSPNativeSoundInit();}
 void PXI_SetFifoRecvCallback(int tag,PXIFifoCallback fn){if(tag!=PXI_FIFO_TAG_SOUND){printf("[AUDIO] unsupported FIFO callback %d\n",tag);abort();}callback=fn;PSPNativeSoundInit();}

@@ -6,7 +6,7 @@
 #include <stdint.h>
 static TPData point={128,96,0,TP_VALIDITY_VALID},sample;
 static unsigned rtcReads;
-static int touchMode;static unsigned previous,prevRaw;static BOOL sampling,rtcReady;
+static int touchMode;static unsigned previous;static BOOL sampling,rtcReady;
 static TPCalibrateParam calibration;
 /* osk.c: while the firmware keyboard owns the screen the game must see no
    buttons at all, otherwise the presses the user makes on the keyboard also
@@ -20,11 +20,6 @@ void PSPNativeInputStep(unsigned bits,unsigned ax,unsigned ay){
  if((bits&PSP_CTRL_RTRIGGER)&&!(previous&PSP_CTRL_RTRIGGER))touchMode=!touchMode;
  if((bits&combo)==combo&&(previous&combo)!=combo)touchMode=!touchMode;previous=bits;
  bits&=~PSP_CTRL_RTRIGGER;
- /* SELECT+SQUARE toggles sound (default off). SQUARE is swallowed while SELECT is held so
-    the game does not also see it. */
- {unsigned snd=PSP_CTRL_SELECT|PSP_CTRL_SQUARE;extern int PSPNativeSoundToggle(void);
-  if((bits&snd)==snd&&(prevRaw&snd)!=snd)PSPNativeSoundToggle();
-  prevRaw=bits;if(bits&PSP_CTRL_SELECT)bits&=~PSP_CTRL_SQUARE;}
  for(unsigned i=0;i<12;i++)if(bits&buttons[i])keys|=1u<<i;
  int x=point.x,y=point.y;
  /* Stylus mode (user request): only the analog stick moves the cursor, so the D-pad and face
