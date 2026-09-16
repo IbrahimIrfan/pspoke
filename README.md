@@ -7,7 +7,7 @@ at close to full speed on real hardware.
 
 This repository contains no game code, assets, ROMs, saves or prebuilt EBOOTs. It is build scripts, PSP platform
 code and patches. You build the EBOOT yourself from the community decompilations and your own cartridge dump.
-Fan project, unaffiliated with Nintendo, Game Freak, Creatures or The Pokémon Company. No warranty; see
+Not affiliated with or endorsed by Nintendo, Game Freak, Creatures or The Pokémon Company. No warranty; see
 [LICENSE](LICENSE) (GPL-3.0, sections 15 and 16). Please don't ask for, or share, ROMs or prebuilt EBOOTs in the issues.
 
 The code, patches, tests and documentation here were written by AI.
