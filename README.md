@@ -8,7 +8,7 @@ at close to full speed on real hardware.
 This repository contains no game code, assets, ROMs, saves or prebuilt EBOOTs. It is build scripts, PSP platform
 code and patches. You build the EBOOT yourself from the community decompilations and your own cartridge dump.
 Fan project, unaffiliated with Nintendo, Game Freak, Creatures or The Pokémon Company. No warranty; see
-[LICENSE](LICENSE) (GPL-3.0, sections 15 and 16). Don't ask for or post ROMs or builds in issues.
+[LICENSE](LICENSE) (GPL-3.0, sections 15 and 16). Please don't ask for, or share, ROMs or prebuilt EBOOTs in the issues.
 
 The code, patches, tests and documentation here were written by AI.
 
@@ -25,9 +25,9 @@ Sound works. Tested on a PSP-3001 running ARK-4; builds on macOS and Linux.
 
 Not supported: Wi-Fi and online features, DS-to-DS wireless (trades, Union Room, Download Play), microphone,
 Pokéwalker, Pal Park, other regions or languages, and other games (HeartGold, Diamond/Pearl). There is no touch
-screen, so touch input uses a cursor (see Controls). PSP-1000 (32 MB) can't run it and isn't planned: the port
-needs about 38 MB of RAM and what remains is the DS memory map the game addresses directly, not tunable
-buffers ([issue #10](https://github.com/IbrahimIrfan/pspoke/issues/10)). Works on PSP-2000/3000/Go/E1000 and Vita/PSTV under Adrenaline.
+screen, so touch input uses a cursor (see Controls). It won't run on a PSP-1000 (32 MB), and that isn't planned:
+the port needs about 38 MB of RAM, and what's left is the DS memory map the game addresses directly rather than
+tunable buffers ([issue #10](https://github.com/IbrahimIrfan/pspoke/issues/10)). It does run on the PSP-2000/3000/Go/E1000 and on Vita/PSTV under Adrenaline.
 
 ## Building
 
@@ -104,7 +104,7 @@ buttons keep working. Platinum only: SELECT+□ toggles sound.
 
 Open an issue with the game, what happened and whether it repeats, your PSP model and firmware (or your OS if the
 build failed), the pspoke version (`git log -1 --oneline`), and if possible `native-memlog.txt` from the game's
-folder on the memory stick. Never attach ROMs, other people's saves, or EBOOTs.
+folder on the memory stick. Please don't attach ROMs, other people's saves, or EBOOTs.
 
 Pull requests are welcome; run `tests/run.sh` first ([tests/README.md](tests/README.md)). Most wanted: Windows
 builds, other games and regions, SoulSilver performance in busy areas, and testing on other PSP models. See
