@@ -122,10 +122,11 @@ PSP/GAME/NativeSoulSilver/SoulSilver.native.sav  <- python3 scripts/make_save.py
 Then launch it from the PSP's Game menu. Keep the CPU at the default speed; the game sets 333 MHz itself.
 
 **Controls:** the PSP buttons map to the DS buttons (○ = A, ✕ = B, △ = X, □ = Y, L, START, SELECT, D-pad). R is
-the stylus toggle, so the DS R button is not available (the games barely use it). The touch screen is emulated with
-a cursor:
+used to swap screens, so the DS R button is not available (the games barely use it). The two DS screens share the
+PSP display, one large and one small, and the touch screen is emulated with a cursor:
 
-- **R** (or SELECT + ✕) toggles stylus mode.
+- **R** (or SELECT + ✕) swaps which screen is large. Normally the top screen is the big one; in stylus mode the
+  touch screen takes the big slot so you can see what you are pointing at.
 - In stylus mode the **analog stick** moves the cursor (push further to move faster) and **L** taps the screen.
   The D-pad and the other buttons keep working normally, so you can mix touch and button input.
 - **L + R + SELECT** quits the game back to the PSP menu.
