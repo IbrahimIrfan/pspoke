@@ -10,8 +10,7 @@ code and patches. You build the EBOOT yourself from the community decompilations
 Fan project, unaffiliated with Nintendo, Game Freak, Creatures or The Pokémon Company. No warranty; see
 [LICENSE](LICENSE) (GPL-3.0, sections 15 and 16). Don't ask for or post ROMs or builds in issues.
 
-The code, patches, tests and documentation here were written by an AI assistant (Claude), directed by the
-maintainer, who tested every build on real hardware. Read it with that in mind.
+The code, patches, tests and documentation here were written by AI.
 
 It's a beta. Keep backups of your saves.
 
