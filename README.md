@@ -164,7 +164,7 @@ pspoke is a beta, so reports and help are very welcome.
 
 Please never attach or link ROMs, saves from someone else's game, or prebuilt EBOOTs.
 
-**Want to contribute?** Pull requests are welcome, especially for:
+**Want to contribute?** Pull requests are welcome (run `tests/run.sh` first; see [tests/README.md](tests/README.md)), especially for:
 - **Windows support** (building natively or confirming WSL works),
 - **other games:** Diamond/Pearl, HeartGold, and other regions or languages of Platinum/SoulSilver,
 - anything under [Not supported yet](#not-supported-yet), and performance (SoulSilver's busy areas in particular),

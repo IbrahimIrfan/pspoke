@@ -21,8 +21,8 @@ parser.add_argument('--save', type=Path, default=None, help='copy of an existing
 args = parser.parse_args()
 rom, emulator = args.rom.resolve(strict=True), args.ppsspp.resolve(strict=True)
 eboot = (HERE / 'EBOOT.PBP').resolve(strict=True)
-if not 1 <= args.seconds <= 120:
-    parser.error('--seconds must be 1..120 wall-clock seconds')
+if not 1 <= args.seconds <= 600:
+    parser.error('--seconds must be 1..600 wall-clock seconds')
 # New directory and exclusive save creation: existing game saves are never read.
 run = HERE / 'runs' / datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
 stage = run / 'memstick/PSP/GAME/NativePlatinum'

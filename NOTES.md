@@ -130,6 +130,12 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
   game drew at a given frame.
 - Reproducibility: EBOOT md5s differ between trees because asserts embed paths; compare text symbol sizes with
   `psp-nm -S` instead.
+- `tests/run.sh` is the gate above turned into a repo script. Its first full run caught a shipped bug: the SoulSilver
+  repel prompt asserted in `RunScriptCommand` because the script command table (`scrcmd_c.c`, not rebuilt by the QoL
+  step) never got commands 853/854, and because the patch wrote `#if PSPOKE_QOL_REPEL_PROMPT` *before* including the
+  header that defines it. A feature guarded by a header macro must include that header first, in every file that
+  tests the macro, and every file a patch touches (including through headers) must be in the rebuild list. "Symbols
+  identical to the card build" proves nothing when the card build has the same bug.
 
 ## 7. Process rules
 

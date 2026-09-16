@@ -8,6 +8,7 @@
 | `scripts/` | Build steps (`fetch.sh`, `stage.sh`, `platinum.sh`, ...), `install.sh`, `make_save.py`, `check_native_pbp.py` (PSP loader limits). |
 | `port/` | pspoke's own code, laid out as the build tree expects (`port/<component>/...`). |
 | `patches/` | Patches applied to the downloaded decompilations and to generated per-overlay source copies. |
+| `tests/` | Regression suite (`run.sh`), synthetic save fixtures, `tests/README.md`. |
 | `third_party/melonDS/` | The four melonDS headers the renderer includes (GPL-3.0). |
 | `.cache/upstream/` | Downloaded pinned sources (created by the build). |
 | `.work/tree/` | The staged build tree shared by both games (created by the build; safe to delete). |
@@ -64,11 +65,18 @@ relinked. Copy changes back into `port/` (or turn decompilation changes into a p
 If you edit `port/` directly instead, run `./build.sh clean` before rebuilding (downloads in `.cache` are kept): staging
 copies `port/` with its original timestamps, so an already-built object can look newer than your change and be reused.
 
-Useful checks:
+## Tests
+
+`tests/run.sh` builds each game, runs the loader audit and, with `PPSSPP_HEADLESS` set, replays recorded scenarios
+(menus, battles, evolutions, the QoL features) in headless PPSSPP and checks the game's log. Run it before a pull
+request; `tests/README.md` explains the scenarios, fixtures and how to add one.
+
+Other checks:
 - `python3 scripts/check_native_pbp.py dist/.../EBOOT.PBP`: the retail PSP loader rejects EBOOTs with a section ending
-  past 32 MiB (error 80020148). Every build runs this.
-- Headless PPSSPP: `port/native-audio-app/run_probe.py` stages a throwaway memory stick and runs the EBOOT
-  (`PPSSPP_HEADLESS=/path/to/PPSSPPHeadless`, `--rom`, `--save`, `--seconds`). Emulator timings do not reflect PSP speed.
+  past 32 MiB (error 80020148). Every build runs this; PPSSPP does not enforce it.
+- One-off emulator runs: `run_probe.py` in `port/native-audio-app/` and `port/soulsilver-native-core/nitromain-perf/`
+  stage a throwaway memory stick and run the EBOOT (`--ppsspp`, `--rom`, `--save`/`--fixture`, `--seconds`;
+  SoulSilver also takes `--input-script` and `--frames`). Emulator timings say nothing about PSP speed.
 
 ## Rules for contributions
 

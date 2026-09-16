@@ -16,3 +16,5 @@ _old/
 # Your own XMB icon/background art (see art/README.md); not committed.
 art/*
 !art/README.md
+# Test fixtures are synthetic saves made in the emulator (no ROM data); see tests/README.md.
+!tests/fixtures/**/*.sav

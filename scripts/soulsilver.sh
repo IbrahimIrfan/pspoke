@@ -48,9 +48,10 @@ if ! done_ soulsilver-game; then
   mark soulsilver-game
 fi
 
-# Quality-of-life switches: rebuild the five game files they touch every time (see build.sh --no-* flags).
+# Quality-of-life switches: rebuild the game files they touch every time (see build.sh --no-* flags). scrcmd_c.c holds
+# the script command table (data/fieldmap/script_cmd_table.h) that the repel prompt adds commands 853/854 to.
 qol_header
-step ss-qol          bash -c "cd '$C' && for f in 'src/text.c text.o none' 'src/item.c item.o none' 'src/pokemon.c pokemon.o none' 'src/script_manager.c script_manager.o none' 'src/field/scrcmd_message.c field__scrcmd_message.o 1'; do bash rebuild_game_object.sh \$f || exit 1; done"
+step ss-qol          bash -c "cd '$C' && for f in 'src/text.c text.o none' 'src/item.c item.o none' 'src/pokemon.c pokemon.o none' 'src/script_manager.c script_manager.o none' 'src/scrcmd_c.c scrcmd_c.o none' 'src/field/scrcmd_message.c field__scrcmd_message.o 1'; do bash rebuild_game_object.sh \$f || exit 1; done"
 log "Linking SoulSilver EBOOT (DEV=$DEV)"
 F="$T/soulsilver-native-assets/render-fastcompare"
 cp -f "$T/native-render-opt/native_gpu.o" "$T/native-render-opt/GPU2D_Soft.o" "$F/"

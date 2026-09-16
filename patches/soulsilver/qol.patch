@@ -318,8 +318,8 @@
 +++ b/src/data/fieldmap/script_cmd_table.h
 @@ -1,4 +1,10 @@
  #include "script.h"
-+#if PSPOKE_QOL_REPEL_PROMPT
 +#include "pspoke_qol.h"
++#if PSPOKE_QOL_REPEL_PROMPT
 +
 +BOOL ScrCmd_SSRepelAsk(ScriptContext *ctx);
 +BOOL ScrCmd_SSRepelUse(ScriptContext *ctx);
