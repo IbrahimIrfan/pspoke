@@ -29,7 +29,7 @@ extern BOOL PSPNativeOverlay_Init(void);
 extern BOOL PSPNativeRomFS_SetPath(const char *path);
 extern BOOL PSPNative_OpenBackup(const char *path);
 static int exitCallback(int a,int b,void*c){sceKernelExitGame();return 0;}
-static int callbackThread(SceSize args,void*argp){int cb=sceKernelCreateCallback("exit",exitCallback,NULL);sceKernelRegisterExitCallback(cb);sceKernelSleepThreadCB();return 0;}
+static int callbackThread(SceSize args,void*argp){int cb=sceKernelCreateCallback("exit",exitCallback,NULL);sceKernelRegisterExitCallback(cb);{extern void PSPNativeSuspendInit(void);PSPNativeSuspendInit();}sceKernelSleepThreadCB();return 0;}
 int main(void){
  {int th=sceKernelCreateThread("cbthread",callbackThread,0x11,0xFA0,0,NULL);if(th>=0)sceKernelStartThread(th,0,NULL);}
  scePowerSetClockFrequency(333,333,166);

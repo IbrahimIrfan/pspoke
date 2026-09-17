@@ -60,6 +60,8 @@ static s32 RomCachedRead(u32 pos,void*dst,u32 len){
    u32 want=ROM_CACHE_BLOCK;if((uint64_t)base+want>romSize)want=romSize>base?romSize-base:0;
    /* A sticky EOF/error flag left by an earlier read must not short-circuit this one (the original
       per-read code cleared it; on SoulSilver dropping this silenced the sound banks). */
+   {static unsigned seen;extern int PSPNativeResumedSince(unsigned*);
+    if(PSPNativeResumedSince(&seen)){FILE*s=fopen(romPath,"rb");if(s){fclose(romStream);romStream=s;}else{romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}}}
    clearerr(romStream);
    if(fseek(romStream,(long)base,SEEK_SET)){romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}
    size_t got=want?fread(romCache[slot],1,want,romStream):0;

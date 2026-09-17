@@ -5,13 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 #define BACKUP_BYTES (512u*1024u)
-static FILE *file;
+static FILE *file;static char backupPath[256];
 static SceUID mutex=-1;
 static int owner=-1;
 static CARDResult result=CARD_RESULT_NO_RESPONSE;
 BOOL PSPNative_OpenBackup(const char *path){
  if(file||owner!=-1)return FALSE;
  FILE *candidate=fopen(path,"r+b");if(!candidate)return FALSE;
+ strncpy(backupPath,path,sizeof backupPath-1);
  if(fseek(candidate,0,SEEK_END)||ftell(candidate)!=BACKUP_BYTES){fclose(candidate);return FALSE;}
  mutex=sceKernelCreateSema("NativeBackup",0,1,1,NULL);if(mutex<0){fclose(candidate);return FALSE;}
  file=candidate;result=CARD_RESULT_SUCCESS;return TRUE;
@@ -40,6 +41,8 @@ BOOL CARDi_RequestStreamCommand(u32 src,u32 dst,u32 length,MIDmaCallback callbac
  (void)async;(void)retry;
  u32 offset=request==CARD_REQ_READ_BACKUP?src:dst;
  result=CARD_RESULT_SUCCESS;
+ /* after PSP sleep mode the old handle is dead: reopen the same file (see services/power.c) */
+ {static unsigned seen;extern int PSPNativeResumedSince(unsigned*);if(file&&PSPNativeResumedSince(&seen)){FILE*n=fopen(backupPath,"r+b");if(n){fclose(file);file=n;}}}
  if(!file||owner<0)result=CARD_RESULT_NO_RESPONSE;
  else if(offset>BACKUP_BYTES||length>BACKUP_BYTES-offset)result=CARD_RESULT_INVALID_PARAM;
  else if(request==CARD_REQ_READ_BACKUP){

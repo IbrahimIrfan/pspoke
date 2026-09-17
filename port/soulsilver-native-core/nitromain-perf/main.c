@@ -55,7 +55,7 @@ static void VerifyInitialSystems(void){
 /* PSP HOME button: the firmware only shows its quit dialog when an exit callback is registered on a thread that
    sleeps with callbacks enabled (same as the Platinum port). */
 static int exitCallback(int a,int b,void*c){sceKernelExitGame();return 0;}
-static int callbackThread(SceSize args,void*argp){int cb=sceKernelCreateCallback("exit",exitCallback,NULL);sceKernelRegisterExitCallback(cb);sceKernelSleepThreadCB();return 0;}
+static int callbackThread(SceSize args,void*argp){int cb=sceKernelCreateCallback("exit",exitCallback,NULL);sceKernelRegisterExitCallback(cb);{extern void PSPNativeSuspendInit(void);PSPNativeSuspendInit();}sceKernelSleepThreadCB();return 0;}
 /* PSP port: our own EBOOT path, so OS_ResetSystem can relaunch the game (platform.c). */
 char gPSPNativeSelfPath[256];
 int main(int argc, char **argv){

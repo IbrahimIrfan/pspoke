@@ -70,6 +70,8 @@ static s32 RomCachedRead(u32 pos,void*dst,u32 len){
    u32 want=ROM_CACHE_BLOCK;if((uint64_t)base+want>romSize)want=romSize>base?romSize-base:0;
    /* SS's original read cleared the stream's sticky EOF/error flag before EVERY read; dropping that made a
       short fread cache a zero-length block and silenced the sound banks on hardware. Clear it here. */
+   {static unsigned seen;extern int PSPNativeResumedSince(unsigned*);
+    if(PSPNativeResumedSince(&seen)){FILE*s=fopen(romPath,"rb");if(s){fclose(romStream);romStream=s;}else{romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}}}
    clearerr(romStream);
    if(fseek(romStream,(long)base,SEEK_SET)){romCacheTag[slot]=CACHE_EMPTY;return done?(s32)done:-1;}
    size_t got=want?fread(romCache[slot],1,want,romStream):0;
@@ -178,6 +180,7 @@ s32 FS_ReadFile(FSFile*f,void*dst,s32 len){
    if(n<0){f->error=FS_RESULT_FAILURE;return -1;}
    f->prop.file.pos+=(u32)n; f->error=FS_RESULT_SUCCESS; return n; }
 #else
+ {static unsigned seen;extern int PSPNativeResumedSince(unsigned*);if(PSPNativeResumedSince(&seen)){FILE*s=fopen(romPath,"rb");if(s){fclose(romStream);romStream=s;streamPos=0xffffffffu;}else{f->error=FS_RESULT_FAILURE;return -1;}}}
  clearerr(romStream);
  if(streamPos!=f->prop.file.pos){if(fseek(romStream,(long)f->prop.file.pos,SEEK_SET)){f->error=FS_RESULT_FAILURE;return -1;}streamPos=f->prop.file.pos;}
  size_t n=fread(dst,1,len,romStream);f->prop.file.pos+=n;streamPos+=n;
