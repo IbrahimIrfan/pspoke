@@ -77,6 +77,14 @@ Options:
 - `./build.sh clean` removes the build output (downloads are kept).
 - `PSPDEV=/path/to/pspdev` uses an existing toolchain instead of the downloaded one.
 - `--dev` builds the instrumented version described under [Developer builds](#developer-builds).
+- `--display` picks how the main screen is scaled to the PSP's display (the DS is 256x192, the PSP 480x272):
+  - `nearest` (default): 1.42x with sharp pixels. Crisp, but some pixel rows and columns come out doubled and
+    others not, so lines are slightly uneven and scrolling can shimmer.
+  - `bilinear`: the same size with smoothing. Even and steady, a little softer.
+  - `integer`: exactly 1:1 (256x192, centred with black borders). Perfectly crisp and even, but small.
+
+  The choice is stored in `pspoke.cfg` next to the EBOOT, so you can also change it on the memory stick without
+  rebuilding: edit the line to `display=bilinear`, `display=integer` or `display=nearest`.
 - For a menu icon and background, put `ICON0.PNG` (144x80) and `PIC1.PNG` (480x272) in `art/platinum/` or
   `art/soulsilver/` before building (see [art/README.md](art/README.md)).
 

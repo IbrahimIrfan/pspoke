@@ -56,6 +56,14 @@ static inline void GeSyncTimed(unsigned&acc){unsigned t=sceKernelGetSystemTimeLo
 // Main panel fills the full height (363x272, ~1.42x nearest-neighbour, no black bars); the touch panel
 // (117x88) is centred in the remaining width. The bottom-right corner is left free for the DEV fps counter.
 enum{MAIN_X=0,MAIN_Y=0,MAIN_W=363,MAIN_H=272,SUB_X=363,SUB_Y=92,SUB_W=117,SUB_H=88};
+/* Display mode from pspoke.cfg next to the EBOOT (written by build.sh --display, editable on the card):
+   0 nearest: main panel at 1.42x with nearest sampling, sharp pixels but uneven pixel widths (default);
+   1 bilinear: same size, linear sampling, even and smooth but softer;
+   2 integer: main panel at exactly 1:1 (256x192) centred in its slot, perfectly crisp, small. */
+static int displayMode;
+static void ReadDisplayConfig(){FILE*f=fopen("pspoke.cfg","r");if(!f)return;char line[96];
+ while(fgets(line,sizeof line,f))if(!strncmp(line,"display=",8)){displayMode=!strncmp(line+8,"bilinear",8)?1:!strncmp(line+8,"integer",7)?2:0;}
+ fclose(f);printf("[GU2D] display mode %d\n",displayMode);}
 static unsigned statFallback[2],statGe[2];
 extern "C" char PSPNativeOverlayText[128];
 char PSPNativeOverlayText[128];
@@ -498,6 +506,7 @@ extern "C" void PSPNativeRenderSetInput(unsigned keys,int touchMode,int touchDow
 extern "C" unsigned PSPNativeRenderLastDrawMask(){return lastDraw;}
 extern "C" unsigned PSPNativeRenderFrameCount(){return frames;}
 extern "C" int PSPNativeRenderInit(){
+ ReadDisplayConfig();
  if(initialized)return 0;frames=0;displayOffset=0;engineA.Reset();engineB.Reset();sceGuInit();
  sceGuStart(GU_DIRECT,list);sceGuDrawBuffer(GU_PSM_8888,(void*)0,512);sceGuDispBuffer(480,272,(void*)0x88000,512);
  sceGuScissor(0,0,480,272);sceGuEnable(GU_SCISSOR_TEST);sceGuFinish();sceGuSync(0,0);sceGuDisplay(GU_TRUE);
@@ -667,9 +676,10 @@ static int Present(bool waitForVblank){
  /* In stylus mode the touch screen is what the player is working on, so the two
     panels swap places: touch screen gets the big left slot, main screen the small one. */
  const bool swap=mode!=0;
- const short bigX=MAIN_X,bigY=MAIN_Y,bigW=MAIN_W,bigH=MAIN_H,smallX=SUB_X,smallY=SUB_Y,smallW=SUB_W,smallH=SUB_H;
+ const bool integer=displayMode==2;const int bigFilter=displayMode==1?GU_LINEAR:GU_NEAREST;
+ const short bigX=integer?(MAIN_W-256)/2:MAIN_X,bigY=integer?(MAIN_H-192)/2:MAIN_Y,bigW=integer?256:MAIN_W,bigH=integer?192:MAIN_H,smallX=SUB_X,smallY=SUB_Y,smallW=SUB_W,smallH=SUB_H;
  for(unsigned screen=0;screen<2;screen++){unsigned e=(power&0x8000)?screen:1-screen;const bool big=(screen==1)==swap;
-  sceGuTexFilter(big?GU_NEAREST:GU_LINEAR,big?GU_NEAREST:GU_LINEAR);sceGuTexImage(0,256,256,256,texsrc[e]);V*v=(V*)PSPNativeGUGetMemory(2*sizeof(V));
+  sceGuTexFilter(big?bigFilter:GU_LINEAR,big?bigFilter:GU_LINEAR);sceGuTexImage(0,256,256,256,texsrc[e]);V*v=(V*)PSPNativeGUGetMemory(2*sizeof(V));
   short px=big?bigX:smallX,py=big?bigY:smallY,pw=big?bigW:smallW,ph=big?bigH:smallH;
   v[0]={0,0,px,py,0};v[1]={256,192,short(px+pw),short(py+ph),0};sceGuDrawArray(GU_SPRITES,GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,0,v);}
  if(mode){struct C{u32 color;short x,y,z;};C*c=(C*)PSPNativeGUGetMemory(4*sizeof(C));short cx=bigX+(x*bigW)/256,cy=bigY+(y*bigH)/192;u32 col=down?0xff00ffff:0xffffffff;c[0]={col,short(cx-3),cy,0};c[1]={col,short(cx+3),cy,0};c[2]={col,cx,short(cy-3),0};c[3]={col,cx,short(cy+3),0};sceGuDisable(GU_TEXTURE_2D);sceGuDrawArray(GU_LINES,GU_COLOR_8888|GU_VERTEX_16BIT|GU_TRANSFORM_2D,4,0,c);}

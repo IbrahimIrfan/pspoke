@@ -28,6 +28,7 @@ run = HERE / 'runs' / datetime.datetime.now(datetime.timezone.utc).strftime('%Y%
 stage = run / 'memstick/PSP/GAME/NativePlatinum'
 stage.mkdir(parents=True, exist_ok=False)
 shutil.copyfile(eboot, stage / 'EBOOT.PBP')
+if (HERE / 'pspoke.cfg').exists(): shutil.copyfile(HERE / 'pspoke.cfg', stage / 'pspoke.cfg')   # display mode under test
 (stage / 'Platinum.nds').symlink_to(rom)
 save = stage / 'Platinum.native.sav'
 with save.open('xb') as f:

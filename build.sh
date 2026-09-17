@@ -16,6 +16,7 @@ while [ $# -gt 0 ]; do case "$1" in
   --no-repel-prompt) export PSPOKE_QOL_REPEL_PROMPT=0; shift;;
   --no-forget-hms) export PSPOKE_QOL_FORGET_HMS=0; shift;;
   --no-move-buffs) export PSPOKE_QOL_MOVE_BUFFS=0; shift;;
+  --display) case "${2:-}" in nearest|bilinear|integer) export PSPOKE_DISPLAY="$2";; *) die "--display takes nearest, bilinear or integer";; esac; shift 2;;
   *) die "unknown option $1";;
 esac; done
 
@@ -24,7 +25,7 @@ case "$GAME" in
   clean) rm -rf "$ROOT/.work" "$ROOT/dist"; log "Removed .work and dist (downloads in .cache kept)"; exit 0;;
   platinum)   EXPECT=0862ec35b24de5c7e2dcb88c9eea0873110d755c; NAME="Pokémon Platinum (US, Rev 1)";;
   soulsilver) EXPECT=f8dc38ea20c17541a43b58c5e6d18c1732c7e582; NAME="Pokémon SoulSilver (US)";;
-  *) die "usage: ./build.sh platinum|soulsilver --rom <file.nds> [--dev] [--no-instant-text] [--no-trade-evos] [--no-repel-prompt] [--no-forget-hms] [--no-move-buffs]   (or ./build.sh setup, ./build.sh clean)";;
+  *) die "usage: ./build.sh platinum|soulsilver --rom <file.nds> [--dev] [--no-instant-text] [--no-trade-evos] [--no-repel-prompt] [--no-forget-hms] [--no-move-buffs] [--display nearest|bilinear|integer]   (or ./build.sh setup, ./build.sh clean)";;
 esac
 
 if [ "$(uname -s)" = Darwin ]; then

@@ -30,6 +30,6 @@ rm -f "$R"/{render-gu2d,g3_backend,frontend,g3_handler}.o "$R/libnative-render-g
 step plat-renderer make -C "$R" DEV="$DEV"
 rm -f "$A"/{frame,gameprof,input,main}.o "$A/EBOOT.PBP" "$A/native-app.elf" "$A/PARAM.SFO"
 step plat-app      make -C "$A" DEV="$DEV" $(art_args platinum "$A")
-OUT=$(dist_dir platinum "$DEV" NativePlatinum); mkdir -p "$OUT"; cp -f "$A/EBOOT.PBP" "$OUT/EBOOT.PBP"
+OUT=$(dist_dir platinum "$DEV" NativePlatinum); mkdir -p "$OUT"; cp -f "$A/EBOOT.PBP" "$OUT/EBOOT.PBP"; printf 'display=%s\n' "${PSPOKE_DISPLAY:-nearest}" > "$OUT/pspoke.cfg"
 python3 "$ROOT/scripts/check_native_pbp.py" "$OUT/EBOOT.PBP" > "$LOGS/audit-platinum.json" || die "EBOOT failed the PSP loader check (see $LOGS/audit-platinum.json)"
 log "Done: $OUT/EBOOT.PBP"
