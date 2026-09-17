@@ -138,6 +138,15 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
   --headers-only` writes just the headers and `soulsilver.sh` runs it when they are missing. Fresh-clone builds of
   each game alone are part of the release check now.
 
+- **PSP sleep mode kills Memory Stick file handles.** The ROM and the save stay open for the whole session, so
+  after suspend/resume the first ROM read failed and the game froze to a black screen. A power callback
+  (`services/power.c`) counts completed resumes and the ROM readers and save writer reopen their file when it moved.
+  Not reproducible in PPSSPP; hardware-confirmed on both games (2026-09-17). Rule: anything that keeps a file open
+  across frames must handle resume.
+- Display scaling is a runtime setting (`pspoke.cfg` next to the EBOOT, written by `build.sh --display`), not a
+  compile flag, on purpose: one hardware-tested binary for every mode, and the memory layout (see §5) does not change
+  per option.
+
 ## 5. Audio
 
 - The DS sound engine (sequencer, channels) runs fully on the CPU; output goes through `sceSasCore`, the PSP's own
