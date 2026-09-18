@@ -188,6 +188,27 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
   silent on hardware but fine in PPSSPP, compare section tables and symbol addresses against the last good build
   before suspecting the diff. The hand-built DEV silence above was probably this same thing.
 
+- **Kept assertions turn vanilla no-ops into crashes.** Both games build with `-DPM_KEEP_ASSERTS`, and the port
+  wires the handlers to abort (Platinum `ErrorHandling_AssertFail` -> `PSPNativeFatal`; SoulSilver `GF_AssertFail`
+  -> `[FATAL]` log + `abort()`). Retail cartridges strip assertions, so any `GF_ASSERT(FALSE)` stub that vanilla
+  code actually reaches is silent there and a hard crash here. This is how the Old Chateau Rotom/TV crash happened.
+- Audit (2026-09-18): Platinum has 807 always-failing asserts, SoulSilver 666 -- almost all of them correct
+  defensive guards. The dangerous subset is narrow: a **named** `case` label falling straight into the assert,
+  i.e. a real enum value the game can produce with nothing implemented. (`default: GF_ASSERT(FALSE)` on its own is
+  the normal, correct pattern.) That subset is 11 sites in Platinum and 10 in SoulSilver, and exactly one in each
+  is genuinely reachable: the party menu form-change switch, `case SPECIES_ROTOM: default: GF_ASSERT(FALSE)`, in
+  Platinum `applications/party_menu/form_change.c` and SoulSilver `src/overlay_94.c`. Both now have an explicit
+  no-op case, matching what retail does silently. Fixes live in `patches/pokeplatinum/local-edits.patch` and
+  `patches/soulsilver/src.patch`.
+- The rest triaged as unreachable, with the reason worth remembering per shape: berry growth-advance is
+  caller-guarded (`while (stage != ..._NONE)`); the map-name popup's END/INVALID state is only ever set together
+  with `isInited`/`onScreen` = FALSE, so the guarded branch never runs; the `MON_DATA_*` sites are internal
+  setter/increment paths rejecting derived or read-only params; `PLAYER_STATE_USE_HM` is the enum range sentinel
+  (`GF_ASSERT(state < PLAYER_STATE_USE_HM)`), never a live state; battle `OPCODE_GET`/`MAX_PP` reject
+  invalid-in-write-context; the Wi-Fi lobby cases cannot run with no Wi-Fi.
+- **Rule:** when a player reports a crash in one specific vanilla interaction, grep that feature's source for
+  `GF_ASSERT(FALSE)` before anything else. Re-run the named-case-into-assert scan after any upstream decomp bump.
+
 ## 6. Testing loop
 
 - `run_probe.py` (both apps) stages a throwaway memory stick, symlinks the ROM read-only, creates the save exclusively
