@@ -92,3 +92,19 @@ index 10fe1eca..4fb570da 100644
          default:
              GF_ASSERT(FALSE);
              break;
+diff --git a/src/choose_starter/choose_starter_app.c b/src/choose_starter/choose_starter_app.c
+index 25c8bbf5..72f4149c 100644
+--- a/src/choose_starter/choose_starter_app.c
++++ b/src/choose_starter/choose_starter_app.c
+@@ -1119,7 +1119,10 @@ static void SetSelectionMatrixObjects(ChooseStarterApp *app)
+ static void ChangePokeballChoice(ChooseStarterApp *app)
+ {
+     if (gSystem.pressedKeys & PAD_KEY_LEFT) {
+-        if (app->cursorPosition - 1 >= 0) {
++        // pspoke: enum CursorPosition is unsigned under psp-gcc, so the original
++        // `cursorPosition - 1 >= 0` is always true and the cursor walks off the left
++        // end (and then cannot come back right). Compare against the low bound instead.
++        if (app->cursorPosition > CURSOR_POSITION_LEFT) {
+             app->cursorPosition -= 1;
+             Sound_PlayEffect(SE_CONFIRM_sseq_3);
+         }
