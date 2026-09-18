@@ -77,3 +77,18 @@ index e02f512..c181c85 100644
      { UndergroundCommon_Text_Greet, (u32)UndergroundTalk_OfferExchangeTrainerCases },
      { UndergroundCommon_Text_Question, (u32)UndergroundTalk_StartAskingQuestions },
      { UndergroundCommon_Text_GiveGoods, (u32)UndergroundTalk_OpenGiveGiftMenu },
+diff --git a/src/applications/party_menu/form_change.c b/src/applications/party_menu/form_change.c
+index 10fe1eca..4fb570da 100644
+--- a/src/applications/party_menu/form_change.c
++++ b/src/applications/party_menu/form_change.c
+@@ -78,6 +78,10 @@ BOOL PartyMenuFormChange_ChangeForm(PartyMenuApplication *app)
+             formChanger->narcIdx = shaymin_spa;
+             break;
+         case SPECIES_ROTOM:
++            // pspoke: retail (asserts stripped) silently no-ops here for Rotom; this build keeps
++            // assertions for development, so give it an explicit no-op instead of a hard crash
++            // when the party menu form-change animation runs for Rotom (Old Chateau TV event).
++            break;
+         default:
+             GF_ASSERT(FALSE);
+             break;
