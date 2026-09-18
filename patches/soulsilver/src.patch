@@ -4484,3 +4484,17 @@ diff -ruN a/src/voltorb_flip/voltorb_flip.c b/src/voltorb_flip/voltorb_flip.c
      header.listMenuItems = work->menuItems[whichList];
      header.bgConfig = work->bgConfig;
 
+diff -ruN a/src/overlay_94.c b/src/overlay_94.c
+--- a/src/overlay_94.c
++++ b/src/overlay_94.c
+@@ -67,6 +67,10 @@
+             work->fileId = NARC_particle_shaymin;
+             break;
+         case SPECIES_ROTOM:
++            // pspoke: retail (asserts stripped) silently no-ops here for Rotom; this build keeps
++            // assertions, so give it an explicit no-op instead of a hard crash when the party
++            // menu form-change animation runs for Rotom. Same fix as Platinum's form_change.c.
++            break;
+         default:
+             GF_ASSERT(FALSE);
+             break;
