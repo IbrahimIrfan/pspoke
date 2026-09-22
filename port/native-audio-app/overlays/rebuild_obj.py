@@ -1,6 +1,6 @@
 # Recompile edited overlays/source/<name>.c copies with build.py's exact flags and
 # section renames, then replace the members in libplatinum-overlays.a. Never regenerates copies.
-import sys,re,json,subprocess
+import sys,re,json,hashlib,subprocess
 from pathlib import Path
 p=Path(__file__).resolve().parent;b=p.parent.parent/'native-probe';r=b/'pokeplatinum'
 ns={'__file__':str(b/'crossprobe-batch.py')};exec((b/'crossprobe-batch.py').read_text().split('previous=')[0],ns)
@@ -22,4 +22,4 @@ for rel in sys.argv[1:]:
   if ren:subprocess.run(['@PSPDEV@/bin/psp-objcopy',*ren,str(obj)],check=True)
  objs.append(str(obj))
 subprocess.run(['@PSPDEV@/bin/psp-ar','r',str(p/'libplatinum-overlays.a'),*objs],check=True)
-print('archive',subprocess.check_output(['md5','-q',str(p/'libplatinum-overlays.a')],text=True).strip())
+print('archive',hashlib.md5((p/'libplatinum-overlays.a').read_bytes()).hexdigest())

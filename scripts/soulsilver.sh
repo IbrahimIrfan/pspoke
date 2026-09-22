@@ -8,6 +8,7 @@ C="$T/soulsilver-native-core"; P="$C/nitromain-perf"
 if ! done_ soulsilver-prepare; then
   log "Preparing the HeartGold/SoulSilver decompilation"
   "$ROOT/scripts/fetch.sh" pokeheartgold-slop pokeheartgold
+  mkdir -p "$T/soulsilver-research" "$T/soulsilver-native-audit"
   rsync -a --exclude .git "$U/pokeheartgold-slop/" "$T/soulsilver-research/pokeheartgold-slop/"
   rsync -a --exclude .git "$U/pokeheartgold/" "$T/soulsilver-native-audit/pokeheartgold/"
   fill_rom SOULSILVER_ROM "$ROM"
