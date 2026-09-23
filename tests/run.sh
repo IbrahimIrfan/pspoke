@@ -137,12 +137,16 @@ plat_tests(){
     # (no DS radio on the PSP). Must arrive with the WM stand-in running and stay up to the frame bound.
     PLAT_CHECKS=("log:[DIAG] entering the Underground" "log:[OVERLAY] load id=23" "log:[WIRELESS] WM stand-in")
     plat_case underground 5400 underground.h "$PLAT_SAVE" WARP_TO=45,302,775 UNDERGROUND=1
-  else result PASS oreburgh-belts floaroma-gate underground "skipped (needs --platinum-save, see tests/README.md)"; fi
+    # A double battle where every Pokemon is a Clefairy that knows only Sing. Sing's notes are polygon particles, whose
+    # draw called the SDK port's MTX_Scale43_ stub and aborted, in any battle (fx_mtx_native.c is now linked).
+    PLAT_CHECKS=("log:[DIAG] double battle vs trainer")
+    plat_case sing-double 7000 double-sing.h "$PLAT_SAVE" DOUBLE_SING=1
+  else result PASS oreburgh-belts floaroma-gate underground sing-double "skipped (needs --platinum-save, see tests/README.md)"; fi
 }
 
 ### main #####################################################################################################
 if [ "$LIST" = 1 ]; then cat <<'EOF'
-platinum:   boot (quick) oreburgh-belts floaroma-gate underground (need --platinum-save)
+platinum:   boot (quick) oreburgh-belts floaroma-gate underground sing-double (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
             options-b options-scene options-nochange options-after geonet gym-pryce rocket-radio-tower
             qol-friendship-evo qol-trade-item-evo qol-trade-level-evo qol-repel-yes qol-repel-no

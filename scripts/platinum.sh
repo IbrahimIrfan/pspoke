@@ -14,7 +14,8 @@ if ! done_ platinum-game; then
   step qol-rebuild  bash -c "cd '$O' && python3 rebuild_obj.py text.c applications/bag/main.c game_options.c item.c overlay006/repel_step_update.c pokemon.c move_table.c applications/pokemon_summary_screen/main.c battle_sub_menus/battle_party.c"
   step ov-internal  bash -c "cd '$O' && python3 internal.py && cp -f libplatinum-overlays.a libplatinum-overlays.a.base"
   step ov-link      bash -c "cd '$O' && python3 gen-link.py"
-  step g3stack      bash -c "cd '$T/native-audio-app' && cp -f libsdk-filtered.a.base libsdk-filtered.a && python3 sdk-g3stack/rebuild.py"
+  # The weakened fx matrix stubs give way to fx_mtx_native.o (battle particles call MTX_Scale43_), as in soulsilver.sh.
+  step g3stack      bash -c "cd '$T/native-audio-app' && cp -f libsdk-filtered.a.base libsdk-filtered.a && python3 sdk-g3stack/rebuild.py && psp-objcopy --weaken-symbol=MTX_Copy33To43_ --weaken-symbol=MTX_Copy33To44_ --weaken-symbol=MTX_Copy43To44_ --weaken-symbol=MTX_Scale33_ --weaken-symbol=MTX_Scale43_ --weaken-symbol=MTX_Scale44_ --weaken-symbol=MTX_Transpose33_ --weaken-symbol=MTX_Transpose43_ --weaken-symbol=MTX_Transpose44_ libsdk-filtered.a"
   step tex-redirect bash -c "cd '$T/native-audio-app' && python3 opttex_redirect.py"
   mark platinum-game
 fi

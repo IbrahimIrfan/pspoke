@@ -1,5 +1,5 @@
 TARGET = native-app
-OBJS = sas_out.o vram_dirty.o stackprobe.o ctrdg_absent.o search_disabled.o wm_absent.o cadence.o sdl_threads.o power.o audio_bank.o audio_loader.o audio_out.o audio_backend.o audio_seq.o audio_exchannel.o audio_channel.o audio_engine.o mic_pm.o os_sync.o offline.o gx_dma.o frame.o owner_lock.o threads.o alarms.o overlay.o main.o config.o platform.o input.o romfs.o backup.o backing.o graphics_registers.o trainer_ai.o mi_memory.o mi_dma.o memprobe.o osk.o naming_osk.o
+OBJS = sas_out.o vram_dirty.o stackprobe.o ctrdg_absent.o search_disabled.o wm_absent.o fx_mtx_native.o cadence.o sdl_threads.o power.o audio_bank.o audio_loader.o audio_out.o audio_backend.o audio_seq.o audio_exchannel.o audio_channel.o audio_engine.o mic_pm.o os_sync.o offline.o gx_dma.o frame.o owner_lock.o threads.o alarms.o overlay.o main.o config.o platform.o input.o romfs.o backup.o backing.o graphics_registers.o trainer_ai.o mi_memory.o mi_dma.o memprobe.o osk.o naming_osk.o
 INCDIR = ../native-audio-probe/include overlays/include ../native-graphics/libntr/libraries/mi/src ../native-backup-probe/include ../native-fonts/include ../native-input/include ../native-startup/include ../native-probe/backing/include ../native-graphics/alias-proof/include ../native-probe/generated ../native-probe/pokeplatinum/include ../native-probe/libntrsystem/include ../native-graphics/libntr/include
 CFLAGS = -DPM_KEEP_ASSERTS -O2 -G0 -std=gnu99 -DSDL_MAIN_HANDLED -DSDK_PORT -DSDK_X86 -DSDK_BUILD_PSP -DSDK_VERSION_MAJOR=4 -DSDK_TS -DSDK_4M -DSDK_FINALROM -DNNS_FINALROM -DPOKEPLATINUM_GENERATED_ENUM -ffunction-sections -fdata-sections -include ../native-probe/pokeplatinum/include/pch/global_pch.h
 # printf is invisible on real hardware, so every build that goes on a card
@@ -30,6 +30,11 @@ endif
 ifneq ($(WARP_TO),)
 OBJS += diag_warp.o
 CFLAGS += -DWARP_TO=\"$(WARP_TO)\"
+endif
+# TEST ONLY: DOUBLE_SING=1 links diag_double.o (a double battle where every Pokemon is a Clefairy with only Sing).
+ifneq ($(DOUBLE_SING),)
+OBJS += diag_double.o
+LDFLAGS += -Wl,--wrap=Trainer_Encounter,--wrap=FieldTask_Run
 endif
 # TEST ONLY: UNDERGROUND=1 (with WARP_TO) then enters the Underground like the Explorer Kit (see diag_warp.c).
 ifneq ($(UNDERGROUND),)
@@ -137,6 +142,9 @@ ctrdg_absent.o: services/ctrdg_absent.c
 search_disabled.o: services/search_disabled.c
 	$(CC) $(CFLAGS) -c $< -o $@
 wm_absent.o: services/wm_absent.c
+	$(CC) $(CFLAGS) -c $< -o $@
+# C versions of the SDK-port fx matrix stubs (shared with SoulSilver; scripts/platinum.sh weakens the archive copies).
+fx_mtx_native.o: ../soulsilver-native-core/nitromain-perf/fx_mtx_native.c
 	$(CC) $(CFLAGS) -c $< -o $@
 LDFLAGS += -Wl,--wrap=G3X_GetClipMtx -Wl,--wrap=ApplicationManager_New -Wl,--wrap=CTRDG_Init,--wrap=CommManager_InitializeSearchParty,--wrap=CommManager_GetAvailableConnections
 ifneq ($(QOL_TEST),)

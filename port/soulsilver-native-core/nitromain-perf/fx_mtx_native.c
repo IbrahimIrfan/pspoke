@@ -1,7 +1,9 @@
 /* C ports of the NitroSDK fx matrix routines that the SDK port left as
  * SIM_assert_always_msg("Not implemented") stubs (hand assembly on the DS).
- * Platinum's field never calls them; SoulSilver's starter-selection app calls
- * MTX_Scale43_ every frame and stalled in the stub. Ported line for line from
+ * SoulSilver's starter-selection app calls MTX_Scale43_ every frame and stalled
+ * in the stub; in Platinum the particle library's polygon draws call it, so any
+ * battle animation with polygon particles (Sing's notes, for one) aborted.
+ * Both games link this file. Ported line for line from
  * the assembly bodies in libntr/libraries/fx/src/fx_mtx{33,43,44}.c. The
  * archive copies of these symbols are weakened so these definitions win. */
 #include <nitro.h>

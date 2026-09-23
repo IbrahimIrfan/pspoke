@@ -64,7 +64,10 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
    memory/DMA entry points are wrapped (`--wrap=MIi_CpuCopy32` etc.) to redirect them. Three literal DS addresses also
    exist in the decompiled C (`battle_system.c`).
 7. **SDK-port stubs that assert.** The X86 SDK port leaves nine fx matrix helpers as "Not implemented"; SoulSilver's
-   starter screen calls one every frame. C ports live in `nitromain-perf/fx_mtx_native.c`.
+   starter screen calls one every frame, and Platinum's particle library calls `MTX_Scale43_` for every polygon
+   particle (Sing's notes crashed any battle). C ports live in `nitromain-perf/fx_mtx_native.c`, linked by both games
+   with the archive copies weakened. Grep the link for other `SIM_assert_always_msg` stubs before assuming a path is
+   unreachable.
 8. **`MI_CpuFillFast`/`MI_CpuClearFast` round up to whole words.** The DS assembly stores words while the pointer is
    below `dest + size`; a port that did `size / 4` dropped 1-3 byte fills, and a 1-byte `MI_CpuClearFast` of a state
    variable is why a switched-in Pokémon had no health bar. Match the hardware semantics exactly.
