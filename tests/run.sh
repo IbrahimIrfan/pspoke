@@ -132,12 +132,17 @@ plat_tests(){
     # submission order they came out as a solid black block (fixed by deferring translucent batches).
     PLAT_CHECKS=("log:[DIAG] warp done")
     plat_case floaroma-gate 2000 floaroma-sign.h "$PLAT_SAVE" WARP_TO=426,171,663
-  else result PASS oreburgh-belts floaroma-gate "skipped (needs --platinum-save, see tests/README.md)"; fi
+    # Oreburgh City into the Underground the way the Explorer Kit does. It used to crash twice over: the wireless icon
+    # palette is opened by a path that differs in case from the ROM's file name, then the WM wireless library aborted
+    # (no DS radio on the PSP). Must arrive with the WM stand-in running and stay up to the frame bound.
+    PLAT_CHECKS=("log:[DIAG] entering the Underground" "log:[OVERLAY] load id=23" "log:[WIRELESS] WM stand-in")
+    plat_case underground 5400 underground.h "$PLAT_SAVE" WARP_TO=45,302,775 UNDERGROUND=1
+  else result PASS oreburgh-belts floaroma-gate underground "skipped (needs --platinum-save, see tests/README.md)"; fi
 }
 
 ### main #####################################################################################################
 if [ "$LIST" = 1 ]; then cat <<'EOF'
-platinum:   boot (quick) oreburgh-belts floaroma-gate (need --platinum-save)
+platinum:   boot (quick) oreburgh-belts floaroma-gate underground (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
             options-b options-scene options-nochange options-after geonet gym-pryce rocket-radio-tower
             qol-friendship-evo qol-trade-item-evo qol-trade-level-evo qol-repel-yes qol-repel-no

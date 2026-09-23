@@ -10,6 +10,7 @@
 static unsigned frames;
 static unsigned long long start,last,gameUs,audioUs,renderUs;
 extern void PSPNativeVBlankFrameComplete(void);
+extern void PSPNativeWMPump(void);
 extern unsigned long long PSPNativeVBlankIdleTake(void);
 extern void PSPNativeSoundAdvance(unsigned elapsedMicroseconds);
 extern void PSPNativeInputGetRenderState(unsigned*,int*,int*,int*,int*);
@@ -50,6 +51,7 @@ static void PerfLine(void){
 }
 void PSPNativeFrameInit(void){start=sceKernelGetSystemTimeWide();perf.winStart=start;int result=PSPNativeRenderInit();if(result){printf("[NATIVE] renderer init failed %d\n",result);abort();}if(PSPNativeRenderBegin())abort();PSPNativeMemReport("frame init");}
 void PSPNativeFrameComplete(void){
+ PSPNativeWMPump();   /* wireless callbacks (services/wm_absent.c), between frames like the DS FIFO interrupt */
  unsigned long long now=sceKernelGetSystemTimeWide();if(last)gameUs+=now-last;
 #ifdef PSP_NATIVE_DEV
  {static unsigned long long prevEnd;if(prevEnd){unsigned d=(unsigned)(now-prevEnd);unsigned p=(d+8333)/16667;frHist[p<1?0:p>5?4:p-1]++;if(d>frMaxUs)frMaxUs=d;}prevEnd=now;

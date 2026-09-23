@@ -35,7 +35,8 @@ build time.
 ## Not supported yet
 
 - **Wi-Fi and online features:** GTS, Wi-Fi Plaza, online trades and battles, Mystery Gift over the internet.
-- **DS wireless:** local trades and battles with another DS, Union Room, DS Download Play.
+- **DS wireless:** local trades and battles with another DS, Union Room, DS Download Play. The Underground works,
+  but only on your own: no other players ever appear.
 - **Microphone** features.
 - **Other versions and regions:** only the two US ROMs listed above build (no HeartGold, Diamond/Pearl or
   non-English releases).

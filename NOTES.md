@@ -82,6 +82,18 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     just the VRAM range.
 13. **Text and the sound heap:** `SDK_PORT` sound-heap blocks carry a larger header than on DS, so SoulSilver's
     DS-sized `heap_buf` runs out (Pokéathlon intro music never loads). Give it a bigger heap, same layout.
+14. **ROM file names are case-insensitive on the DS.** A few files are opened by path rather than by NARC index, and
+    the path need not match the ROM's case: Platinum opens `data/pl_wm.NCLR` (the wireless icon palette), stored as
+    `data/pl_wm.nclr`. The port's `FS_ConvertPathToFileID` compared with `memcmp`, the open failed silently
+    (`ReadFileToBuffer` ignores it), and parsing the uninitialized buffer as a palette crashed on every Underground
+    entry. All three `romfs.c` copies now fold ASCII case like the SDK.
+15. **No DS radio: the WM library is replaced, not stubbed to fail.** The Underground brings up local wireless even
+    when played alone, and the SDK's WM calls only forward to the ARM7 over PXI (the audio backend aborts on that
+    tag). `services/wm_absent.c` implements the WM API as a radio with nobody in range: async calls complete a frame
+    later with SUCCESS, scans find no parent, a parent beacons and never gets a child. The game already handles that
+    case (CommSys "alone" mode loops its own commands back), so the Underground plays solo and cycles host/search
+    every few seconds like a lone DS. Failing the calls instead sends the game to its comm-error reset. Callbacks
+    are delivered from `PSPNativeFrameComplete`, on the main thread between frames.
 
 ## 4. Rendering
 
