@@ -141,6 +141,9 @@ static BOOL Next(FSDirPos*pos,FSDirEntry*entry){
  else {entry->file_id.arc=&archive;entry->file_id.file_id=pos->index++;if(entry->file_id.file_id>=fatSize/8)return FALSE;}
  return TRUE;
 }
+/* The DS SDK matches ROM file names case-insensitively (FS_ConvertPathToFileID uses a folding compare), and the
+ * game relies on it: network_icon.c opens "data/pl_wm.NCLR", stored in the ROM as data/pl_wm.nclr. */
+static BOOL NameEq(const char*a,const char*b,size_t n){while(n--){char x=*a++,y=*b++;if(x>='A'&&x<='Z')x+=32;if(y>='A'&&y<='Z')y+=32;if(x!=y)return FALSE;}return TRUE;}
 static BOOL Resolve(const char*path,BOOL directory,u32*result){
  if(!ready||!path)return FALSE;u32 dir=currentDir;
  if(!strncmp(path,"rom:",4)){path+=4;dir=0xf000;}else if(strchr(path,':'))return FALSE;
@@ -153,7 +156,7 @@ static BOOL Resolve(const char*path,BOOL directory,u32*result){
   if(n==2&&!memcmp(path,"..",2)){if(dir!=0xf000)dir=U16(fnt+(dir&4095)*8+6);path+=n;continue;}
   if(!n||n>127)return FALSE;
   FSDirPos pos;if(!DirPos(dir,&pos))return FALSE;FSDirEntry entry;BOOL found=FALSE;
-  while(Next(&pos,&entry))if(entry.name_len==n&&!memcmp(entry.name,path,n)){found=TRUE;break;}
+  while(Next(&pos,&entry))if(entry.name_len==n&&NameEq(entry.name,path,n)){found=TRUE;break;}
   if(!found)return FALSE;path+=n;while(*path=='/')path++;
   if(!*path){if(directory!=entry.is_directory)return FALSE;*result=directory?entry.dir_id.own_id:entry.file_id.file_id;return TRUE;}
   if(!entry.is_directory)return FALSE;dir=entry.dir_id.own_id;
