@@ -108,3 +108,21 @@ index 25c8bbf5..72f4149c 100644
              app->cursorPosition -= 1;
              Sound_PlayEffect(SE_CONFIRM_sseq_3);
          }
+diff --git a/src/underground/secret_bases.c b/src/underground/secret_bases.c
+index 7dbb2eb5..1a94a5c2 100644
+--- a/src/underground/secret_bases.c
++++ b/src/underground/secret_bases.c
+@@ -170,7 +170,13 @@ enum MoveStatus {
+ typedef struct SecretBaseInfo {
+     u8 ownerNetID;
+     u8 visitorNetID;
++    #ifdef SDK_BUILD_PSP
++    // Read through SecretBase * (its UndergroundRecord is u32 bitfields). At offset 2 that is an unaligned lw, which the
++    // DS rotates and a real PSP faults on (entering the Underground froze the console). Keep it word-aligned.
++    u8 secretBase[sizeof(SecretBase)] __attribute__((aligned(4)));
++    #else
+     u8 secretBase[sizeof(SecretBase)];
++    #endif
+ } SecretBaseInfo;
+ 
+ typedef struct BaseEntrance {
