@@ -452,10 +452,6 @@ __attribute__((noreturn)) void ov112_021F0394(void){Missing("ov112_021F0394");}
 __attribute__((noreturn)) void ov112_021F2EF4(void){Missing("ov112_021F2EF4");}
 __attribute__((noreturn)) void ov112_021F2FAC(void){Missing("ov112_021F2FAC");}
 __attribute__((noreturn)) void ov112_021F3018(void){Missing("ov112_021F3018");}
-__attribute__((noreturn)) void ov114_0225F020(void){Missing("ov114_0225F020");}
-__attribute__((noreturn)) void ov114_0225F280(void){Missing("ov114_0225F280");}
-__attribute__((noreturn)) void ov116_0225F054(void){Missing("ov116_0225F054");}
-__attribute__((noreturn)) void ov116_0225F364(void){Missing("ov116_0225F364");}
 __attribute__((noreturn)) void ov13_0222B430(void){Missing("ov13_0222B430");}
 __attribute__((noreturn)) void ov28_0225D520(void){Missing("ov28_0225D520");}
 __attribute__((noreturn)) void ov28_0225D5EC(void){Missing("ov28_0225D5EC");}
