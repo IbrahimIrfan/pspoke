@@ -36,6 +36,10 @@ ifneq ($(DOUBLE_SING),)
 OBJS += diag_double.o
 LDFLAGS += -Wl,--wrap=Trainer_Encounter,--wrap=FieldTask_Run
 endif
+# TEST ONLY: GIVE_ITEM=<itemId>:<count> (with WARP_TO) adds an item to the bag as the warp starts (see diag_warp.c).
+ifneq ($(GIVE_ITEM),)
+CFLAGS += -DGIVE_ITEM=\"$(GIVE_ITEM)\"
+endif
 # TEST ONLY: UNDERGROUND=1 (with WARP_TO) then enters the Underground like the Explorer Kit (see diag_warp.c).
 ifneq ($(UNDERGROUND),)
 CFLAGS += -DWARP_UNDERGROUND

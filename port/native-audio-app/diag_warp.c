@@ -6,11 +6,18 @@
  * decompilation (Oreburgh City = 45, Oreburgh Mine B1F = 198).
  * With UNDERGROUND=1 as well, once the warp is done and the field is idle for another 60 frames, start the
  * Underground entry exactly as the Explorer Kit does (UseExplorerKitInField), so the scenario does not depend on
- * where the kit sits in the save's bag. The comms/save prompts still need A presses from the input script. */
+ * where the kit sits in the save's bag. The comms/save prompts still need A presses from the input script.
+ * With GIVE_ITEM=<itemId>:<count> as well, the item is added to the bag when the warp starts (e.g. 93:1, a Heart
+ * Scale for the Pastoria move relearner). */
 #include <nitro.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "field_task.h"
+#ifdef GIVE_ITEM
+#include "bag.h"
+#include "field/field_system.h"
+#include "savedata.h"
+#endif
 #ifdef WARP_UNDERGROUND
 #include "field/field_system.h"
 #include "map_object.h"
@@ -37,6 +44,15 @@ static BOOL DiagWarpTask(FieldTask *task)
         z = (int)strtol(s, (char **)&s, 10);   if (*s == ',') { s++; dir = (int)strtol(s, (char **)&s, 10); }
         PSPNativeMemLog("[DIAG] warp to map %d (%d,%d) dir %d", map, x, z, dir);
         printf("[DIAG] warp to map %d (%d,%d) dir %d\n", map, x, z, dir);
+#ifdef GIVE_ITEM
+        {
+            const char *g = GIVE_ITEM;
+            int item = (int)strtol(g, (char **)&g, 10), count = 1;
+            if (*g == ':') { g++; count = (int)strtol(g, (char **)&g, 10); }
+            BOOL added = Bag_TryAddItem(SaveData_GetBag(FieldTask_GetFieldSystem(task)->saveData), item, count, HEAP_ID_FIELD2);
+            printf("[DIAG] give item %d x%d: %s\n", item, count, added ? "added" : "bag full");
+        }
+#endif
         state = 1;
         FieldTask_StartMapChangeFull(task, map, -1, x, z, dir);
         return FALSE;

@@ -97,6 +97,13 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     case (CommSys "alone" mode loops its own commands back), so the Underground plays solo and cycles host/search
     every few seconds like a lone DS. Failing the calls instead sends the game to its comm-error reset. Callbacks
     are delivered from `PSPNativeFrameComplete`, on the main thread between frames.
+16. **`MENU_*` constants are u64 off ARM.** The decompilation's non-ARM branch defines `MENU_CANCEL` etc. as `(u64)(-2)`,
+    so a u32 variable compared with one is never equal: the move relearner read its CANCEL row as a move and asserted,
+    and the start menu's Exit (`callback = (void *)MENU_CANCEL`) was called as a function at 0xFFFFFFFE. `switch`
+    cases are converted to the operand's type and are fine. Find them all with a `-fsyntax-only -Wtype-limits` pass
+    over the overlay sources ("comparison is always true/false due to limited range"); `local-edits.patch` casts the
+    real ones to `(u32)`. The underground menus' `if (input == MENU_CANCEL) input = MENU_CANCEL;` lines are no-ops
+    either way.
 
 ## 4. Rendering
 

@@ -141,12 +141,20 @@ plat_tests(){
     # draw called the SDK port's MTX_Scale43_ stub and aborted, in any battle (fx_mtx_native.c is now linked).
     PLAT_CHECKS=("log:[DIAG] double battle vs trainer")
     plat_case sing-double 7000 double-sing.h "$PLAT_SAVE" DOUBLE_SING=1
-  else result PASS oreburgh-belts floaroma-gate underground sing-double "skipped (needs --platinum-save, see tests/README.md)"; fi
+    # Menus compared 32-bit values with the u64 MENU_CANCEL / MENU_NOTHING_CHOSEN, which is never equal on the PSP:
+    # the relearner treated its CANCEL row as a move (bad move ID, assertion) and the start menu jumped to the Exit
+    # entry's (void *)MENU_CANCEL "callback".
+    PLAT_CHECKS=("log:[DIAG] give item 93 x1: added")
+    plat_case move-relearner 4100 move-relearner.h "$PLAT_SAVE" WARP_TO=129,8,5,0 GIVE_ITEM=93:1
+    PLAT_CHECKS=("log:[AUDIO-SAS] ready: sceSasCore")
+    plat_case start-menu-exit 2200 start-menu-exit.h "$PLAT_SAVE"
+  else result PASS oreburgh-belts floaroma-gate underground sing-double move-relearner start-menu-exit "skipped (needs --platinum-save, see tests/README.md)"; fi
 }
 
 ### main #####################################################################################################
 if [ "$LIST" = 1 ]; then cat <<'EOF'
-platinum:   boot (quick) oreburgh-belts floaroma-gate underground sing-double (need --platinum-save)
+platinum:   boot (quick) oreburgh-belts floaroma-gate underground sing-double move-relearner
+            start-menu-exit (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
             options-b options-scene options-nochange options-after geonet gym-pryce rocket-radio-tower
             qol-friendship-evo qol-trade-item-evo qol-trade-level-evo qol-repel-yes qol-repel-no

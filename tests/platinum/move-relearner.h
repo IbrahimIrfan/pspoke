@@ -1,0 +1,33 @@
+/* Continue the save, close the journal (Start), talk to the Pastoria move relearner (WARP_TO=129,8,5,0 GIVE_ITEM=93:1
+ * put the player in front of him with a Heart Scale), pick the first Pokemon, then press Down past the end of the list. */
+struct ScriptEvent{unsigned first,last,bits;int x,y,down;};
+static const struct ScriptEvent script[]={
+{360,363,PSP_CTRL_CIRCLE,-1,-1,0},
+{410,413,PSP_CTRL_CIRCLE,-1,-1,0},
+{460,463,PSP_CTRL_CIRCLE,-1,-1,0},
+{510,513,PSP_CTRL_CIRCLE,-1,-1,0},
+{560,563,PSP_CTRL_CIRCLE,-1,-1,0},
+{610,613,PSP_CTRL_CIRCLE,-1,-1,0},
+{930,933,PSP_CTRL_START,-1,-1,0},
+{1650,1653,PSP_CTRL_CIRCLE,-1,-1,0},
+{1730,1733,PSP_CTRL_CIRCLE,-1,-1,0},
+{1810,1813,PSP_CTRL_CIRCLE,-1,-1,0},
+{1890,1893,PSP_CTRL_CIRCLE,-1,-1,0},
+{1970,1973,PSP_CTRL_CIRCLE,-1,-1,0},
+{2050,2053,PSP_CTRL_CIRCLE,-1,-1,0},
+{2130,2133,PSP_CTRL_CIRCLE,-1,-1,0},
+{2210,2213,PSP_CTRL_CIRCLE,-1,-1,0},
+{2290,2293,PSP_CTRL_CIRCLE,-1,-1,0},
+{2770,2773,PSP_CTRL_CIRCLE,-1,-1,0},
+{2890,2893,PSP_CTRL_CIRCLE,-1,-1,0},
+{3410,3413,PSP_CTRL_DOWN,-1,-1,0},
+{3430,3433,PSP_CTRL_DOWN,-1,-1,0},
+{3450,3453,PSP_CTRL_DOWN,-1,-1,0},
+{3470,3473,PSP_CTRL_DOWN,-1,-1,0},
+{3490,3493,PSP_CTRL_DOWN,-1,-1,0},
+{3510,3513,PSP_CTRL_DOWN,-1,-1,0},
+{3530,3533,PSP_CTRL_DOWN,-1,-1,0},
+{3550,3553,PSP_CTRL_DOWN,-1,-1,0},
+{3570,3573,PSP_CTRL_DOWN,-1,-1,0},
+{3590,3593,PSP_CTRL_DOWN,-1,-1,0},
+};

@@ -66,6 +66,8 @@ for trying a build on a PSP.
 | `floaroma-gate` (Platinum, needs `--platinum-save`) | Warps to Floaroma Town's south gate. Its translucent arch and shade are submitted before the ground; drawn in submission order they were a solid black block. Screenshot check by eye (`.work/tests/floaroma-gate.png`). |
 | `underground` (Platinum, needs `--platinum-save`) | Warps to Oreburgh City and enters the Underground the way the Explorer Kit does (comms prompt, save, descent). Crashed before the ROM file-name lookup ignored case and the WM wireless stand-in (`port/native-audio-app/services/wm_absent.c`) existed. |
 | `sing-double` (Platinum, needs `--platinum-save`) | A trainer double battle (`DOUBLE_SING=1`, `diag_double.c`) where all four Pokémon are Clefairy that know only Sing; one turn of both sides singing. Sing's notes are polygon particles, which aborted in the SDK port's `MTX_Scale43_` stub. |
+| `move-relearner` (Platinum, needs `--platinum-save`) | Warps in front of the Pastoria move relearner with a Heart Scale (`GIVE_ITEM=93:1`), opens his list for the first Pokémon and scrolls past the end. The CANCEL row used to be read as a move and hit an assertion. |
+| `start-menu-exit` (Platinum, needs `--platinum-save`) | Opens the start menu and chooses Exit with A, which used to jump to address 0xFFFFFFFE. |
 | `smoke` | Violet City: continue a save and walk around. |
 | `pc`, `easychat`, `pokedex`, `apricorn`, `vs-recorder`, `trainer-card`, `options*` | Menus and sub-applications, each from the same Violet City save; the `options-*` variants leave the Options screen every possible way. |
 | `catch` | Route 31 wild battle and a catch (battle overlay 12); also checks the field-move buffs are in the loaded move table. |
