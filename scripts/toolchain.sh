@@ -14,7 +14,43 @@ case "$(uname -s)-$(uname -m)" in
   *) die "no prebuilt PSP toolchain for $(uname -s) $(uname -m). Install PSPDEV (https://pspdev.github.io) and set PSPDEV.";;
 esac
 DEST="$CACHE/pspdev"
-[ -x "$DEST/bin/psp-gcc" ] && [ "$(cat "$DEST/.pspoke-release" 2>/dev/null)" = "$RELEASE $ASSET" ] && { echo "    PSP toolchain $RELEASE already installed"; exit 0; }
+
+# macOS: the prebuilt compilers load a few Homebrew libraries from fixed paths (/opt/homebrew on Apple Silicon,
+# /usr/local on Intel; without them dyld stops with "Library not loaded: .../libisl.23.dylib" and similar) and are
+# built for a minimum macOS (LC_BUILD_VERSION minos of this release: 26 arm64, 15 x86_64). Check before downloading.
+mac_check(){
+  [ "$(uname -s)" = Darwin ] || return 0
+  local prefix min pkgs have p missing="" ans
+  if [ "$(uname -m)" = arm64 ]; then prefix=/opt/homebrew; min=26; pkgs="gmp mpfr libmpc zstd"
+  else prefix=/usr/local; min=15; pkgs="gmp mpfr libmpc isl zstd gettext"; fi
+  have=$(sw_vers -productVersion | cut -d. -f1)
+  [ "$have" -ge "$min" ] || die "the prebuilt PSP toolchain for this Mac needs macOS $min or newer (this is macOS $(sw_vers -productVersion)). Update macOS, or build PSPDEV yourself (https://pspdev.github.io) and set PSPDEV to it, or build in a Linux VM."
+  for p in $pkgs; do [ -d "$prefix/opt/$p/lib" ] || missing="$missing $p"; done
+  [ -z "$missing" ] && return 0
+  [ -x "$prefix/bin/brew" ] || die "the PSP toolchain needs Homebrew installed in $prefix (https://brew.sh), then:  brew install$missing"
+  echo "The PSP toolchain needs these Homebrew libraries:$missing"
+  echo "To install them: brew install$missing"
+  if [ "${PSPPOKE_ASSUME_YES:-0}" = 1 ]; then ans=y
+  elif [ -t 0 ]; then printf 'Install them now? [y/N] '; read -r ans
+  else die "not an interactive terminal: run the command above, then run the build again (or set PSPPOKE_ASSUME_YES=1)"; fi
+  case "$ans" in y|Y|yes|YES) ;; *) die "run the command above, then run the build again";; esac
+  # shellcheck disable=SC2086  # intentional word splitting: the package list printed above
+  "$prefix/bin/brew" install $missing || die "brew install failed. Run the command above yourself, then run the build again."
+}
+# Compile an empty file: that runs the driver, cc1 and the assembler, which is where the libraries are loaded.
+toolchain_runs(){
+  local out
+  out=$(echo 'int pspoke;' | "$DEST/bin/psp-gcc" -x c -c -o /dev/null - 2>&1) && return 0
+  case "$out" in
+    *"Library not loaded"*) die "the PSP toolchain cannot load a library it needs: $(echo "$out" | grep -m1 'Library not loaded'). On macOS run:  brew install gmp mpfr libmpc isl zstd gettext   then run the build again.";;
+    *) die "the PSP toolchain was downloaded but does not run on this computer: $(echo "$out" | head -3)";;
+  esac
+}
+
+mac_check
+if [ -x "$DEST/bin/psp-gcc" ] && [ "$(cat "$DEST/.pspoke-release" 2>/dev/null)" = "$RELEASE $ASSET" ]; then
+  toolchain_runs; echo "    PSP toolchain $RELEASE already installed"; exit 0
+fi
 need curl "Install curl."; need tar "Install tar."
 log "Downloading the PSP toolchain ($RELEASE, about 150 MB, one time)"
 mkdir -p "$CACHE"; TMP="$CACHE/$ASSET.part"
@@ -24,5 +60,5 @@ GOT=$(if command -v sha256sum >/dev/null; then sha256sum "$TMP"; else shasum -a 
 rm -rf "$DEST" "$CACHE/pspdev.extract"; mkdir -p "$CACHE/pspdev.extract"
 tar xzf "$TMP" -C "$CACHE/pspdev.extract" && mv "$CACHE/pspdev.extract/pspdev" "$DEST" && rm -rf "$CACHE/pspdev.extract" "$TMP"
 echo "$RELEASE $ASSET" > "$DEST/.pspoke-release"
-"$DEST/bin/psp-gcc" --version >/dev/null 2>&1 || die "the toolchain was downloaded but does not run on this computer"
+toolchain_runs
 echo "    PSP toolchain $RELEASE installed in .cache/pspdev"
