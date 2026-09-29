@@ -40,6 +40,13 @@ endif
 ifneq ($(GIVE_ITEM),)
 CFLAGS += -DGIVE_ITEM=\"$(GIVE_ITEM)\"
 endif
+# TEST ONLY: TEACH_MOVE=<partySlot>:<moveId> and ALL_BADGES=1 (with WARP_TO), see diag_warp.c.
+ifneq ($(TEACH_MOVE),)
+CFLAGS += -DTEACH_MOVE=\"$(TEACH_MOVE)\"
+endif
+ifneq ($(ALL_BADGES),)
+CFLAGS += -DALL_BADGES
+endif
 # TEST ONLY: UNDERGROUND=1 (with WARP_TO) then enters the Underground like the Explorer Kit (see diag_warp.c).
 ifneq ($(UNDERGROUND),)
 CFLAGS += -DWARP_UNDERGROUND

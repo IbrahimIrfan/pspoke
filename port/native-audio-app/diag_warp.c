@@ -8,15 +8,20 @@
  * Underground entry exactly as the Explorer Kit does (UseExplorerKitInField), so the scenario does not depend on
  * where the kit sits in the save's bag. The comms/save prompts still need A presses from the input script.
  * With GIVE_ITEM=<itemId>:<count> as well, the item is added to the bag when the warp starts (e.g. 93:1, a Heart
- * Scale for the Pastoria move relearner). */
+ * Scale for the Pastoria move relearner). TEACH_MOVE=<partySlot>:<moveId> puts a move in that Pokemon's first move
+ * slot and ALL_BADGES=1 grants the eight badges, e.g. to test Fly (move 19) from the party menu. */
 #include <nitro.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "field_task.h"
-#ifdef GIVE_ITEM
+#if defined(GIVE_ITEM) || defined(TEACH_MOVE) || defined(ALL_BADGES)
 #include "bag.h"
 #include "field/field_system.h"
+#include "party.h"
+#include "pokemon.h"
+#include "save_player.h"
 #include "savedata.h"
+#include "trainer_info.h"
 #endif
 #ifdef WARP_UNDERGROUND
 #include "field/field_system.h"
@@ -52,6 +57,21 @@ static BOOL DiagWarpTask(FieldTask *task)
             BOOL added = Bag_TryAddItem(SaveData_GetBag(FieldTask_GetFieldSystem(task)->saveData), item, count, HEAP_ID_FIELD2);
             printf("[DIAG] give item %d x%d: %s\n", item, count, added ? "added" : "bag full");
         }
+#endif
+#ifdef TEACH_MOVE
+        {
+            const char *t = TEACH_MOVE;
+            int slot = (int)strtol(t, (char **)&t, 10), move = 0;
+            if (*t == ':') { t++; move = (int)strtol(t, (char **)&t, 10); }
+            Pokemon_ResetMoveSlot(Party_GetPokemonBySlotIndex(SaveData_GetParty(FieldTask_GetFieldSystem(task)->saveData), slot), move, 0);
+            printf("[DIAG] teach move %d to party slot %d\n", move, slot);
+        }
+#endif
+#ifdef ALL_BADGES
+        for (int badge = 0; badge < 8; badge++) {
+            TrainerInfo_SetBadge(SaveData_GetTrainerInfo(FieldTask_GetFieldSystem(task)->saveData), badge);
+        }
+        printf("[DIAG] all badges\n");
 #endif
         state = 1;
         FieldTask_StartMapChangeFull(task, map, -1, x, z, dir);

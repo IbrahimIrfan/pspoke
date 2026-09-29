@@ -204,3 +204,28 @@ index f816e940..86ed2ca4 100644
          Sound_PlayEffect(seqID);
      }
  }
+diff --git a/src/render_oam.c b/src/render_oam.c
+index 8ce5a697..e8cd0247 100644
+--- a/src/render_oam.c
++++ b/src/render_oam.c
+@@ -139,14 +139,20 @@ void RenderOam_ClearSub(enum HeapID heapID)
+ static BOOL AddToMainOamManager(const GXOamAttr *oam, u16 affineIdx, BOOL unused)
+ {
+     BOOL result = NNS_G2dEntryOamManagerOamWithAffineIdx(&sOamManager->mainScreenOam, oam, affineIdx);
++    // PSP: a full OAM buffer drops the sprite, as on a retail cartridge (asserts stripped). One frame of the Fly
++    // take-off cut-in asks for 132 of the 124 main-screen slots; with kept asserts that crashed.
++    #ifndef SDK_BUILD_PSP
+     GF_ASSERT(result);
++    #endif
+     return result;
+ }
+ 
+ static BOOL AddToSubOamManager(const GXOamAttr *oam, u16 affineIdx, BOOL unused)
+ {
+     BOOL result = NNS_G2dEntryOamManagerOamWithAffineIdx(&sOamManager->subScreenOam, oam, affineIdx);
++    #ifndef SDK_BUILD_PSP
+     GF_ASSERT(result);
++    #endif
+     return result;
+ }
+ 

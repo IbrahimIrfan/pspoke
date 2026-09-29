@@ -148,13 +148,17 @@ plat_tests(){
     plat_case move-relearner 4100 move-relearner.h "$PLAT_SAVE" WARP_TO=129,8,5,0 GIVE_ITEM=93:1
     PLAT_CHECKS=("log:[AUDIO-SAS] ready: sceSasCore")
     plat_case start-menu-exit 2200 start-menu-exit.h "$PLAT_SAVE"
-  else result PASS oreburgh-belts floaroma-gate underground sing-double move-relearner start-menu-exit "skipped (needs --platinum-save, see tests/README.md)"; fi
+    # Fly from Oreburgh to Jubilife. One frame of the take-off cut-in overflows the OAM buffer (132 of 124 sprites);
+    # retail drops the extra sprites, the kept assert in render_oam.c crashed.
+    PLAT_CHECKS=("log:[DIAG] teach move 19 to party slot 0" "log:[DIAG] all badges")
+    plat_case fly 4400 fly.h "$PLAT_SAVE" WARP_TO=45,302,775 TEACH_MOVE=0:19 ALL_BADGES=1
+  else result PASS oreburgh-belts floaroma-gate underground sing-double move-relearner start-menu-exit fly "skipped (needs --platinum-save, see tests/README.md)"; fi
 }
 
 ### main #####################################################################################################
 if [ "$LIST" = 1 ]; then cat <<'EOF'
 platinum:   boot (quick) oreburgh-belts floaroma-gate underground sing-double move-relearner
-            start-menu-exit (need --platinum-save)
+            start-menu-exit fly (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
             options-b options-scene options-nochange options-after geonet gym-pryce rocket-radio-tower
             qol-friendship-evo qol-trade-item-evo qol-trade-level-evo qol-repel-yes qol-repel-no

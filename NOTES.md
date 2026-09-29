@@ -230,6 +230,9 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
   invalid-in-write-context; the Wi-Fi lobby cases cannot run with no Wi-Fi.
 - **Rule:** when a player reports a crash in one specific vanilla interaction, grep that feature's source for
   `GF_ASSERT(FALSE)` before anything else. Re-run the named-case-into-assert scan after any upstream decomp bump.
+- Conditional asserts that retail reaches are the same trap. `render_oam.c` asserts that every sprite fits the OAM
+  buffer; one frame of Fly's take-off asks for 132 of 124 main-screen slots, which retail silently drops. On the PSP
+  those two asserts are compiled out (`local-edits.patch`).
 
 ## 6. Testing loop
 
