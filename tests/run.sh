@@ -90,6 +90,10 @@ ss_tests(){
     ss_case geonet         violet-center-postrod input-geo3.txt        600 overlay:69 "log:downscaled 1024x512 -> 512x256"; fi
   if ss_group_wanted gym-pryce; then ss_build pryce PARTY_LEVEL=100 TEACH_MOVES=0:85,0:53,0:94,0:247 NO_WILD=1
     ss_case gym-pryce      diag-mahogany-gym-pryce input-perfwp2.txt   120 overlay:12; fi
+  # Mahogany Gym's first ice room: walk every direction for 90 s. Sliding on this ice called two untranslated
+  # movement functions (sub_0205D240/sub_0205D2D0, [SS-MISSING]); Pryce's badge is required for the story.
+  if ss_group_wanted ice-mahogany; then ss_build ice WARP_TO=397,4,19 NO_WILD=1
+    ss_case ice-mahogany diag-azalea-saved input-icewalk.txt 100; fi
   if ss_group_wanted rocket-radio-tower; then ss_build rocket WARP_TO=186,16,7 NO_WILD=1
     ss_case rocket-radio-tower diag-radio-takeover input-rocket117-loop.txt 300 overlay:12 overlay:117; fi
   # Quality-of-life features (default build switches; these fail on a --no-trade-evos / --no-repel-prompt build).
@@ -177,7 +181,7 @@ if [ "$LIST" = 1 ]; then cat <<'EOF'
 platinum:   boot (quick) quit-combo fast-forward weather-snow weather-sand weather-ash oreburgh-belts floaroma-gate underground sing-double move-relearner
             start-menu-exit fly (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
-            options-b options-scene options-nochange options-after geonet gym-pryce rocket-radio-tower
+            options-b options-scene options-nochange options-after geonet gym-pryce ice-mahogany rocket-radio-tower
             qol-friendship-evo qol-trade-item-evo qol-trade-level-evo qol-repel-yes qol-repel-no
 EOF
 exit 0; fi
