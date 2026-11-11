@@ -163,6 +163,9 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     C callee reads an FPU register. `port.py` now converts float parameters/returns of externals (`FLOAT_PARAMS`,
     `FLOAT_RET`; doubles abort the build). Before, `ManagedSprite_SetAffineScale` got 0.0 and the Pal Pad's digit
     boxes vanished (affine matrices all zero in OAM); `ov01_02203F2C` had the same problem.
+    And 64-bit parameters: AAPCS puts a u64 in an even register pair or an 8-aligned stack slot and shifts what
+    follows; `port.py` (`WIDE_PARAMS`, `aapcs_args`) now reads them from there (`String16_FormatUnsignedLongLong`
+    in the Vs. Recorder, `OS_SetTick`).
 22. **Translated exit functions can leave callbacks behind.** The Pal Pad code-entry screen's exit destroys its heap
     without clearing the VBlank callback its init set; the next VBlank used the freed BgConfig (DS memory just kept
     the old bytes). Translated code cannot be edited, so `palpad_vblank.c` wraps `Heap_Destroy` and clears exactly that
