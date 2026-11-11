@@ -155,6 +155,18 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     animation's wait-for-particles command (ov07 command 0x32) never finished. Water Pulse, Pin Missile, Supersonic
     and Fly froze the battle on "used <move>!". Whenever a native/glue C function's parameter list differs from the
     decomp header, add it to `arg-overrides.json` and grep the generated `overworld_native.c` for its call sites.
+21. **64-bit returns.** A C function returning `u64`/`s64` hands the result back in r1:r0, and hand assembly reads r1.
+    The translator bound every external as `uint32_t` and then clobbered r1, so the Pal Pad's friend code (`String_atoi`)
+    came back as garbage and `sub_0203088C` (u64 records, 14 call sites) lost its high word. `port.py` now reads the
+    return type next to the argument count (`RET64`) and splits a 64-bit result into r0/r1.
+22. **Translated exit functions can leave callbacks behind.** The Pal Pad code-entry screen's exit destroys its heap
+    without clearing the VBlank callback its init set; the next VBlank used the freed BgConfig (DS memory just kept
+    the old bytes). Translated code cannot be edited, so `palpad_vblank.c` wraps `Heap_Destroy` and clears exactly that
+    callback. Look for the same shape when a crash follows leaving a screen.
+23. **Overlay static initializers.** The native overlay loader refuses an overlay whose ROM has `.sinit` constructors
+    unless it knows what they do (`soulsilver-native-overlays/overlay.c`, `Supported()`/`NativeStaticInit()`). Ball
+    Capsule (ov57) exited the game until its initializer (load OVY_6 and OVY_7) was added. Symptom:
+    `[SS-OVERLAY] unsupported SDK lifetime or constructor id=N` and a black screen; the suite now counts it as a trap.
 
 ## 4. Rendering
 

@@ -23,7 +23,7 @@ PPSSPP="${PPSSPP_HEADLESS:-}"
 OUT="$ROOT/.work/tests"; mkdir -p "$OUT"; SUMMARY="$OUT/summary.txt"; : > "$SUMMARY"
 PASSED=0; FAILED=0
 # Lines that mean the game trapped, asserted or lost an overlay. PPSSPP mirrors the game's stdout into run.log.
-TRAPS='FATAL\]|SS-MISSING|GF_ASSERT|SIGSEGV|invalid input range|LIST-VERIFY\] MISMATCH|[Ii]nvalid address|Jumped to invalid'
+TRAPS='FATAL\]|SS-MISSING|SS-OVERLAY\] unsupported|GF_ASSERT|SIGSEGV|invalid input range|LIST-VERIFY\] MISMATCH|[Ii]nvalid address|Jumped to invalid'
 
 result(){ # result PASS|FAIL NAME DETAIL
   if [ "$1" = PASS ]; then PASSED=$((PASSED+1)); printf '    \033[32mPASS\033[0m %-22s %s\n' "$2" "$3"; else FAILED=$((FAILED+1)); printf '    \033[31mFAIL\033[0m %-22s %s\n' "$2" "$3"; fi
@@ -112,6 +112,25 @@ ss_tests(){
     ss_case frontier-castle diag-azalea-saved input-frontier-castle.txt 100; fi
   if ss_group_wanted frontier-arcade; then ss_build farcade WARP_TO=278,14,8 GIVE_PARTY=445:100:337,248:100:242,376:100:309
     ss_case frontier-arcade diag-azalea-saved input-frontier-arcade.txt 100; fi
+  # SoulSilver features whose code was untranslated until 2026-11-11 (recipes recorded by an emulator agent).
+  if ss_group_wanted feature-mail; then ss_build fmail GIVE_ITEM_IDS=137:1 OSK_AUTONAME=Abc
+    ss_case feature-mail violet-center-postrod input-feature-mail.txt 120 overlay:56; fi
+  if ss_group_wanted feature-mailbox; then ss_build fmailbox GIVE_ITEM_IDS=137:1 OSK_AUTONAME=Abc
+    ss_case feature-mailbox violet-center-postrod input-feature-mailbox.txt 120 overlay:103; fi
+  if ss_group_wanted feature-ball-capsule; then ss_build fball-capsule WARP_TO=169,8,16 CLEAR_FLAGS=0x27E GIVE_SEALS=1:3,2:2 GIVE_ITEM_IDS=434:1,137:1 OSK_AUTONAME=Abc
+    ss_case feature-ball-capsule violet-center-postrod input-feature-ball-capsule.txt 120 overlay:57; fi
+  if ss_group_wanted feature-photo-album; then ss_build fphoto-album WARP_TO=224,2,15 WARP2_TO=226,11,13 NO_WILD=1
+    ss_case feature-photo-album violet-center-postrod input-feature-photo-album.txt 120 overlay:109; fi
+  if ss_group_wanted feature-hall-of-fame; then ss_build fhall-of-fame SET_FLAGS=0x964 GIVE_HOF=1
+    ss_case feature-hall-of-fame violet-center-postrod input-feature-hall-of-fame.txt 120 overlay:64; fi
+  if ss_group_wanted feature-photo-studio; then ss_build fphoto-studio WARP_TO=199,21,7 WARP_AFTER=2000 WARP2_TO=199,2,50 CLEAR_FLAGS=0x1B8 NO_WILD=1
+    ss_case feature-photo-studio violet-center-postrod input-feature-photo-studio.txt 120 overlay:41; fi
+  if ss_group_wanted feature-pal-pad; then ss_build fpal-pad GIVE_ITEM_IDS=437:1 OSK_AUTONAME=Abc
+    ss_case feature-pal-pad violet-center-postrod input-feature-pal-pad.txt 120 ; fi
+  if ss_group_wanted feature-safari-areas; then ss_build fsafari-areas WARP_TO=173,9,7 WARP_AFTER=2000 SET_VARS=0x4057:7 NO_WILD=1
+    ss_case feature-safari-areas violet-center-postrod input-feature-safari-areas.txt 120 overlay:108; fi
+  if ss_group_wanted feature-safari-objects; then ss_build fsafari-objects WARP_TO=173,4,5 WARP_AFTER=2000 SET_VARS=0x4057:6 SAFARI_OBJ_LEVEL=5 NO_WILD=1
+    ss_case feature-safari-objects violet-center-postrod input-feature-safari-objects.txt 120 overlay:108; fi
   if ss_group_wanted rocket-radio-tower; then ss_build rocket WARP_TO=186,16,7 NO_WILD=1
     ss_case rocket-radio-tower diag-radio-takeover input-rocket117-loop.txt 300 overlay:12 overlay:117; fi
   # Quality-of-life features (default build switches; these fail on a --no-trade-evos / --no-repel-prompt build).
@@ -211,7 +230,7 @@ if [ "$LIST" = 1 ]; then cat <<'EOF'
 platinum:   boot (quick) quit-combo fast-forward weather-snow weather-sand weather-ash weather-thunder bag-dial-cancel ug-trap-cancel ug-shops pc2f-confirm-cancel oreburgh-belts floaroma-gate underground sing-double move-relearner
             start-menu-exit fly (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
-            options-b options-scene options-nochange options-after geonet gym-pryce ice-mahogany move-reminder dowsing frontier-factory frontier-tower frontier-hall frontier-castle frontier-arcade rocket-radio-tower
+            options-b options-scene options-nochange options-after geonet gym-pryce ice-mahogany move-reminder dowsing frontier-factory frontier-tower frontier-hall frontier-castle frontier-arcade feature-mail feature-mailbox feature-ball-capsule feature-photo-album feature-hall-of-fame feature-photo-studio feature-pal-pad feature-safari-areas feature-safari-objects rocket-radio-tower
             qol-friendship-evo qol-trade-item-evo qol-trade-level-evo qol-repel-yes qol-repel-no
 EOF
 exit 0; fi

@@ -11,17 +11,21 @@
 #include "player_avatar.h"
 #include "map_object.h"
 #include "task.h"
+#ifdef WARP2_TO
+#include "system.h"
+#endif
 
 extern void PSPNativeMemLog(const char *fmt, ...);
 extern void __real_PlayerAvatar_UpdateMovement(PlayerAvatar *avatar);
 
 /* Top-level field task: tick 1 queues the script warp as a child task, tick 2 (after the
  * child chain finished) ends the task. Same shape as the start menu's selection tasks. */
+static const char *sWarpSpec;
 static BOOL DiagWarpTask(TaskManager *taskman)
 {
     static int state;
     if (state == 0) {
-        int map, x, z; const char *s = WARP_TO;
+        int map, x, z; const char *s = sWarpSpec;
         map = (int)strtol(s, (char **)&s, 10); if (*s == ',') s++;
         x = (int)strtol(s, (char **)&s, 10);   if (*s == ',') s++;
         z = (int)strtol(s, (char **)&s, 10);
@@ -31,16 +35,28 @@ static BOOL DiagWarpTask(TaskManager *taskman)
         CallTask_ScriptWarp(taskman, (u32)map, -1, x, z, 1);
         return FALSE;
     }
+    state = 0;
     return TRUE;
 }
 
+#ifndef WARP_AFTER
+#define WARP_AFTER 90 /* TEST ONLY (agent-features): WARP_AFTER=<n> delays the warp so GIVE/SET hooks can apply first */
+#endif
 void __wrap_PlayerAvatar_UpdateMovement(PlayerAvatar *avatar)
 {
     static int frames, done;
-    if (!done && ++frames == 90) {
+    if (!done && ++frames == WARP_AFTER) {
         FieldSystem *fieldSystem = MapObject_GetFieldSystem(PlayerAvatar_GetMapObject(avatar));
-        done = 1;
+        done = 1; sWarpSpec = WARP_TO;
         FieldSystem_CreateTask(fieldSystem, DiagWarpTask, NULL);
     }
+#ifdef WARP2_TO
+    /* TEST ONLY (agent-features): a second warp to WARP2_TO when SELECT is held on a free field frame. */
+    else if (done == 1 && (gSystem.heldKeys & PAD_BUTTON_SELECT)) {
+        FieldSystem *fieldSystem = MapObject_GetFieldSystem(PlayerAvatar_GetMapObject(avatar));
+        done = 2; sWarpSpec = WARP2_TO;
+        FieldSystem_CreateTask(fieldSystem, DiagWarpTask, NULL);
+    }
+#endif
     __real_PlayerAvatar_UpdateMovement(avatar);
 }
