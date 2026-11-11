@@ -94,6 +94,12 @@ ss_tests(){
   # movement functions (sub_0205D240/sub_0205D2D0, [SS-MISSING]); Pryce's badge is required for the story.
   if ss_group_wanted ice-mahogany; then ss_build ice WARP_TO=397,4,19 NO_WILD=1
     ss_case ice-mahogany diag-azalea-saved input-icewalk.txt 100; fi
+  # Blackthorn Move Reminder with a Heart Scale: relearn a move. Its state handlers (overlay 68) were never translated.
+  if ss_group_wanted move-reminder; then ss_build reminder WARP_TO=291,3,5 NO_WILD=1 SET_FLAGS=0x15E GIVE_ITEM_IDS=93:1
+    ss_case move-reminder diag-azalea-saved input-reminder.txt 200 overlay:68; fi
+  # Bag > Key Items (tapped in stylus mode) > Dowsing MCHN > Use: the radar on the touch screen (overlay 28) was untranslated.
+  if ss_group_wanted dowsing; then ss_build dowse NO_WILD=1 GIVE_ITEM_IDS=471:1
+    ss_case dowsing diag-azalea-saved input-dowsing.txt 200 overlay:28; fi
   if ss_group_wanted rocket-radio-tower; then ss_build rocket WARP_TO=186,16,7 NO_WILD=1
     ss_case rocket-radio-tower diag-radio-takeover input-rocket117-loop.txt 300 overlay:12 overlay:117; fi
   # Quality-of-life features (default build switches; these fail on a --no-trade-evos / --no-repel-prompt build).
@@ -144,6 +150,10 @@ plat_tests(){
   plat_case weather-sand 13000 newgame-warp.h "" WARP_TO=406,774,331
   PLAT_CHECKS=("log:[DIAG] warp to map 403")
   plat_case weather-ash 13000 newgame-warp.h "" WARP_TO=403,740,302
+  # Thunderstorm, forced (Route 212 South only gets it on some dates): its lightning task was allocated for ints and
+  # wrote s64[8] past the block.
+  PLAT_CHECKS=("log:[DIAG] warp to map 371")
+  plat_case weather-thunder 13500 newgame-warp.h "" WARP_TO=371,517,846 FORCE_WEATHER=4
   if [ -n "$PLAT_SAVE" ]; then
     # Oreburgh City south end into the Mine: the long conveyor belts have bounding boxes larger than the view,
     # which the box test used to cull at random. The screenshot at frame 2000 (about ten steps south) must still show them.
@@ -178,10 +188,10 @@ plat_tests(){
 
 ### main #####################################################################################################
 if [ "$LIST" = 1 ]; then cat <<'EOF'
-platinum:   boot (quick) quit-combo fast-forward weather-snow weather-sand weather-ash oreburgh-belts floaroma-gate underground sing-double move-relearner
+platinum:   boot (quick) quit-combo fast-forward weather-snow weather-sand weather-ash weather-thunder oreburgh-belts floaroma-gate underground sing-double move-relearner
             start-menu-exit fly (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
-            options-b options-scene options-nochange options-after geonet gym-pryce ice-mahogany rocket-radio-tower
+            options-b options-scene options-nochange options-after geonet gym-pryce ice-mahogany move-reminder dowsing rocket-radio-tower
             qol-friendship-evo qol-trade-item-evo qol-trade-level-evo qol-repel-yes qol-repel-no
 EOF
 exit 0; fi

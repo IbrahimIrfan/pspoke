@@ -10,12 +10,14 @@
  * With GIVE_ITEM=<itemId>:<count> as well, the item is added to the bag when the warp starts (e.g. 93:1, a Heart
  * Scale for the Pastoria move relearner). TEACH_MOVE=<partySlot>:<moveId> puts a move in that Pokemon's first move
  * slot and ALL_BADGES=1 grants the eight badges, e.g. to test Fly (move 19) from the party menu. GIVE_MON=<species>:<level>
- * adds a Pokemon to the party first, so a fresh new-game save can walk into trainers and wild battles. */
+ * adds a Pokemon to the party first, so a fresh new-game save can walk into trainers and wild battles.
+ * FORCE_WEATHER=<id> makes every map's weather lookup return that OVERWORLD_WEATHER_* value (thunderstorms and other
+ * date-dependent weathers on demand). */
 #include <nitro.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "field_task.h"
-#if defined(GIVE_ITEM) || defined(TEACH_MOVE) || defined(ALL_BADGES) || defined(GIVE_MON)
+#if defined(GIVE_ITEM) || defined(TEACH_MOVE) || defined(ALL_BADGES) || defined(GIVE_MON) || defined(FORCE_WEATHER)
 #include "bag.h"
 #include "field/field_system.h"
 #include "heap.h"
@@ -94,6 +96,15 @@ static BOOL DiagWarpTask(FieldTask *task)
     printf("[DIAG] warp done\n");
     return TRUE;
 }
+
+#ifdef FORCE_WEATHER
+/* TEST ONLY: every map's weather lookup returns FORCE_WEATHER (see the header comment). */
+int __wrap_FieldSystem_GetWeather(FieldSystem *fieldSystem, int mapHeaderID)
+{
+    (void)fieldSystem; (void)mapHeaderID;
+    return FORCE_WEATHER;
+}
+#endif
 
 BOOL __wrap_FieldTask_Run(FieldSystem *fieldSystem)
 {

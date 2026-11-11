@@ -44,6 +44,11 @@ endif
 ifneq ($(GIVE_MON),)
 CFLAGS += -DGIVE_MON=\"$(GIVE_MON)\"
 endif
+# TEST ONLY: FORCE_WEATHER=<id> (with WARP_TO) forces every map's weather, see diag_warp.c.
+ifneq ($(FORCE_WEATHER),)
+CFLAGS += -DFORCE_WEATHER=$(FORCE_WEATHER)
+LDFLAGS += -Wl,--wrap=FieldSystem_GetWeather
+endif
 # TEST ONLY: TEACH_MOVE=<partySlot>:<moveId> and ALL_BADGES=1 (with WARP_TO), see diag_warp.c.
 ifneq ($(TEACH_MOVE),)
 CFLAGS += -DTEACH_MOVE=\"$(TEACH_MOVE)\"
