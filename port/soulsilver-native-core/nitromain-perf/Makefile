@@ -34,7 +34,7 @@ OBJS += diag_nowild.o
 LDFLAGS += -Wl,--wrap=MetatileBehavior_CanGenerateWalkingEncounters
 endif
 # Diagnostic replays only: GIVE_SPECIES / GIVE_ITEMS / GIVE_BADGES / TEACH_MOVES share diag_give.c.
-DIAG_GIVE_ANY := $(GIVE_SPECIES)$(GIVE_ITEMS)$(GIVE_BADGES)$(TEACH_MOVES)$(GIVE_ITEM_IDS)$(SET_VARS)$(SET_FLAGS)$(CLEAR_FLAGS)$(GIVE_FRIENDSHIP)$(REPEL_STEPS)
+DIAG_GIVE_ANY := $(GIVE_PARTY)$(GIVE_SPECIES)$(GIVE_ITEMS)$(GIVE_BADGES)$(TEACH_MOVES)$(GIVE_ITEM_IDS)$(SET_VARS)$(SET_FLAGS)$(CLEAR_FLAGS)$(GIVE_FRIENDSHIP)$(REPEL_STEPS)
 ifneq ($(DIAG_GIVE_ANY),)
 ifdef HATCH_NOW
 $(error GIVE_SPECIES/GIVE_ITEMS/GIVE_BADGES/TEACH_MOVES and HATCH_NOW all wrap HandleDaycareStep; use one at a time)
@@ -48,6 +48,8 @@ CFLAGS += $(if $(GIVE_ITEM_IDS),-DGIVE_ITEM_IDS=\"$(GIVE_ITEM_IDS)\")
 CFLAGS += $(if $(SET_FLAGS),-DSET_FLAGS=\"$(SET_FLAGS)\") $(if $(CLEAR_FLAGS),-DCLEAR_FLAGS=\"$(CLEAR_FLAGS)\")
 CFLAGS += $(if $(GIVE_FRIENDSHIP),-DGIVE_FRIENDSHIP=$(GIVE_FRIENDSHIP)) $(if $(REPEL_STEPS),-DREPEL_STEPS=$(REPEL_STEPS) -DREPEL_FULL=$(or $(REPEL_FULL),100))
 CFLAGS += $(if $(SET_VARS),-DSET_VARS=\"$(SET_VARS)\")
+# GIVE_PARTY="<species>:<level>[:<move0>],..." replaces the party (Battle Frontier checks need 3 strong, distinct mons).
+CFLAGS += $(if $(GIVE_PARTY),-DGIVE_PARTY=\"$(GIVE_PARTY)\")
 endif
 # Diagnostic replays only: `make DIAG_TILES=1` logs unique (x,z,behaviour,solid) from GetMetatileBehavior.
 ifdef DIAG_TILES

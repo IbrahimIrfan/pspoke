@@ -144,7 +144,9 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     the C. The Battle Factory crashed starting its first battle with a jump to address 0: `ov80_02236F24` declared
     `void *trainerBuf;` (4 bytes) and passed `&trainerBuf` to `ov80_02229F04`, which fills a 0x30-byte trainer record,
     overwriting the saved return address with zeros. The asm reserves the 0x30 bytes. "Jump to 0, RA 0" is a smashed
-    stack: look for a too-small local passed by address. Find the culprit with `port.py --trace` and `TRACE_ONLY=`
+    stack: look for a too-small local passed by address. The Battle Hall's `ov80_022375D0` had the same
+    record bug plus `sub_02051D18` called with its arguments shifted (save pointer as the field system, map id as the
+    save) and parties 2/4 instead of 1/3; it crashed starting every battle. Compare such functions against their asm. Find the culprit with `port.py --trace` and `TRACE_ONLY=`
     (comma-separated names) on the translated side; it logs `[MLM] <name> a0..a3` on entry.
 20. **A glue signature change needs an `arg-overrides.json` entry.** `fix_glue.py` gives the SPL glue its real
     arity (`sub_02015484(sys, resourceID, pos)`, `sub_020154C4(sys, emitter)`), but the translator takes arity from

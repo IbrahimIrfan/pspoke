@@ -100,6 +100,18 @@ ss_tests(){
   # Bag > Key Items (tapped in stylus mode) > Dowsing MCHN > Use: the radar on the touch screen (overlay 28) was untranslated.
   if ss_group_wanted dowsing; then ss_build dowse NO_WILD=1 GIVE_ITEM_IDS=471:1
     ss_case dowsing diag-azalea-saved input-dowsing.txt 200 overlay:28; fi
+  # Battle Frontier: start a challenge and play through the first battle (Factory rents; the others use GIVE_PARTY).
+  # Untranslated until 2026-11-11; the Factory and Hall then crashed in the decomp C's battle setup (NOTES.md 3.19).
+  if ss_group_wanted frontier-factory; then ss_build ffactory WARP_TO=275,21,7
+    ss_case frontier-factory diag-azalea-saved input-frontier-factory.txt 100; fi
+  if ss_group_wanted frontier-tower; then ss_build ftower WARP_TO=265,15,7 GIVE_PARTY=445:100:337,248:100:242,376:100:309
+    ss_case frontier-tower diag-azalea-saved input-frontier-tower.txt 100; fi
+  if ss_group_wanted frontier-hall; then ss_build fhall WARP_TO=276,9,9 GIVE_PARTY=445:100:337,248:100:242,376:100:309
+    ss_case frontier-hall diag-azalea-saved input-frontier-hall.txt 100; fi
+  if ss_group_wanted frontier-castle; then ss_build fcastle WARP_TO=277,8,9 GIVE_PARTY=445:100:337,248:100:242,376:100:309
+    ss_case frontier-castle diag-azalea-saved input-frontier-castle.txt 100; fi
+  if ss_group_wanted frontier-arcade; then ss_build farcade WARP_TO=278,14,8 GIVE_PARTY=445:100:337,248:100:242,376:100:309
+    ss_case frontier-arcade diag-azalea-saved input-frontier-arcade.txt 100; fi
   if ss_group_wanted rocket-radio-tower; then ss_build rocket WARP_TO=186,16,7 NO_WILD=1
     ss_case rocket-radio-tower diag-radio-takeover input-rocket117-loop.txt 300 overlay:12 overlay:117; fi
   # Quality-of-life features (default build switches; these fail on a --no-trade-evos / --no-repel-prompt build).
@@ -199,7 +211,7 @@ if [ "$LIST" = 1 ]; then cat <<'EOF'
 platinum:   boot (quick) quit-combo fast-forward weather-snow weather-sand weather-ash weather-thunder bag-dial-cancel ug-trap-cancel ug-shops pc2f-confirm-cancel oreburgh-belts floaroma-gate underground sing-double move-relearner
             start-menu-exit fly (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
-            options-b options-scene options-nochange options-after geonet gym-pryce ice-mahogany move-reminder dowsing rocket-radio-tower
+            options-b options-scene options-nochange options-after geonet gym-pryce ice-mahogany move-reminder dowsing frontier-factory frontier-tower frontier-hall frontier-castle frontier-arcade rocket-radio-tower
             qol-friendship-evo qol-trade-item-evo qol-trade-level-evo qol-repel-yes qol-repel-no
 EOF
 exit 0; fi
