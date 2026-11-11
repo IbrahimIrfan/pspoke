@@ -204,6 +204,30 @@ RET64 = set()
 FLOAT_PARAMS = {}
 FLOAT_RET = set()
 FLOAT_TYPES = {'f32', 'float'}
+# C functions with 64-bit parameters. ARM AAPCS puts each in an even-aligned register pair (r0:r1 or r2:r3) or an
+# 8-aligned stack slot, shifting the arguments after it; the generic binding passed plain words (OS_SetTick,
+# String16_FormatUnsignedLongLong).
+WIDE_PARAMS = {}
+WIDE_TYPES = {'u64', 's64', 'fx64', 'OSTick', 'int64_t', 'uint64_t'}
+
+
+def aapcs_args(widths):
+    """C argument expressions for parameters of the given widths (4 or 8 bytes), read where ARM code put them."""
+    reg, stack, out = 0, 0, []
+    for w in widths:
+        if w == 8:
+            if reg % 2:
+                reg += 1
+            if reg <= 2:
+                out.append(f'(((uint64_t)r{reg + 1}<<32)|r{reg})'); reg += 2
+            else:
+                reg = 4; stack = (stack + 7) & ~7
+                out.append(f'(((uint64_t)ld32(sp+{stack + 4})<<32)|ld32(sp+{stack}))'); stack += 8
+        elif reg < 4:
+            out.append(f'r{reg}'); reg += 1
+        else:
+            out.append(f'ld32(sp+{stack})'); stack += 4
+    return out
 RET64_TYPES = {'s64', 'u64', 'fx64', 'OSTick', 'int64_t', 'uint64_t'}
 
 
@@ -226,6 +250,8 @@ def arg_count(name):
         ptypes = [re.sub(r'\s+\w+$', '', p).replace('const ', '').strip() for p in parts]
         if any(t in ('f64', 'double') for t in ptypes):
             raise SystemExit('double parameter in external ' + name + ': not supported by the translator')
+        if any(t in WIDE_TYPES or t == 'long long' for t in ptypes):
+            WIDE_PARAMS[name] = [4] * hidden + [8 if (t in WIDE_TYPES or t == 'long long') else 4 for t in ptypes]
         if any(t in FLOAT_TYPES for t in ptypes):
             FLOAT_PARAMS[name] = [i + hidden for i, t in enumerate(ptypes) if t in FLOAT_TYPES]
         if any(p == '...' for p in parts):
@@ -275,6 +301,15 @@ for name in extern:
         t.CALLS[name] = (f'printf("[DBG] {name} {fmt}"' + ''.join(',' + x for x in a) + f');r0={name}(' + ','.join(a) + ');printf(" -> %08lx\\n", r0);', c)
         continue
     args = [f'r{i}' if i < 4 else f'ld32(sp+{4 * (i - 4)})' for i in range(c)]
+    if name in WIDE_PARAMS:
+        if name in FLOAT_PARAMS or name in FLOAT_RET:
+            raise SystemExit('external with both 64-bit and float parameters: ' + name)
+        widths = WIDE_PARAMS[name]
+        rtype = 'uint64_t' if name in RET64 else 'uint32_t'
+        protos.append(f'extern {rtype} {name}(' + ','.join('uint64_t' if w == 8 else 'uint32_t' for w in widths) + ');')
+        call = f'{name}(' + ','.join(aapcs_args(widths)) + ')'
+        t.CALLS[name] = ((f'{{uint64_t v64={call};r0=(uint32_t)v64;r1=(uint32_t)(v64>>32);}}' if name in RET64 else f'r0={call};'), c)
+        continue
     if name in FLOAT_PARAMS or name in FLOAT_RET:
         fl = set(FLOAT_PARAMS.get(name, []))
         rtype = 'float' if name in FLOAT_RET else 'uint32_t'
