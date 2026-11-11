@@ -4641,3 +4641,19 @@ diff -ruN a/src/frontier/overlay_80_022372D8.c b/src/frontier/overlay_80_022372D
          tmpMon = AllocMonZeroed(HEAP_ID_FIELD2);
          {
              void *monRow = (u8 *)work + 0x290 + r7x38;
+diff -ruN a/src/battle/battle_command.c b/src/battle/battle_command.c
+--- a/src/battle/battle_command.c	2026-11-11 11:49:09.178389232 -0500
++++ b/src/battle/battle_command.c	2026-11-11 11:49:09.186513700 -0500
+@@ -1248,6 +1248,12 @@
+         }
+         totalExp = GetMonBaseStat(ctx->battleMons[ctx->battlerIdFainted].species, BASE_EXP_YIELD);
+         totalExp = (totalExp * ctx->battleMons[ctx->battlerIdFainted].level) / 7;
++        // PSP: if no party member can take experience (the player's last Pokemon fainted in the same turn, e.g. to its own
++        // Self-Destruct), expMonsCnt is 0. The DS divide routine returns quietly; MIPS traps on division by zero and the
++        // battle froze on "...fainted!". Nobody gains experience either way. Same guard as the Platinum port.
++        if (expMonsCnt == 0) {
++            return FALSE;
++        }
+         if (expShareMonsCnt) {
+             ctx->gainedExp = (totalExp / 2) / expMonsCnt;
+             if (ctx->gainedExp == 0) {
