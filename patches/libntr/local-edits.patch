@@ -1,0 +1,17 @@
+--- a/libraries/gx/src/gx_load2d.c	2026-11-11 11:55:28.485932562 -0500
++++ b/libraries/gx/src/gx_load2d.c	2026-11-11 11:55:28.493261768 -0500
+@@ -501,11 +501,10 @@
+ 		break;
+ 	case GX_VRAM_BGEXTPLTT_23_G:
+ 		sBGExtPlttLCDCBlk = HW_LCDC_VRAM_G;
+-        #ifdef SDK_PORT
+-		sBGExtPlttLCDCOffset = 0;
+-        #else
++		/* pspoke: the PSP port keeps the DS LCDC layout (16 KB bank G, then bank H), so slots 2-3 (0x4000-0x7FFF)
++		 * start at bank G itself, as on hardware. The fork's SDK_PORT offset of 0 wrote them into bank H: the Battle
++		 * Frontier rooms (extended affine BGs) rendered black and the sub screen's BG VRAM was overwritten. */
+ 		sBGExtPlttLCDCOffset = 0x4000;
+-        #endif
+ 		break;
+ 	case GX_VRAM_BGEXTPLTT_0123_FG:
+ 	case GX_VRAM_BGEXTPLTT_01_F:

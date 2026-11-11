@@ -14,6 +14,7 @@ phase_base(){   # NitroSDK replacement + Platinum decompilation (SoulSilver reus
   for spec in "libntr native-graphics/libntr" "libntrsystem native-probe/libntrsystem" "libntrdwc native-probe/libntrdwc" "libntrwifi native-probe/libntrwifi" "libvct native-probe/libvct" "metang native-probe/metang"; do
     set -- $spec; rsync -a --exclude .git "$U/$1/" "$T/$2/"
   done
+  (cd "$T/native-graphics/libntr" && patch -p1 -s < "$ROOT/patches/libntr/local-edits.patch")
   rsync -a "$U/pokeplatinum/" "$T/native-probe/pokeplatinum/"   # keeps .git: gen-game-tables.py uses git ls-tree
   (cd "$T/native-probe/pokeplatinum" && patch -p1 -s < "$ROOT/patches/pokeplatinum/local-edits.patch")
   mark base
