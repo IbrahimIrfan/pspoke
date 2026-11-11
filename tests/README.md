@@ -83,6 +83,15 @@ for trying a build on a PSP.
 | `move-reminder` | Talks to the Blackthorn Move Maniac with a Heart Scale and relearns a move. Overlay 68's state handlers were never translated (`[SS-MISSING]` on the first step). |
 | `dowsing` | Opens the Bag, taps the Key Items pocket in stylus mode and uses the Dowsing MCHN; its touch-screen radar (overlay 28) was untranslated. |
 | `frontier-factory`, `frontier-tower`, `frontier-hall`, `frontier-castle`, `frontier-arcade` | Start a challenge in each Battle Frontier facility and win the first battle (Factory rentals; the others use `GIVE_PARTY` for three strong level-100 Pokémon, capped to 50). The Frontier was untranslated; the Factory and Hall then crashed in the decomp C's battle setup. |
+| `feature-mail` | Give Grass Mail from the Bag, write it (Easy Chat), then read it from the party (overlay 56). |
+| `feature-mailbox` | Send the mail to the PC and read it from PC > Mailbox (overlay 103). |
+| `feature-ball-capsule` | PC > Ball Capsule with seals (overlay 57, whose static initializer the native overlay loader now runs). |
+| `feature-photo-album` | Cameron takes a photo at Olivine Lighthouse 5F (needs the replay date, a Saturday); view it in PC > Photo Album (overlay 109). |
+| `feature-hall-of-fame` | PC > Hall of Fame with a recorded entry (GIVE_HOF) (overlay 64). |
+| `feature-photo-studio` | Goldenrod Tunnel dress-up and the framed portrait (overlay 41). |
+| `feature-pal-pad` | Pal Pad > Register Friend Code: enter a code and reach the confirm screen. OK crashed (stale VBlank callback) and the code came back as garbage (64-bit String_atoi). |
+| `feature-safari-areas` | Safari Zone Gate area customizer: swap two areas (overlay 108). |
+| `feature-safari-objects` | Start a Safari game and place an object (overlay 108). |
 | `rocket-radio-tower` | Team Rocket grunt sight line in the Radio Tower (overlay 117) into a battle. |
 | `qol-friendship-evo`, `qol-trade-item-evo`, `qol-trade-level-evo` | The trade-evolution replacements (Chingling, Onix + Metal Coat, Kadabra at Lv36 reach the evolution screen, overlay 15). |
 | `qol-repel-yes`, `qol-repel-no` | The repel re-use prompt, both answers. |

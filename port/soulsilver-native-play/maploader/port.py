@@ -194,6 +194,11 @@ def _typedef_struct_names(text):
     return names - {'return', 'break', 'continue', 'else', 'while', 'do'}
 STRUCT_TYPES = _typedef_struct_names(TEXT)
 STRUCT_RETURNS = {}
+# C functions returning a 64-bit value: the result travels in r1:r0, and hand assembly reads r1 after the call
+# (ov43's Pal Pad friend code: `bl String_atoi; add r7, r0, #0; add r6, r1, #0`). Bound as uint64_t, split into
+# r0/r1, and exempt from the r1 clobber that follows every other external call.
+RET64 = set()
+RET64_TYPES = {'s64', 'u64', 'fx64', 'OSTick', 'int64_t', 'uint64_t'}
 
 
 def arg_count(name):
@@ -205,6 +210,8 @@ def arg_count(name):
         hidden = 1 if (toks and toks[-1] != '*' and toks[-1] in STRUCT_TYPES) else 0
         if hidden:
             STRUCT_RETURNS[name] = toks[-1]
+        if toks and toks[-1] != '*' and (toks[-1] in RET64_TYPES or toks[-2:] == ['long', 'long']):
+            RET64.add(name)
         if args in ('', 'void'):
             return hidden
         parts = split_top(args)
@@ -254,8 +261,12 @@ for name in extern:
         fmt = ' '.join(['%08lx'] * c)
         t.CALLS[name] = (f'printf("[DBG] {name} {fmt}"' + ''.join(',' + x for x in a) + f');r0={name}(' + ','.join(a) + ');printf(" -> %08lx\\n", r0);', c)
         continue
-    protos.append(f'extern uint32_t {name}(' + (','.join(['uint32_t'] * c) or 'void') + ');')
     args = [f'r{i}' if i < 4 else f'ld32(sp+{4 * (i - 4)})' for i in range(c)]
+    if name in RET64:
+        protos.append(f'extern uint64_t {name}(' + (','.join(['uint32_t'] * c) or 'void') + ');')
+        t.CALLS[name] = (f'{{uint64_t v64={name}(' + ','.join(args) + ');r0=(uint32_t)v64;r1=(uint32_t)(v64>>32);}', c)
+        continue
+    protos.append(f'extern uint32_t {name}(' + (','.join(['uint32_t'] * c) or 'void') + ');')
     t.CALLS[name] = (f'r0={name}(' + ','.join(args) + ');', c)
 for name, kind in DIV.items():
     t.CALLS[name] = (f'ssdiv_{kind}(&r0,&r1);', 2)
@@ -282,6 +293,9 @@ for name in closure:
                                 stmt + '\nr1=0xa1a1a1a1; r2=0xa2a2a2a2; r3=0xa3a3a3a3; /* caller-clobbered, flags kept */')
     for stmt in RUNTIME64.values():
         code = code.replace(stmt + '\nr1=0xa1a1a1a1; ', stmt + '\n')
+    for ext in RET64:
+        if ext in t.CALLS:
+            code = code.replace(t.CALLS[ext][0] + '\nr1=0xa1a1a1a1; ', t.CALLS[ext][0] + '\n')
     for other in closure + extern:
         code = code.replace(f'extern unsigned char {other}[];\n', '')
     if trace and (not os.environ.get('TRACE_ONLY') or name in os.environ['TRACE_ONLY'].split(',')):

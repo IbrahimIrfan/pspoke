@@ -26,8 +26,10 @@ BOOL PSPNativeOverlay_Init(void){
  * 123  ds_protect - five DSProt constructors; every DSProt call is answered by dsprot_native.c,
  *      so the module has no state to reset and its constructors are never needed. */
 extern BOOL sub_02039998(void);extern BOOL HandleLoadOverlay(FSOverlayID id,int loadType);
-static BOOL Supported(unsigned id){return bounds[id].supported||id==12||id==123;}
+static BOOL Supported(unsigned id){return bounds[id].supported||id==12||id==57||id==123;}
 static void NativeStaticInit(unsigned id){
+ /* ov57 (Ball Capsule) .sinit ov57_022378C0: load OVY_6 and OVY_7. */
+ if(id==57){HandleLoadOverlay(6,2);HandleLoadOverlay(7,2);}
  if(id==12&&!sub_02039998()){extern void PSPNativeMemLog(const char*,...);PSPNativeMemLog("[SS-OVERLAY] ov12 sinit: loading OVY_18");HandleLoadOverlay(18,2);}
 }
 static BOOL Valid(const FSOverlayInfo *o){

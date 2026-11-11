@@ -206,6 +206,54 @@ static void DiagGiveParty(Party *party, FieldSystem *fieldSystem)
 }
 #endif
 
+#ifdef GIVE_SEALS
+#include "seal_case.h"
+/* TEST ONLY (agent-features): GIVE_SEALS=<sealId>[:<n>][,...] puts seals in the Seal Case (Ball Capsule PC test). */
+static void DiagGiveSeals(FieldSystem *fieldSystem)
+{
+    SealCase *sc = Save_SealCase_Get(FieldSystem_GetSaveData(fieldSystem));
+    const char *s = GIVE_SEALS;
+    while (*s) {
+        int id = (int)strtol(s, (char **)&s, 0); int n = 1;
+        if (*s == ':') { s++; n = (int)strtol(s, (char **)&s, 0); }
+        if (*s == ',') s++;
+        if (id <= 0 || n <= 0) continue;
+        BOOL ok = GiveOrTakeSeal(sc, id, (s16)n);
+        PSPNativeMemLog("[DIAG] gave seal %d x%d -> %d (unique now %d)", id, n, ok, SealCase_CountUniqueSeals(sc));
+    }
+}
+#endif
+
+#ifdef GIVE_HOF
+#include "hall_of_fame.h"
+#include "save_arrays.h"
+#include "gf_rtc.h"
+/* TEST ONLY (agent-features): GIVE_HOF=1 records the current party as a Hall of Fame entry, exactly as
+ * game_clear.c AddHallOfFameEntry does (pair with SET_FLAGS=0x964 FLAG_GAME_CLEAR for the PC entry). */
+static void DiagGiveHof(FieldSystem *fieldSystem, Party *party)
+{
+    int val; RTCDate date;
+    HallOfFame *hof = LoadHallOfFame(fieldSystem->saveData, HEAP_ID_FIELD2, &val);
+    if (val != 1) Save_HOF_Init(hof);
+    GF_RTC_CopyDate(&date);
+    Save_HOF_RecordParty(hof, party, &date);
+    int w = SaveHallOfFame(fieldSystem->saveData, hof);
+    Heap_Free(hof);
+    PSPNativeMemLog("[DIAG] hall of fame entry recorded (load %d, write %d)", val, w);
+}
+#endif
+
+#ifdef SAFARI_OBJ_LEVEL
+#include "safari_zone.h"
+/* TEST ONLY (agent-features): SAFARI_OBJ_LEVEL=<n> sets the Safari Zone object unlock level (object placement test). */
+static void DiagSafariObj(FieldSystem *fieldSystem)
+{
+    SafariZone *sz = Save_SafariZone_Get(fieldSystem->saveData);
+    SafariZone_SetObjectUnlockLevel(sz, SAFARI_OBJ_LEVEL);
+    PSPNativeMemLog("[DIAG] safari object unlock level -> %d", SafariZone_GetObjectUnlockLevel(sz));
+}
+#endif
+
 BOOL __wrap_HandleDaycareStep(Daycare *dayCare, Party *party, FieldSystem *fieldSystem)
 {
     static int done;
@@ -243,6 +291,15 @@ BOOL __wrap_HandleDaycareStep(Daycare *dayCare, Party *party, FieldSystem *field
 #endif
 #ifdef CLEAR_FLAGS
         DiagFlags(fieldSystem, CLEAR_FLAGS, FALSE);
+#endif
+#ifdef GIVE_SEALS
+        DiagGiveSeals(fieldSystem);
+#endif
+#ifdef GIVE_HOF
+        DiagGiveHof(fieldSystem, party);
+#endif
+#ifdef SAFARI_OBJ_LEVEL
+        DiagSafariObj(fieldSystem);
 #endif
     }
     return __real_HandleDaycareStep(dayCare, party, fieldSystem);
