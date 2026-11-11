@@ -167,6 +167,13 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     unless it knows what they do (`soulsilver-native-overlays/overlay.c`, `Supported()`/`NativeStaticInit()`). Ball
     Capsule (ov57) exited the game until its initializer (load OVY_6 and OVY_7) was added. Symptom:
     `[SS-OVERLAY] unsupported SDK lifetime or constructor id=N` and a black screen; the suite now counts it as a trap.
+24. **Integer division by zero freezes the PSP, silently.** psp-gcc emits a trap after every `div` with a zero divisor
+    (`teq ..., 7`); the DS's divide routine just returns. The game thread stops, the screen holds its last frame and
+    no `[FATAL]` is logged. SoulSilver's `BtlCmd_CalcExpGain` divided by the number of party members able to take
+    experience, which is 0 when the player's last Pokemon faints in the same turn as the foe (Self-Destruct,
+    Explosion): the battle froze on "...fainted!". Guarded like the Platinum fork's `SDK_PORT` fix. A freeze with no
+    trap line: suspect a division whose divisor can reach 0 in an edge case, and find it by logging the
+    battle-controller command (`BattleContext_Main`) and battle-script command (`RunBattleScript`) as they change.
 
 ## 4. Rendering
 
