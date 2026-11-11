@@ -13,5 +13,7 @@
  "SSAsm_G2x_SetBlendAlpha_": 5,
  "SSAsm_G2x_SetBlendBrightness_": 3,
  "SSAsm_G2x_SetBlendBrightnessExt_": 6,
- "SSAsm_G2x_ChangeBlendBrightness_": 2
+ "SSAsm_G2x_ChangeBlendBrightness_": 2,
+ "sub_02015484": 3,
+ "sub_020154C4": 2
 }
