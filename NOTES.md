@@ -118,6 +118,27 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     `sizeof(int) * 10` and wrote s64[8] (heap overrun, Routes 212 and 213). When a weather or field effect crashes,
     compare each `#ifdef SDK_BUILD_ARM` pair in its file first. The yearly-weather maps (Snowpoint, Acuity Lakefront,
     Routes 212/213/216) only show some weathers on some dates, so a warp sweep on one day can miss them.
+18. **SoulSilver: untranslated assembly is a crash, not a stub.** Every function in
+    `soulsilver-native-core/nitromain-perf/missing-assembly-functions.json` links as a trap (`missing.c`) that logs
+    `[SS-MISSING] <name>` and aborts. To port one: add it to `soulsilver-native-play/maploader/seeds.json` (and the
+    asm file to `seed-files.json` if its `.rodata` holds function-pointer tables the feature dispatches through, e.g.
+    an app's state handlers), then remove it from the trap list and `missing.c`. Expect a few link rounds:
+    - *multiple definition* against a native library: the closure reached a function the port already implements
+      (player movement, compiled slop C). Add it to `native-provided.json` so the closure stops there.
+    - *undefined reference*: something new calls assembly nobody seeded. Seed it.
+    Do not add a main-program asm file (`unk_*.s`) to `seed-files.json` just for one function: its tables drag in
+    whole subsystems that are native already. `build.sh` does not rerun the translator when only the JSON changed
+    in an existing work tree; run `python3 port.py --compile` in the staged `maploader` or build from clean.
+    Audit (2026-11-11), the traps that single-player play reached: ice sliding (Mahogany Gym, required for the
+    story), mail, Dowsing MCHN, the Blackthorn Move Reminder (seeded without its file, so its state tables were
+    traps), PC Mailbox / Ball Capsules / Photo Album / Hall of Fame, the Goldenrod Tunnel photo studio, Pal Pad
+    friend codes, the Safari Zone customizer, and the title menu's Pokewalker / WFC / Wii / Mystery Gift options
+    (now hidden under `PSP_NATIVE_OFFLINE`). Still trapped: the whole Battle Frontier (`frontier_map.s`, the
+    `overlay_80_*` script engine, ov67/81/82/83/86/87; about 260 functions). The rest are Wi-Fi, wireless, GBA or
+    dead code. A heap exhaustion also surfaces as `[SS-MISSING] sub_02038D90` (the error screen is a trap).
+    A warp sweep of all 478 real maps (`WARP_TO` from `diag-azalea-saved`, B through dialogue) is clean apart from
+    the Wi-Fi rooms, the Frontier, elevators (entered directly they assert on the previous floor; normal play
+    always comes from a floor) and Pal Park (asserts without migrated Pokemon, which a PSP cannot have).
 
 ## 4. Rendering
 

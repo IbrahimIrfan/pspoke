@@ -77,6 +77,7 @@ for trying a build on a PSP.
 | `catch` | Route 31 wild battle and a catch (battle overlay 12); also checks the field-move buffs are in the loaded move table. |
 | `geonet` | Pokégear globe (the 1024x512 texture that must be downscaled; overlay 69). |
 | `gym-pryce` | Mahogany Gym battle at Lv100 with particle-heavy moves. |
+| `ice-mahogany` | Warps into Mahogany Gym's first room and walks every direction for 90 s. Sliding on its ice used to hit two untranslated movement functions (`[SS-MISSING] sub_0205D240`). |
 | `rocket-radio-tower` | Team Rocket grunt sight line in the Radio Tower (overlay 117) into a battle. |
 | `qol-friendship-evo`, `qol-trade-item-evo`, `qol-trade-level-evo` | The trade-evolution replacements (Chingling, Onix + Metal Coat, Kadabra at Lv36 reach the evolution screen, overlay 15). |
 | `qol-repel-yes`, `qol-repel-no` | The repel re-use prompt, both answers. |
