@@ -56,6 +56,14 @@ endif
 ifneq ($(ALL_BADGES),)
 CFLAGS += -DALL_BADGES
 endif
+# TEST ONLY: GIVE_UG=1 (with WARP_TO) adds Underground traps and spheres; UG_POS=<x>,<z> (with UNDERGROUND=1) sets the
+# Underground arrival tile (see diag_warp.c).
+ifneq ($(GIVE_UG),)
+CFLAGS += -DGIVE_UG
+endif
+ifneq ($(UG_POS),)
+CFLAGS += -DUG_POS=\"$(UG_POS)\"
+endif
 # TEST ONLY: UNDERGROUND=1 (with WARP_TO) then enters the Underground like the Explorer Kit (see diag_warp.c).
 ifneq ($(UNDERGROUND),)
 CFLAGS += -DWARP_UNDERGROUND

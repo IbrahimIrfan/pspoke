@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "field_task.h"
-#if defined(GIVE_ITEM) || defined(TEACH_MOVE) || defined(ALL_BADGES) || defined(GIVE_MON) || defined(FORCE_WEATHER)
+#if defined(GIVE_UG) || defined(GIVE_ITEM) || defined(TEACH_MOVE) || defined(ALL_BADGES) || defined(GIVE_MON) || defined(FORCE_WEATHER)
 #include "bag.h"
 #include "field/field_system.h"
 #include "heap.h"
@@ -26,6 +26,9 @@
 #include "save_player.h"
 #include "savedata.h"
 #include "trainer_info.h"
+#endif
+#ifdef GIVE_UG
+#include "underground.h"
 #endif
 #ifdef WARP_UNDERGROUND
 #include "field/field_system.h"
@@ -83,6 +86,17 @@ static BOOL DiagWarpTask(FieldTask *task)
             printf("[DIAG] teach move %d to party slot %d\n", move, slot);
         }
 #endif
+#ifdef GIVE_UG
+        /* TEST ONLY: Underground inventory for the trap/sphere menus and the shops: traps 1-4 (Move Trap up/right/
+         * down/left) and five large spheres of each colour. */
+        {
+            Underground *ug = SaveData_GetUnderground(FieldTask_GetFieldSystem(task)->saveData);
+            int t = 0, sp = 0;
+            for (int i = 1; i <= 4; i++) t += Underground_TryAddTrap(ug, i);
+            for (int c = 1; c <= 5; c++) for (int k = 0; k < 2; k++) sp += Underground_TryAddSphere(ug, c, 40);
+            printf("[DIAG] give underground: %d traps, %d spheres\n", t, sp);
+        }
+#endif
 #ifdef ALL_BADGES
         for (int badge = 0; badge < 8; badge++) {
             TrainerInfo_SetBadge(SaveData_GetTrainerInfo(FieldTask_GetFieldSystem(task)->saveData), badge);
@@ -119,6 +133,17 @@ BOOL __wrap_FieldTask_Run(FieldSystem *fieldSystem)
         entered = 1;
         printf("[DIAG] entering the Underground\n");
         struct MapChangeUndergroundContext *ctx = MapChangeUndergroundContext_New(fieldSystem);
+#ifdef UG_POS
+        /* TEST ONLY: arrive at this Underground tile instead of the one under the player's overworld position
+         * (destX/destZ are the 5th and 6th ints of MapChangeUndergroundContext). */
+        {
+            const char *u = UG_POS;
+            int ux = (int)strtol(u, (char **)&u, 10), uz = 0;
+            if (*u == ',') { u++; uz = (int)strtol(u, (char **)&u, 10); }
+            ((int *)ctx)[4] = ux; ((int *)ctx)[5] = uz;
+            printf("[DIAG] underground arrival at (%d,%d)\n", ux, uz);
+        }
+#endif
         MapObjectMan_PauseAllMovement(fieldSystem->mapObjMan);
         FieldSystem_CreateTask(fieldSystem, FieldTask_MapChangeToUnderground, ctx);
     }
