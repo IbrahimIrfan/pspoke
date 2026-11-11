@@ -65,6 +65,7 @@ for trying a build on a PSP.
 | `quit-combo` (Platinum) | Holds L+R+SELECT on the title screen; the game must log `[QUIT]` and exit to the PSP menu (issue #16: the combo was never polled). |
 | `fast-forward` (Platinum) | SELECT+□ on the title screen turns on 2x fast-forward (`[FF]` log line); the game must keep running to the frame bound. |
 | `weather-snow`, `weather-sand`, `weather-ash` (Platinum) | A new game on a blank save (`newgame-warp.h`), then a warp into Snowpoint City, Route 228 and Route 227. Their snow, sand and ash particles keep pointers in s64 work slots off ARM: snow and sand failed an s32-sized size check, ash wrote s32 and read s64 (a NULL read). |
+| `weather-thunder` (Platinum) | The same new game, warped to Route 212 South with `FORCE_WEATHER=4` (diag_warp.c). The lightning task was allocated 40 bytes and wrote 64. |
 | `oreburgh-belts` (Platinum, needs `--platinum-save`) | Warps to the south end of Oreburgh City and walks toward the Mine; the long conveyor belts (bounding boxes larger than the view) must still be drawn ten steps in. Caught the box-test bug. |
 | `floaroma-gate` (Platinum, needs `--platinum-save`) | Warps to Floaroma Town's south gate. Its translucent arch and shade are submitted before the ground; drawn in submission order they were a solid black block. Screenshot check by eye (`.work/tests/floaroma-gate.png`). |
 | `underground` (Platinum, needs `--platinum-save`) | Warps to Oreburgh City and enters the Underground the way the Explorer Kit does (comms prompt, save, descent). Crashed before the ROM file-name lookup ignored case and the WM wireless stand-in (`port/native-audio-app/services/wm_absent.c`) existed. |
@@ -78,6 +79,8 @@ for trying a build on a PSP.
 | `geonet` | Pokégear globe (the 1024x512 texture that must be downscaled; overlay 69). |
 | `gym-pryce` | Mahogany Gym battle at Lv100 with particle-heavy moves. |
 | `ice-mahogany` | Warps into Mahogany Gym's first room and walks every direction for 90 s. Sliding on its ice used to hit two untranslated movement functions (`[SS-MISSING] sub_0205D240`). |
+| `move-reminder` | Talks to the Blackthorn Move Maniac with a Heart Scale and relearns a move. Overlay 68's state handlers were never translated (`[SS-MISSING]` on the first step). |
+| `dowsing` | Opens the Bag, taps the Key Items pocket in stylus mode and uses the Dowsing MCHN; its touch-screen radar (overlay 28) was untranslated. |
 | `rocket-radio-tower` | Team Rocket grunt sight line in the Radio Tower (overlay 117) into a battle. |
 | `qol-friendship-evo`, `qol-trade-item-evo`, `qol-trade-level-evo` | The trade-evolution replacements (Chingling, Onix + Metal Coat, Kadabra at Lv36 reach the evolution screen, overlay 15). |
 | `qol-repel-yes`, `qol-repel-no` | The repel re-use prompt, both answers. |

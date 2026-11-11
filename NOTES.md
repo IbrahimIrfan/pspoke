@@ -133,12 +133,26 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     story), mail, Dowsing MCHN, the Blackthorn Move Reminder (seeded without its file, so its state tables were
     traps), PC Mailbox / Ball Capsules / Photo Album / Hall of Fame, the Goldenrod Tunnel photo studio, Pal Pad
     friend codes, the Safari Zone customizer, and the title menu's Pokewalker / WFC / Wii / Mystery Gift options
-    (now hidden under `PSP_NATIVE_OFFLINE`). Still trapped: the whole Battle Frontier (`frontier_map.s`, the
-    `overlay_80_*` script engine, ov67/81/82/83/86/87; about 260 functions). The rest are Wi-Fi, wireless, GBA or
-    dead code. A heap exhaustion also surfaces as `[SS-MISSING] sub_02038D90` (the error screen is a trap).
+    (now hidden under `PSP_NATIVE_OFFLINE`). The Battle Frontier (`frontier_map.s`, the `overlay_80_*` script
+    engine, ov67/81/82/83/86/87; 247 traps) followed the same day: three link rounds, 58 more seeds, 128 functions
+    marked native. The remaining traps are Wi-Fi, wireless, GBA or dead code. A heap exhaustion also surfaces as `[SS-MISSING] sub_02038D90` (the error screen is a trap).
     A warp sweep of all 478 real maps (`WARP_TO` from `diag-azalea-saved`, B through dialogue) is clean apart from
     the Wi-Fi rooms, the Frontier, elevators (entered directly they assert on the previous floor; normal play
     always comes from a floor) and Pal Park (asserts without migrated Pokemon, which a PSP cannot have).
+19. **The slop decompilation's C can be wrong where the asm is right.** `src/` mixes matching C with machine-written C
+    (raw `*(u32 *)((u8 *)p + 0x4D4)` offsets, `#ifdef NONMATCHING` with the original asm in `#else`); the PSP compiles
+    the C. The Battle Factory crashed starting its first battle with a jump to address 0: `ov80_02236F24` declared
+    `void *trainerBuf;` (4 bytes) and passed `&trainerBuf` to `ov80_02229F04`, which fills a 0x30-byte trainer record,
+    overwriting the saved return address with zeros. The asm reserves the 0x30 bytes. "Jump to 0, RA 0" is a smashed
+    stack: look for a too-small local passed by address. Find the culprit with `port.py --trace` and `TRACE_ONLY=`
+    (comma-separated names) on the translated side; it logs `[MLM] <name> a0..a3` on entry.
+20. **A glue signature change needs an `arg-overrides.json` entry.** `fix_glue.py` gives the SPL glue its real
+    arity (`sub_02015484(sys, resourceID, pos)`, `sub_020154C4(sys, emitter)`), but the translator takes arity from
+    the decomp's declaration, which said one argument. Translated battle animations therefore created emitters from a
+    garbage resource ID and "deleted" a garbage emitter; a non-self-maintaining emitter then lived forever and the
+    animation's wait-for-particles command (ov07 command 0x32) never finished. Water Pulse, Pin Missile, Supersonic
+    and Fly froze the battle on "used <move>!". Whenever a native/glue C function's parameter list differs from the
+    decomp header, add it to `arg-overrides.json` and grep the generated `overworld_native.c` for its call sites.
 
 ## 4. Rendering
 
