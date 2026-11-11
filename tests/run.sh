@@ -154,6 +154,14 @@ plat_tests(){
   # wrote s64[8] past the block.
   PLAT_CHECKS=("log:[DIAG] warp to map 371")
   plat_case weather-thunder 13500 newgame-warp.h "" WARP_TO=371,517,846 FORCE_WEATHER=4
+  # MENU_CANCEL zero-extended through u32s (NOTES.md 3.16): Cancel in each of these menus used to crash or misfire.
+  PLAT_CHECKS=("log:[DIAG] warp to map 45")
+  plat_case bag-dial-cancel 12000 bag-dial-cancel.h "" WARP_TO=45,302,775 GIVE_ITEM=93:1
+  PLAT_CHECKS=("log:[DIAG] give underground: 4 traps" "log:[DIAG] underground arrival at (232,88)")
+  plat_case ug-trap-cancel 13800 ug-trap-cancel.h "" WARP_TO=45,302,775 UNDERGROUND=1 GIVE_UG=1 UG_POS=232,88
+  plat_case ug-shops 14800 ug-shops.h "" WARP_TO=45,302,775 UNDERGROUND=1 GIVE_UG=1 UG_POS=232,88
+  PLAT_CHECKS=("log:[DIAG] warp to map 49")
+  plat_case pc2f-confirm-cancel 12200 pc2f-confirm-cancel.h "" WARP_TO=49,12,5,0 GIVE_MON=25:50
   if [ -n "$PLAT_SAVE" ]; then
     # Oreburgh City south end into the Mine: the long conveyor belts have bounding boxes larger than the view,
     # which the box test used to cull at random. The screenshot at frame 2000 (about ten steps south) must still show them.
@@ -188,7 +196,7 @@ plat_tests(){
 
 ### main #####################################################################################################
 if [ "$LIST" = 1 ]; then cat <<'EOF'
-platinum:   boot (quick) quit-combo fast-forward weather-snow weather-sand weather-ash weather-thunder oreburgh-belts floaroma-gate underground sing-double move-relearner
+platinum:   boot (quick) quit-combo fast-forward weather-snow weather-sand weather-ash weather-thunder bag-dial-cancel ug-trap-cancel ug-shops pc2f-confirm-cancel oreburgh-belts floaroma-gate underground sing-double move-relearner
             start-menu-exit fly (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
             options-b options-scene options-nochange options-after geonet gym-pryce ice-mahogany move-reminder dowsing rocket-radio-tower
