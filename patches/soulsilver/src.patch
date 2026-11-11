@@ -4542,3 +4542,39 @@ diff -ruN a/src/overlay_94.c b/src/overlay_94.c
          default:
              GF_ASSERT(FALSE);
              break;
+diff -ruN a/src/frontier/overlay_80_02236B78.c b/src/frontier/overlay_80_02236B78.c
+--- a/src/frontier/overlay_80_02236B78.c	2026-11-11 07:31:52.613100197 -0500
++++ b/src/frontier/overlay_80_02236B78.c	2026-11-11 07:31:52.621931368 -0500
+@@ -679,7 +679,9 @@
+     int sidesA;
+     int sidesB;
+     int i;
+-    void *trainerBuf;
++    // PSP: ov80_02229F04 fills a 0x30-byte trainer record here (the original reserves it on the stack); as a
++    // single pointer it overran into the saved return address and the Battle Factory crashed starting a battle.
++    u32 trainerBuf[0x30 / 4];
+ 
+     sidesA = ov80_02236DD4(*(u8 *)((u8 *)work + 4));
+     sidesB = ov80_02236DF8(*(u8 *)((u8 *)work + 4), 0);
+@@ -725,8 +727,8 @@
+         int slot;
+         slot = *(u8 *)((u8 *)work + 6);
+         trainerId = *(u16 *)((u8 *)work + 0x18 + slot * 2);
+-        Heap_Free(ov80_02229F04(&trainerBuf, trainerId, HEAP_ID_FIELD2, 0xcc));
+-        ov80_0222A480(setup, &trainerBuf, sidesB, 1, HEAP_ID_FIELD2);
++        Heap_Free(ov80_02229F04(trainerBuf, trainerId, HEAP_ID_FIELD2, 0xcc));
++        ov80_0222A480(setup, trainerBuf, sidesB, 1, HEAP_ID_FIELD2);
+     }
+ 
+     {
+@@ -774,8 +776,8 @@
+             int slot;
+             slot = *(u8 *)((u8 *)work + 6);
+             trainerId2 = *(u16 *)((u8 *)work + 0x18 + (slot + 7) * 2);
+-            Heap_Free(ov80_02229F04(&trainerBuf, trainerId2, HEAP_ID_FIELD2, 0xcc));
+-            ov80_0222A480(setup, &trainerBuf, sidesB, 3, HEAP_ID_FIELD2);
++            Heap_Free(ov80_02229F04(trainerBuf, trainerId2, HEAP_ID_FIELD2, 0xcc));
++            ov80_0222A480(setup, trainerBuf, sidesB, 3, HEAP_ID_FIELD2);
+         }
+         Party_InitWithMaxSize(*(Party **)((u8 *)setup + 0x10), sidesB);
+         tmpMon = AllocMonZeroed(HEAP_ID_FIELD2);
