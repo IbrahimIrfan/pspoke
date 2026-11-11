@@ -86,6 +86,9 @@ Options:
 
   The choice is stored in `pspoke.cfg` next to the EBOOT, so you can also change it on the memory stick without
   rebuilding: edit the line to `display=bilinear`, `display=integer` or `display=nearest`.
+- `--layout` picks how the two DS screens share the display: `dual` (default) shows both, one large and one small;
+  `single` shows one screen at a time at full height (R switches which). You can switch at any time in game with
+  SELECT + △; this only sets the starting layout, stored as `layout=dual` or `layout=single` in `pspoke.cfg`.
 - For a menu icon and background, put `ICON0.PNG` (144x80) and `PIC1.PNG` (480x272) in `art/platinum/` or
   `art/soulsilver/` before building (see [art/README.md](art/README.md)).
 
@@ -138,7 +141,13 @@ PSP display, one large and one small, and the touch screen is emulated with a cu
   touch screen takes the big slot so you can see what you are pointing at.
 - In stylus mode the **analog stick** moves the cursor (push further to move faster) and **L** taps the screen.
   The D-pad and the other buttons keep working normally, so you can mix touch and button input.
-- **L + R + SELECT** quits the game back to the PSP menu.
+- **SELECT + △** switches between both screens and one screen at full height. In the one-screen layout, R (or
+  stylus mode) picks which screen you see.
+- **SELECT + □** toggles fast-forward: the game runs at up to 2x speed and `>>` shows in the corner. Music and sound
+  stay at normal speed. On a real PSP the game is already close to its limit in busy areas, so expect nearly 2x in
+  menus, text and quiet places, and less in big cities and battles.
+- **L + R + SELECT** quits the game back to the PSP menu. If the game is saving, it waits until the save has
+  finished (about two seconds after the last write) before quitting.
 
 **Saves:** `Platinum.native.sav` / `SoulSilver.native.sav` are normal 512 KB DS saves. You can bring over a save from a DS emulator or
 cartridge dump by renaming it (it must be exactly 524,288 bytes). Back it up before experimenting.

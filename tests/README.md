@@ -62,6 +62,9 @@ for trying a build on a PSP.
 | Name | What it covers |
 |---|---|
 | `boot` (Platinum) | Blank save through the title and intro for 60 s of game time; sound engine ready, no traps. |
+| `quit-combo` (Platinum) | Holds L+R+SELECT on the title screen; the game must log `[QUIT]` and exit to the PSP menu (issue #16: the combo was never polled). |
+| `fast-forward` (Platinum) | SELECT+□ on the title screen turns on 2x fast-forward (`[FF]` log line); the game must keep running to the frame bound. |
+| `weather-snow`, `weather-sand`, `weather-ash` (Platinum) | A new game on a blank save (`newgame-warp.h`), then a warp into Snowpoint City, Route 228 and Route 227. Their snow, sand and ash particles keep pointers in s64 work slots off ARM: snow and sand failed an s32-sized size check, ash wrote s32 and read s64 (a NULL read). |
 | `oreburgh-belts` (Platinum, needs `--platinum-save`) | Warps to the south end of Oreburgh City and walks toward the Mine; the long conveyor belts (bounding boxes larger than the view) must still be drawn ten steps in. Caught the box-test bug. |
 | `floaroma-gate` (Platinum, needs `--platinum-save`) | Warps to Floaroma Town's south gate. Its translucent arch and shade are submitted before the ground; drawn in submission order they were a solid black block. Screenshot check by eye (`.work/tests/floaroma-gate.png`). |
 | `underground` (Platinum, needs `--platinum-save`) | Warps to Oreburgh City and enters the Underground the way the Explorer Kit does (comms prompt, save, descent). Crashed before the ROM file-name lookup ignored case and the WM wireless stand-in (`port/native-audio-app/services/wm_absent.c`) existed. |

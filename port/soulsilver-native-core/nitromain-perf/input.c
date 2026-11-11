@@ -6,14 +6,20 @@
 #include <stdint.h>
 static TPData point={128,96,0,TP_VALIDITY_VALID},sample;
 static unsigned rtcReads;
-static int touchMode;static unsigned previous;static BOOL sampling,rtcReady;
+static int touchMode;static unsigned previous,layoutToggles,fastForwardToggles;static BOOL sampling,rtcReady;
 static TPCalibrateParam calibration;
 static const unsigned buttons[12]={PSP_CTRL_CIRCLE,PSP_CTRL_CROSS,PSP_CTRL_SELECT,PSP_CTRL_START,PSP_CTRL_RIGHT,PSP_CTRL_LEFT,PSP_CTRL_UP,PSP_CTRL_DOWN,PSP_CTRL_RTRIGGER,PSP_CTRL_LTRIGGER,PSP_CTRL_TRIANGLE,PSP_CTRL_SQUARE};
 void PSPNativeInputStep(unsigned bits,unsigned ax,unsigned ay){
  unsigned combo=PSP_CTRL_SELECT|PSP_CTRL_CROSS,keys=0;
  /* R toggles stylus mode (as on Platinum); SELECT+CROSS still works. R is not forwarded to the game. */
  if((bits&PSP_CTRL_RTRIGGER)&&!(previous&PSP_CTRL_RTRIGGER))touchMode=!touchMode;
- if((bits&combo)==combo&&(previous&combo)!=combo)touchMode=!touchMode;previous=bits;bits&=~PSP_CTRL_RTRIGGER;
+ if((bits&combo)==combo&&(previous&combo)!=combo)touchMode=!touchMode;
+ /* SELECT+TRIANGLE (issue #18) switches between both screens and one screen at full height; R still picks which.
+    The two buttons are not passed to the game while held together. */
+ /* SELECT+SQUARE toggles 2x fast-forward (frame.c); likewise kept from the game while held together. */
+ {unsigned layout=PSP_CTRL_SELECT|PSP_CTRL_TRIANGLE,ff=PSP_CTRL_SELECT|PSP_CTRL_SQUARE;
+  if((bits&layout)==layout&&(previous&layout)!=layout)layoutToggles++;if((bits&ff)==ff&&(previous&ff)!=ff)fastForwardToggles++;
+  previous=bits;if((bits&layout)==layout)bits&=~layout;if((bits&ff)==ff)bits&=~ff;}bits&=~PSP_CTRL_RTRIGGER;
  for(unsigned i=0;i<12;i++)if(bits&buttons[i])keys|=1u<<i;
  int x=point.x,y=point.y;
  /* Stylus mode (user request): only the analog stick moves the cursor, so the D-pad and face
@@ -75,6 +81,8 @@ RTCResult RTC_GetDateTimeAsync(RTCDate*d,RTCTime*t,RTCCallback cb,void*arg){
 }
 
 unsigned PSPNativeRTCReadCount(void){return rtcReads;}
+unsigned PSPNativeInputLayoutToggles(void){return layoutToggles;}
+unsigned PSPNativeInputFastForwardToggles(void){return fastForwardToggles;}
 int PSPNativeInputQuitRequested(void){unsigned combo=PSP_CTRL_LTRIGGER|PSP_CTRL_RTRIGGER|PSP_CTRL_SELECT;return (previous&combo)==combo;}
 
 void PSPNativeInputGetRenderState(unsigned*keys,int*mode,int*down,int*x,int*y){if(keys)*keys=PAD_Read();if(mode)*mode=touchMode;if(down)*down=point.touch;if(x)*x=point.x;if(y)*y=point.y;}

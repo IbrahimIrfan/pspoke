@@ -103,6 +103,15 @@ void PSPNativeOskBegin(const unsigned short *desc, const unsigned short *intext,
 {
     int i;
 
+#ifdef PSP_NATIVE_SCRIPTED_INPUT
+    /* TEST ONLY: scripted input cannot reach the firmware keyboard (headless PPSSPP shows it and waits forever), so
+     * report a cancel at once and the game takes its default name, as when the dialog is abandoned. */
+    (void)desc; (void)intext; (void)limit;
+    PSPNativeMemLog("[OSK] scripted input: skipped, using default name");
+    sAccepted = 0;
+    sState = OSK_DONE;
+    return;
+#endif
     if (limit < 1) {
         limit = 1;
     }

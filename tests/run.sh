@@ -32,10 +32,12 @@ want(){ [ -z "$ONLY" ] || [[ "$ONLY" == *",$1,"* ]]; }
 # judge NAME LOG CHECK... : traps=0 and a clean bounded exit, plus optional overlay:<id> / log:<text> checks.
 judge(){ local name=$1 log=$2; shift 2; local why="" n
   n=$(grep -a -c -E "$TRAPS" "$log" || true); [ "$n" = 0 ] || why="$why traps=$n"
-  grep -a -q 'clean bounded probe exit' "$log" || why="$why no-clean-exit"
+  if [[ " $* " == *" exit:quit "* ]]; then grep -a -q '\[QUIT\] L+R+SELECT' "$log" || why="$why no-quit"
+  else grep -a -q 'clean bounded probe exit' "$log" || why="$why no-clean-exit"; fi
   for c in "$@"; do case "$c" in
     overlay:*) grep -a -q -E "SS-OVERLAY\] native load id=${c#overlay:}([^0-9]|$)" "$log" || why="$why missing-overlay-${c#overlay:}";;
     log:*) grep -a -q -F -- "${c#log:}" "$log" || why="$why missing-log:'${c#log:}'";;
+    exit:quit) ;;
     belts:*) python3 "$ROOT/tests/platinum/count_belt_pixels.py" "$OUT/$name.png" >/dev/null || why="$why belts-not-drawn";;
   esac; done
   local fps; fps=$(grep -a -o 'average_fps=[0-9.]*' "$log" | tail -1 | cut -d= -f2 || true); [ -z "$fps" ] || fps="emulator fps $fps"
@@ -123,6 +125,21 @@ plat_tests(){
   PLAT_CHECKS=("log:[AUDIO-SAS] ready: sceSasCore")
   plat_case boot 1800 "" ""   # blank save: title, intro and the first prompt; 60 s of game time
   [ "$QUICK" = 1 ] && return
+  # L+R+SELECT on the title screen quits to the PSP menu (issue #16: the handler was never called).
+  PLAT_CHECKS=("exit:quit")
+  plat_case quit-combo 4000 quit-combo.h ""
+  # SELECT+SQUARE toggles 2x fast-forward (VBlank deadlines at 120 Hz); the game must keep running to the bound.
+  PLAT_CHECKS=("log:[FF] fast-forward on (2x)")
+  plat_case fast-forward 2400 fast-forward.h ""
+  # A new game on a blank save (newgame-warp.h; the name keyboard is skipped in scripted builds), then a warp into
+  # weather whose particles store pointers in s64 work slots off ARM: snow at Snowpoint City (the size check said
+  # s32 and asserted), sand on Route 228 (same check), ash on Route 227 (written as s32, read as s64: NULL read).
+  PLAT_CHECKS=("log:[DIAG] warp to map 165")
+  plat_case weather-snow 13000 newgame-warp.h "" WARP_TO=165,379,234
+  PLAT_CHECKS=("log:[DIAG] warp to map 406")
+  plat_case weather-sand 13000 newgame-warp.h "" WARP_TO=406,774,331
+  PLAT_CHECKS=("log:[DIAG] warp to map 403")
+  plat_case weather-ash 13000 newgame-warp.h "" WARP_TO=403,740,302
   if [ -n "$PLAT_SAVE" ]; then
     # Oreburgh City south end into the Mine: the long conveyor belts have bounding boxes larger than the view,
     # which the box test used to cull at random. The screenshot at frame 2000 (about ten steps south) must still show them.
@@ -157,7 +174,7 @@ plat_tests(){
 
 ### main #####################################################################################################
 if [ "$LIST" = 1 ]; then cat <<'EOF'
-platinum:   boot (quick) oreburgh-belts floaroma-gate underground sing-double move-relearner
+platinum:   boot (quick) quit-combo fast-forward weather-snow weather-sand weather-ash oreburgh-belts floaroma-gate underground sing-double move-relearner
             start-menu-exit fly (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
             options-b options-scene options-nochange options-after geonet gym-pryce rocket-radio-tower
