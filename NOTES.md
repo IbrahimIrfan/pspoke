@@ -174,6 +174,13 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     Explosion): the battle froze on "...fainted!". Guarded like the Platinum fork's `SDK_PORT` fix. A freeze with no
     trap line: suspect a division whose divisor can reach 0 in an edge case, and find it by logging the
     battle-controller command (`BattleContext_Main`) and battle-script command (`RunBattleScript`) as they change.
+25. **SDK changes live in `patches/libntr/local-edits.patch`** (applied when the tree is staged). The libntr fork's
+    `GX_BeginLoadBGExtPltt` used an LCDC offset of 0 for bank G under `SDK_PORT`, but this port keeps the DS LCDC
+    layout (16 KB bank G, then bank H): BG extended-palette slots 2-3 were written into bank H. Screens that use
+    extended palettes on bank G rendered black (the Battle Frontier rooms, extended affine BGs in mode 5) and the
+    sub screen's BG VRAM in bank H was overwritten. A black layer with sprites still visible: dump DISPCNT/BGxCNT
+    and the VRAM bank registers (`PSPNative_GfxRegisters` + 0x000/0x008/0x240) from frame.c and check where the
+    data actually went.
 
 ## 4. Rendering
 
