@@ -38,8 +38,6 @@ build time.
 - **DS wireless:** local trades and battles with another DS, Union Room, DS Download Play. The Underground works,
   but only on your own: no other players ever appear.
 - **Microphone** features.
-- **SoulSilver's Battle Frontier facilities** (Battle Tower, Factory, Hall, Castle, Arcade): not ported yet; starting a
-  challenge crashes. You can still walk around the Battle Frontier area.
 - **Other versions and regions:** only the two US ROMs listed above build (no HeartGold, Diamond/Pearl or
   non-English releases).
 - **Windows:** untested for building and running the games; the toolchain setup is confirmed on WSL2 (Ubuntu).

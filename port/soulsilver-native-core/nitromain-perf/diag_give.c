@@ -175,6 +175,37 @@ static void DiagRepel(FieldSystem *fieldSystem)
 }
 #endif
 
+
+#ifdef GIVE_PARTY
+#include "script_pokemon_util.h"
+#include "map_header.h"
+/* TEST ONLY: GIVE_PARTY="<species>:<level>[:<move0>],..." replaces the party with these mons (move0, if given,
+ * overwrites move slot 0 with full PP). Used by the Battle Frontier checks, which need 3 distinct eligible mons. */
+static void DiagGiveParty(Party *party, FieldSystem *fieldSystem)
+{
+    int old = Party_GetCount(party);
+    const char *s = GIVE_PARTY;
+    while (*s && Party_GetCount(party) < PARTY_SIZE) {
+        int sp = (int)strtol(s, (char **)&s, 10), lv = 50, mv = 0;
+        if (*s == ':') { s++; lv = (int)strtol(s, (char **)&s, 10); }
+        if (*s == ':') { s++; mv = (int)strtol(s, (char **)&s, 10); }
+        if (*s == ',') s++;
+        if (sp <= 0) continue;
+        GiveMon(HEAP_ID_FIELD3, FieldSystem_GetSaveData(fieldSystem), sp, lv, 0, 0, 0,
+                MapHeader_GetMapSec(fieldSystem->location->mapId), 24);
+        Pokemon *gm = Party_GetMonByIndex(party, Party_GetCount(party) - 1);
+        if (mv > 0) MonSetMoveInSlot(gm, (u16)mv, 0);
+        for (int k = 0; k < 6; k++) { int iv = 31; SetMonData(gm, MON_DATA_HP_IV + k, &iv); }
+        { int ev = 252; SetMonData(gm, MON_DATA_ATK_EV, &ev); SetMonData(gm, MON_DATA_HP_EV, &ev); ev = 6; SetMonData(gm, MON_DATA_SPEED_EV, &ev); }
+        CalcMonStats(gm);
+        PSPNativeMemLog("[DIAG] party gave species %d level %d move0 %d", sp, lv, mv);
+    }
+    for (int i = 0; i < old && Party_GetCount(party) > 1; i++) Party_RemoveMon(party, 0);
+    PSPNativeMemLog("[DIAG] party replaced, count %d", Party_GetCount(party));
+    printf("[DIAG] party replaced, count %d\n", Party_GetCount(party));
+}
+#endif
+
 BOOL __wrap_HandleDaycareStep(Daycare *dayCare, Party *party, FieldSystem *fieldSystem)
 {
     static int done;
@@ -182,6 +213,9 @@ BOOL __wrap_HandleDaycareStep(Daycare *dayCare, Party *party, FieldSystem *field
         done = 1;
 #ifdef GIVE_SPECIES
         DiagGiveSpecies(party, fieldSystem);
+#endif
+#ifdef GIVE_PARTY
+        DiagGiveParty(party, fieldSystem);
 #endif
 #ifdef GIVE_ITEMS
         DiagGiveItems(fieldSystem);

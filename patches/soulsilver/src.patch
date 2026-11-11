@@ -4578,3 +4578,66 @@ diff -ruN a/src/frontier/overlay_80_02236B78.c b/src/frontier/overlay_80_02236B7
          }
          Party_InitWithMaxSize(*(Party **)((u8 *)setup + 0x10), sidesB);
          tmpMon = AllocMonZeroed(HEAP_ID_FIELD2);
+diff -ruN a/src/frontier/overlay_80_022372D8.c b/src/frontier/overlay_80_022372D8.c
+--- a/src/frontier/overlay_80_022372D8.c	2026-11-11 10:30:31.869682676 -0500
++++ b/src/frontier/overlay_80_022372D8.c	2026-11-11 10:30:31.877523412 -0500
+@@ -645,7 +645,10 @@
+     int rank;
+     int diffLevel;
+     int loopCnt;
+-    void *trainerBuf;
++    // PSP: this C (NONMATCHING branch) disagreed with its asm: trainer data is a 0x30-byte stack record, the
++    // battle setup call is (setup, NULL, save, mapno, bag, arg5), and the opponent parties are 1 and 3. The Battle
++    // Hall crashed in sub_02051D18 starting every battle.
++    u8 trainerData[0x30];
+     u32 r7x38;
+ 
+     r7 = ((u32)(*(u8 *)((u8 *)work + 5) & 0x7F) << 0x19) >> 0x18;
+@@ -657,10 +660,10 @@
+ 
+     setup = BattleSetup_New(HEAP_ID_FIELD2, ov80_02237850(*(u8 *)((u8 *)work + 4)));
+     sub_02051D18(setup,
+-        (FieldSystem *)*(void **)((u8 *)fieldCtx + 8),
+-        *(SaveData **)((u8 *)fieldCtx + 0x18),
+-        0,
+-        (BagCursor *)*(void **)((u8 *)fieldCtx + 0xc),
++        NULL,
++        *(SaveData **)((u8 *)fieldCtx + 8),
++        *(u32 *)((u8 *)fieldCtx + 0x18),
++        *(BagCursor **)((u8 *)fieldCtx + 0xc),
+         *(void **)((u8 *)fieldCtx + 0x1c));
+ 
+     *(u32 *)((u8 *)setup + (0x53 << 2)) = 0x16;
+@@ -683,13 +686,11 @@
+     {
+         void *wkbase = (u8 *)work + 0x18;
+         u16 trainerId = *(u16 *)((u8 *)wkbase + r7x2);
+-        trainerBuf = (u8 *)work + 0x34;
+-        ov80_02229F04(trainerBuf, trainerId, 0xb, 0xcc);
+-        Heap_Free(trainerBuf);
+-        ov80_0222A480(setup, trainerBuf, sides_b, 1, 0xb);
++        Heap_Free(ov80_02229F04(trainerData, trainerId, 0xb, 0xcc));
++        ov80_0222A480(setup, trainerData, sides_b, 1, 0xb);
+     }
+ 
+-    Party_InitWithMaxSize(setup->party[2], sides_b);
++    Party_InitWithMaxSize(setup->party[1], sides_b);
+ 
+     {
+         u8 unk4 = *(u8 *)((u8 *)work + 4);
+@@ -749,12 +750,10 @@
+         {
+             void *wkbase = (u8 *)work + 0x18;
+             u16 trainerId3 = *(u16 *)((u8 *)wkbase + (r7 + 1) * 2);
+-            trainerBuf = (u8 *)work + 0x34;
+-            ov80_02229F04(trainerBuf, trainerId3, 0xb, 0xcc);
+-            Heap_Free(trainerBuf);
+-            ov80_0222A480(setup, trainerBuf, sides_b, 3, 0xb);
++            Heap_Free(ov80_02229F04(trainerData, trainerId3, 0xb, 0xcc));
++            ov80_0222A480(setup, trainerData, sides_b, 3, 0xb);
+         }
+-        Party_InitWithMaxSize(setup->party[4], sides_b);
++        Party_InitWithMaxSize(setup->party[3], sides_b);
+         tmpMon = AllocMonZeroed(HEAP_ID_FIELD2);
+         {
+             void *monRow = (u8 *)work + 0x290 + r7x38;

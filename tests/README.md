@@ -82,6 +82,7 @@ for trying a build on a PSP.
 | `ice-mahogany` | Warps into Mahogany Gym's first room and walks every direction for 90 s. Sliding on its ice used to hit two untranslated movement functions (`[SS-MISSING] sub_0205D240`). |
 | `move-reminder` | Talks to the Blackthorn Move Maniac with a Heart Scale and relearns a move. Overlay 68's state handlers were never translated (`[SS-MISSING]` on the first step). |
 | `dowsing` | Opens the Bag, taps the Key Items pocket in stylus mode and uses the Dowsing MCHN; its touch-screen radar (overlay 28) was untranslated. |
+| `frontier-factory`, `frontier-tower`, `frontier-hall`, `frontier-castle`, `frontier-arcade` | Start a challenge in each Battle Frontier facility and win the first battle (Factory rentals; the others use `GIVE_PARTY` for three strong level-100 Pokémon, capped to 50). The Frontier was untranslated; the Factory and Hall then crashed in the decomp C's battle setup. |
 | `rocket-radio-tower` | Team Rocket grunt sight line in the Radio Tower (overlay 117) into a battle. |
 | `qol-friendship-evo`, `qol-trade-item-evo`, `qol-trade-level-evo` | The trade-evolution replacements (Chingling, Onix + Metal Coat, Kadabra at Lv36 reach the evolution screen, overlay 15). |
 | `qol-repel-yes`, `qol-repel-no` | The repel re-use prompt, both answers. |
