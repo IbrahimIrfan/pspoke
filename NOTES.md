@@ -159,6 +159,10 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     The translator bound every external as `uint32_t` and then clobbered r1, so the Pal Pad's friend code (`String_atoi`)
     came back as garbage and `sub_0203088C` (u64 records, 14 call sites) lost its high word. `port.py` now reads the
     return type next to the argument count (`RET64`) and splits a 64-bit result into r0/r1.
+    Floats are the other ABI gap: soft-float ARM passes an `f32` as bits in an integer register, the PSP build of the
+    C callee reads an FPU register. `port.py` now converts float parameters/returns of externals (`FLOAT_PARAMS`,
+    `FLOAT_RET`; doubles abort the build). Before, `ManagedSprite_SetAffineScale` got 0.0 and the Pal Pad's digit
+    boxes vanished (affine matrices all zero in OAM); `ov01_02203F2C` had the same problem.
 22. **Translated exit functions can leave callbacks behind.** The Pal Pad code-entry screen's exit destroys its heap
     without clearing the VBlank callback its init set; the next VBlank used the freed BgConfig (DS memory just kept
     the old bytes). Translated code cannot be edited, so `palpad_vblank.c` wraps `Heap_Destroy` and clears exactly that

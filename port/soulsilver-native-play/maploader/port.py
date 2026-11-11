@@ -198,6 +198,12 @@ STRUCT_RETURNS = {}
 # (ov43's Pal Pad friend code: `bl String_atoi; add r7, r0, #0; add r6, r1, #0`). Bound as uint64_t, split into
 # r0/r1, and exempt from the r1 clobber that follows every other external call.
 RET64 = set()
+# C functions taking or returning single floats. The ARM code passes an f32 as its bit pattern in an integer register
+# (soft-float AAPCS); the PSP build of that function reads it from an FPU register. Without converting, the sprite
+# scale for the Pal Pad's digit boxes arrived as 0.0 and the boxes vanished. Doubles are refused (would need pairs).
+FLOAT_PARAMS = {}
+FLOAT_RET = set()
+FLOAT_TYPES = {'f32', 'float'}
 RET64_TYPES = {'s64', 'u64', 'fx64', 'OSTick', 'int64_t', 'uint64_t'}
 
 
@@ -212,9 +218,16 @@ def arg_count(name):
             STRUCT_RETURNS[name] = toks[-1]
         if toks and toks[-1] != '*' and (toks[-1] in RET64_TYPES or toks[-2:] == ['long', 'long']):
             RET64.add(name)
+        if toks and toks[-1] in FLOAT_TYPES:
+            FLOAT_RET.add(name)
         if args in ('', 'void'):
             return hidden
         parts = split_top(args)
+        ptypes = [re.sub(r'\s+\w+$', '', p).replace('const ', '').strip() for p in parts]
+        if any(t in ('f64', 'double') for t in ptypes):
+            raise SystemExit('double parameter in external ' + name + ': not supported by the translator')
+        if any(t in FLOAT_TYPES for t in ptypes):
+            FLOAT_PARAMS[name] = [i + hidden for i, t in enumerate(ptypes) if t in FLOAT_TYPES]
         if any(p == '...' for p in parts):
             raise SystemExit('variadic external not supported: ' + name)
         return len(parts) + hidden
@@ -262,6 +275,14 @@ for name in extern:
         t.CALLS[name] = (f'printf("[DBG] {name} {fmt}"' + ''.join(',' + x for x in a) + f');r0={name}(' + ','.join(a) + ');printf(" -> %08lx\\n", r0);', c)
         continue
     args = [f'r{i}' if i < 4 else f'ld32(sp+{4 * (i - 4)})' for i in range(c)]
+    if name in FLOAT_PARAMS or name in FLOAT_RET:
+        fl = set(FLOAT_PARAMS.get(name, []))
+        rtype = 'float' if name in FLOAT_RET else 'uint32_t'
+        protos.append(f'extern {rtype} {name}(' + (','.join('float' if i in fl else 'uint32_t' for i in range(c)) or 'void') + ');')
+        cargs = [f'ssf_bits({a})' if i in fl else a for i, a in enumerate(args)]
+        call = f'{name}(' + ','.join(cargs) + ')'
+        t.CALLS[name] = ((f'{{float fr={call};memcpy(&r0,&fr,4);}}' if name in FLOAT_RET else f'r0={call};'), c)
+        continue
     if name in RET64:
         protos.append(f'extern uint64_t {name}(' + (','.join(['uint32_t'] * c) or 'void') + ');')
         t.CALLS[name] = (f'{{uint64_t v64={name}(' + ','.join(args) + ');r0=(uint32_t)v64;r1=(uint32_t)(v64>>32);}', c)
