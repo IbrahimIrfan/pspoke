@@ -104,6 +104,20 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
     over the overlay sources ("comparison is always true/false due to limited range"); `local-edits.patch` casts the
     real ones to `(u32)`. The underground menus' `if (input == MENU_CANCEL) input = MENU_CANCEL;` lines are no-ops
     either way.
+    `-Wtype-limits` does not see the other half: a **u32 widened to u64** is zero-extended (0x00000000FFFFFFFE), while
+    psp-gcc sign-extends a pointer cast to u64. A `MENU_CANCEL` that passes through a u32 table, field or return value
+    and comes back out of a u64 list index no longer matches. Found that way (2026-11): the Underground trap menu
+    (Cancel ran a freed list), the Underground shops (an idle frame bought item 0xFFFFFFFF), the bag's dial button on
+    Cancel (called 0xFFFFFFFE) and Close Bag, the Battle Castle menus and the Pokemon Center 2F confirm menu. Fix by
+    sign-extending at the point it widens, `(u64)(s64)(s32)x`, or by widening the field.
+17. **s32 work slots widened to s64 off ARM.** The fork stores pointers in "int" work arrays, so on non-ARM it widened
+    many of them to s64 (overlay 5's weather particles, `ov5_021D5EB8.c`). Every producer, consumer, size check and
+    allocation of one buffer must agree. Three did not: the particle slot check still said `sizeof(s32) * 10` while
+    snow and sand asked for s64 work (assertion entering Snowpoint City and Route 228); the ash spawner wrote s32 and
+    its updater read s64 (NULL read, Route 227 and Stark Mountain); the thunderstorm lightning task was allocated
+    `sizeof(int) * 10` and wrote s64[8] (heap overrun, Routes 212 and 213). When a weather or field effect crashes,
+    compare each `#ifdef SDK_BUILD_ARM` pair in its file first. The yearly-weather maps (Snowpoint, Acuity Lakefront,
+    Routes 212/213/216) only show some weathers on some dates, so a warp sweep on one day can miss them.
 
 ## 4. Rendering
 
@@ -228,6 +242,10 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
   setter/increment paths rejecting derived or read-only params; `PLAYER_STATE_USE_HM` is the enum range sentinel
   (`GF_ASSERT(state < PLAYER_STATE_USE_HM)`), never a live state; battle `OPCODE_GET`/`MAX_PP` reject
   invalid-in-write-context; the Wi-Fi lobby cases cannot run with no Wi-Fi.
+- Warp sweep (2026-11-11): a blank save played through the intro with `tests/platinum/newgame-warp.h`, then
+  `WARP_TO` into 73 areas (every weather, Distortion World, Spear Pillar, Turnback Cave, the Battle Zone, Victory Road,
+  Stark Mountain). Only the weather bugs above failed. A fresh save has no Pokemon, so the first trainer who spots
+  you asserts in battle setup; add `GIVE_MON=<species>:<level>` before reading anything into that.
 - **Rule:** when a player reports a crash in one specific vanilla interaction, grep that feature's source for
   `GF_ASSERT(FALSE)` before anything else. Re-run the named-case-into-assert scan after any upstream decomp bump.
 - Conditional asserts that retail reaches are the same trap. `render_oam.c` asserts that every sprite fits the OAM

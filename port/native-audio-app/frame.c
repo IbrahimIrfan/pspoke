@@ -66,6 +66,14 @@ void PSPNativeFrameComplete(void){
  {unsigned long long d=last?now-last:33333ULL;if(d<4000ULL)d=4000ULL;else if(d>66666ULL)d=66666ULL;PSPNativeSoundAdvance((unsigned)d);}
 #endif
  unsigned long long a=sceKernelGetSystemTimeWide();audioUs+=a-now;
+ /* Fast-forward: SELECT+SQUARE (input.c) runs the game clock at 2x; sound stays real-time. ">>" in the corner while on
+    (DEV builds keep their fps counter there instead). */
+ {extern unsigned PSPNativeInputFastForwardToggles(void);extern void PSPNativeVBlankSetSpeed(unsigned);static int ff;
+  int on=PSPNativeInputFastForwardToggles()&1;if(on!=ff){ff=on;PSPNativeVBlankSetSpeed(on?2:1);PSPNativeMemLog("[FF] fast-forward %s",on?"on (2x)":"off");
+#ifndef PSP_NATIVE_DEV
+   strcpy(PSPNativeOverlayText,on?">>":"");
+#endif
+  }}
  unsigned keys;int mode,down,x,y;PSPNativeInputGetRenderState(&keys,&mode,&down,&x,&y);PSPNativeRenderSetInput(keys,mode,down,x,y);
  int result=PSPNativeRenderPresentNoWait();if(result){printf("[NATIVE] unsupported renderer state %d\n",result);abort();}
 #ifdef PSP_NATIVE_FRAME_DUMP
@@ -110,6 +118,8 @@ void PSPNativeFrameComplete(void){
 #endif
  }
 #endif
+ {extern int PSPNativeInputQuitRequested(void);extern int PSPNativeBackupIdleFor(unsigned long long); /* L+R+SELECT: back to the PSP menu, never mid-save */
+  if(PSPNativeInputQuitRequested()&&PSPNativeBackupIdleFor(2000000ULL)){PSPNativeMemLog("[QUIT] L+R+SELECT: exiting to the PSP menu");sceKernelExitGame();return;}}
  if(PSP_NATIVE_PROBE_FRAMES&&frames>=PSP_NATIVE_PROBE_FRAMES){PSPNativeMemReport("probe exit");puts("[NATIVE-FRAME] clean bounded probe exit");sceKernelExitGame();return;}
  PSPNativeVBlankFrameComplete();if(PSPNativeRenderBegin())abort();last=sceKernelGetSystemTimeWide();
 }

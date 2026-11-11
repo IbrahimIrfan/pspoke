@@ -5,7 +5,10 @@ static uint64_t epoch,sequence,idleUs;static int ready;
 /* Time spent sleeping for a VBlank deadline; the frame profiler subtracts it from the game window. */
 unsigned long long PSPNativeVBlankIdleTake(void){uint64_t v=idleUs;idleUs=0;return v;}
 void PSPNativeVBlankReset(void){ready=0;}
-static uint64_t deadline(void){return epoch+(sequence*1000000u)/60u;}
+/* Fast-forward (SELECT+SQUARE, frame.c): `speed` VBlanks per 1/60 s. A change re-anchors the clock at the next wait. */
+static unsigned speed=1;
+void PSPNativeVBlankSetSpeed(unsigned s){if(s<1)s=1;if(s!=speed){speed=s;ready=0;}}
+static uint64_t deadline(void){return epoch+(sequence*1000000u)/(60u*speed);}
 void PSPNativeVBlankWait(void){uint64_t now=sceKernelGetSystemTimeWide();if(!ready){epoch=now;sequence=1;ready=1;}uint64_t target=deadline();if(now<target)idleUs+=target-now;while(now<target){uint64_t diff=target-now;unsigned part=diff>1000000?1000000:(unsigned)diff;sceKernelDelayThread(part);now=sceKernelGetSystemTimeWide();}sequence++;}
 /* Bound recovery after sustained over-budget work to one game update. Do this
  * once per completed game frame, not between its two SDK VBlank callbacks. */

@@ -60,9 +60,13 @@ enum{MAIN_X=0,MAIN_Y=0,MAIN_W=363,MAIN_H=272,SUB_X=363,SUB_Y=92,SUB_W=117,SUB_H=
    1 bilinear: same size, linear sampling, even and smooth but softer;
    2 integer: main panel at exactly 1:1 (256x192) centred in its slot, perfectly crisp, small. */
 static int displayMode;
+/* layout=single in pspoke.cfg starts in the one-screen layout (issue #18); SELECT+TRIANGLE switches at run time. */
+static bool singleDefault;
+extern "C" unsigned PSPNativeInputLayoutToggles(void);
 static void ReadDisplayConfig(){FILE*f=fopen("pspoke.cfg","r");if(!f)return;char line[96];
- while(fgets(line,sizeof line,f))if(!strncmp(line,"display=",8)){displayMode=!strncmp(line+8,"bilinear",8)?1:!strncmp(line+8,"integer",7)?2:0;}
- fclose(f);printf("[GU2D] display mode %d\n",displayMode);}
+ while(fgets(line,sizeof line,f)){if(!strncmp(line,"display=",8))displayMode=!strncmp(line+8,"bilinear",8)?1:!strncmp(line+8,"integer",7)?2:0;
+  if(!strncmp(line,"layout=",7))singleDefault=!strncmp(line+7,"single",6);}
+ fclose(f);printf("[GU2D] display mode %d layout %s\n",displayMode,singleDefault?"single":"dual");}
 static unsigned statFallback[2],statGe[2];
 #include "native_window_rows.h"
 extern "C" int SSNativeCaptureWindowRows(SSNativeWindowRow rows[2][192]) __attribute__((weak));
@@ -679,8 +683,10 @@ static int Present(bool waitForVblank){
  sceGuClearColor(0xff101010);sceGuClear(GU_COLOR_BUFFER_BIT);sceGuEnable(GU_TEXTURE_2D);sceGuTexMode(GU_PSM_8888,0,0,0);sceGuTexFunc(GU_TFX_REPLACE,GU_TCC_RGBA);sceGuTexFilter(GU_NEAREST,GU_NEAREST);sceGuTexWrap(GU_CLAMP,GU_CLAMP);
  const bool swap=mode!=0;
  const bool integer=displayMode==2;const int bigFilter=displayMode==1?GU_LINEAR:GU_NEAREST;
- const short bigX=integer?(MAIN_W-256)/2:MAIN_X,bigY=integer?(MAIN_H-192)/2:MAIN_Y,bigW=integer?256:MAIN_W,bigH=integer?192:MAIN_H,smallX=SUB_X,smallY=SUB_Y,smallW=SUB_W,smallH=SUB_H;
- for(unsigned screen=0;screen<2;screen++){unsigned e=(power&0x8000)?screen:1-screen;const bool big=(screen==1)==swap;
+ /* One-screen layout: only the big panel, centred on the whole display (the same size as the big slot). */
+ const bool single=singleDefault^((PSPNativeInputLayoutToggles()&1)!=0);const short slotX=single?(480-MAIN_W)/2:MAIN_X;
+ const short bigX=integer?slotX+(MAIN_W-256)/2:slotX,bigY=integer?(MAIN_H-192)/2:MAIN_Y,bigW=integer?256:MAIN_W,bigH=integer?192:MAIN_H,smallX=SUB_X,smallY=SUB_Y,smallW=SUB_W,smallH=SUB_H;
+ for(unsigned screen=0;screen<2;screen++){unsigned e=(power&0x8000)?screen:1-screen;const bool big=(screen==1)==swap;if(single&&!big)continue;
   sceGuTexFilter(big?bigFilter:GU_LINEAR,big?bigFilter:GU_LINEAR);sceGuTexImage(0,256,256,256,texsrc[e]);V*v=(V*)PSPNativeGUGetMemory(2*sizeof(V));
   short px=big?bigX:smallX,py=big?bigY:smallY,pw=big?bigW:smallW,ph=big?bigH:smallH;
   v[0]={0,0,px,py,0};v[1]={256,192,short(px+pw),short(py+ph),0};sceGuDrawArray(GU_SPRITES,GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D,2,0,v);}

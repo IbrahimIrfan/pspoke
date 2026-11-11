@@ -9,6 +9,7 @@ static FILE *file;static char backupPath[256];
 static SceUID mutex=-1;
 static int owner=-1;
 static CARDResult result=CARD_RESULT_NO_RESPONSE;
+static unsigned long long lastWriteUs; /* system time of the last backup write, 0 = none yet */
 BOOL PSPNative_OpenBackup(const char *path){
  if(file||owner!=-1)return FALSE;
  FILE *candidate=fopen(path,"r+b");if(!candidate)return FALSE;
@@ -52,9 +53,16 @@ BOOL CARDi_RequestStreamCommand(u32 src,u32 dst,u32 length,MIDmaCallback callbac
   if((mode!=CARD_REQUEST_MODE_SEND&&mode!=CARD_REQUEST_MODE_SEND_VERIFY)||(!src&&length))result=CARD_RESULT_INVALID_PARAM;
   else if(fseek(file,offset,SEEK_SET)||fwrite((const void*)(uintptr_t)src,1,length,file)!=length||fflush(file))result=CARD_RESULT_FAILURE;
   else if(mode==CARD_REQUEST_MODE_SEND_VERIFY&&!Verify(offset,(const u8*)(uintptr_t)src,length))result=CARD_RESULT_FAILURE;
+  lastWriteUs=sceKernelGetSystemTimeWide();
  }else if(request==CARD_REQ_VERIFY_BACKUP){
   if(mode!=CARD_REQUEST_MODE_SEND||(!src&&length))result=CARD_RESULT_INVALID_PARAM;
   else if(!Verify(offset,(const u8*)(uintptr_t)src,length))result=CARD_RESULT_FAILURE;
  }else result=CARD_RESULT_UNSUPPORTED;
  BOOL ok=result==CARD_RESULT_SUCCESS;if(callback)callback(arg);return ok;
+}
+/* L+R+SELECT quit (frame.c): a game save is several writes spread over many frames, under CARD_LockBackup. Only
+   report idle when no one holds the backup and nothing was written for `us` microseconds, so quitting never cuts a
+   save in half. Every write is already flushed, so there is nothing left to write out. */
+int PSPNativeBackupIdleFor(unsigned long long us){
+ return owner==-1&&(!lastWriteUs||sceKernelGetSystemTimeWide()-lastWriteUs>=us);
 }

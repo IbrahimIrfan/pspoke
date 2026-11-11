@@ -40,6 +40,10 @@ endif
 ifneq ($(GIVE_ITEM),)
 CFLAGS += -DGIVE_ITEM=\"$(GIVE_ITEM)\"
 endif
+# TEST ONLY: GIVE_MON=<species>:<level> (with WARP_TO) adds a Pokemon to the party, see diag_warp.c.
+ifneq ($(GIVE_MON),)
+CFLAGS += -DGIVE_MON=\"$(GIVE_MON)\"
+endif
 # TEST ONLY: TEACH_MOVE=<partySlot>:<moveId> and ALL_BADGES=1 (with WARP_TO), see diag_warp.c.
 ifneq ($(TEACH_MOVE),)
 CFLAGS += -DTEACH_MOVE=\"$(TEACH_MOVE)\"

@@ -9,14 +9,16 @@
  * where the kit sits in the save's bag. The comms/save prompts still need A presses from the input script.
  * With GIVE_ITEM=<itemId>:<count> as well, the item is added to the bag when the warp starts (e.g. 93:1, a Heart
  * Scale for the Pastoria move relearner). TEACH_MOVE=<partySlot>:<moveId> puts a move in that Pokemon's first move
- * slot and ALL_BADGES=1 grants the eight badges, e.g. to test Fly (move 19) from the party menu. */
+ * slot and ALL_BADGES=1 grants the eight badges, e.g. to test Fly (move 19) from the party menu. GIVE_MON=<species>:<level>
+ * adds a Pokemon to the party first, so a fresh new-game save can walk into trainers and wild battles. */
 #include <nitro.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "field_task.h"
-#if defined(GIVE_ITEM) || defined(TEACH_MOVE) || defined(ALL_BADGES)
+#if defined(GIVE_ITEM) || defined(TEACH_MOVE) || defined(ALL_BADGES) || defined(GIVE_MON)
 #include "bag.h"
 #include "field/field_system.h"
+#include "heap.h"
 #include "party.h"
 #include "pokemon.h"
 #include "save_player.h"
@@ -56,6 +58,18 @@ static BOOL DiagWarpTask(FieldTask *task)
             if (*g == ':') { g++; count = (int)strtol(g, (char **)&g, 10); }
             BOOL added = Bag_TryAddItem(SaveData_GetBag(FieldTask_GetFieldSystem(task)->saveData), item, count, HEAP_ID_FIELD2);
             printf("[DIAG] give item %d x%d: %s\n", item, count, added ? "added" : "bag full");
+        }
+#endif
+#ifdef GIVE_MON
+        {
+            const char *m = GIVE_MON;
+            int species = (int)strtol(m, (char **)&m, 10), level = 50;
+            if (*m == ':') { m++; level = (int)strtol(m, (char **)&m, 10); }
+            Pokemon *mon = Pokemon_New(HEAP_ID_FIELD2);
+            Pokemon_InitWith(mon, species, level, INIT_IVS_RANDOM, FALSE, 0, OTID_NOT_SHINY, 0);
+            BOOL added = Party_AddPokemon(SaveData_GetParty(FieldTask_GetFieldSystem(task)->saveData), mon);
+            Heap_Free(mon);
+            printf("[DIAG] give species %d level %d: %s\n", species, level, added ? "added" : "party full");
         }
 #endif
 #ifdef TEACH_MOVE

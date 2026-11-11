@@ -12,7 +12,7 @@ index a851a39..a7968bf 100644
      #else
      u64 unk_04;
 diff --git a/src/applications/bag/main.c b/src/applications/bag/main.c
-index cd00cb41..1dc15113 100644
+index cd00cb41..4eea1bae 100644
 --- a/src/applications/bag/main.c
 +++ b/src/applications/bag/main.c
 @@ -324,7 +324,7 @@ static const u8 sPocketSizes[POCKET_MAX] = {
@@ -24,7 +24,18 @@ index cd00cb41..1dc15113 100644
  static const u32 sItemActionFuncs[] = {
      [ITEM_ACTION_USE] = (u32)ItemActionFunc_Use,
      [ITEM_ACTION_WALK] = (u32)ItemActionFunc_Use,
-@@ -1818,7 +1818,8 @@ static u8 CanMoveSelectedEntry(BagController *controller)
+@@ -1276,7 +1276,9 @@ static u8 ProcessItemListMenuInput(BagController *interface)
+ 
+     if (selectedItem == MENU_NOTHING_CHOSEN) {
+         if (CheckDialButtonPressed(interface) == TRUE) {
+-            selectedItem = ListMenu_GetIndexOfChoice(interface->itemList, newCursorScroll + newCursorPos);
++            // PSP: GetIndexOfChoice returns u32 and selectedItem is u64 off ARM; sign-extend so the Close Bag row still
++            // reads as MENU_CANCEL (zero-extended, the dial button there picked pocket->items[0xFFFFFFFE]).
++            selectedItem = (u64)(s64)(s32)ListMenu_GetIndexOfChoice(interface->itemList, newCursorScroll + newCursorPos);
+             interface->dialButtonAnimStep = 1;
+         }
+     }
+@@ -1818,7 +1820,8 @@ static u8 CanMoveSelectedEntry(BagController *controller)
  {
      BagApplicationPocket *pocket = &controller->bagCtx->accessiblePockets[controller->bagCtx->currPocketIdx];
  
@@ -34,6 +45,20 @@ index cd00cb41..1dc15113 100644
          return FALSE;
      }
  
+@@ -2110,7 +2113,13 @@ const u32 BagApplication_GetItemActionFunc(enum ItemAction action)
+ const u64 BagApplication_GetItemActionFunc(enum ItemAction action)
+ #endif
+ {
++    #ifdef SDK_BUILD_PSP
++    // PSP: the table is u32 (see above); sign-extend so ITEM_ACTION_CANCEL comes back as the u64 MENU_CANCEL. Zero-extended,
++    // the dial button on Cancel missed the case and called address 0xFFFFFFFE. Function addresses are below 2 GB.
++    return (u64)(s64)(s32)sItemActionFuncs[action];
++    #else
+     return sItemActionFuncs[action];
++    #endif
+ }
+ 
+ static int ItemActionFunc_Use(BagController *controller)
 diff --git a/src/overlay076/ov76_0223D338.c b/src/overlay076/ov76_0223D338.c
 index e039c07..1729722 100644
 --- a/src/overlay076/ov76_0223D338.c
@@ -48,10 +73,24 @@ index e039c07..1729722 100644
      { 1, (const u32)ov76_0223D4C4 },
      { 2, (const u32)ov76_0223D50C },
 diff --git a/src/underground/menus.c b/src/underground/menus.c
-index cf632fd..c4b86c9 100644
+index cf632fdc..909cacbe 100644
 --- a/src/underground/menus.c
 +++ b/src/underground/menus.c
-@@ -157,13 +157,13 @@ static const WindowTemplate sYesNoWindowTemplate = {
+@@ -109,7 +109,13 @@ typedef struct {
+ 
+ typedef struct ItemSelectedOption {
+     u32 bankEntry;
++    // PSP: MENU_CANCEL is a u64 off ARM, as is the list's index; a u32 here zero-extended it, so Cancel matched no
++    // case and the trap menu then ran a freed list (crash on A over Cancel).
++    #ifdef SDK_BUILD_ARM
+     u32 index;
++    #else
++    u64 index;
++    #endif
+ } ItemSelectedOption;
+ 
+ static void UndergroundMenu_FreeSprites(UndergroundMenu *menu);
+@@ -157,13 +163,13 @@ static const WindowTemplate sYesNoWindowTemplate = {
  // clang-format off
  static const struct {
      u32 bankEntry;
@@ -228,4 +267,199 @@ index 8ce5a697..e8cd0247 100644
 +    #endif
      return result;
  }
+ 
+diff --git a/src/overlay005/ov5_021D5EB8.c b/src/overlay005/ov5_021D5EB8.c
+index 247b9f70..f902d9c3 100644
+--- a/src/overlay005/ov5_021D5EB8.c
++++ b/src/overlay005/ov5_021D5EB8.c
+@@ -761,7 +761,13 @@ static UnkStruct_ov5_021D69B8 Unk_ov5_02201D78[31] = {
+     { 0xffff, 0x6, sizeof(UnkStruct_ov5_021D879C), NULL, NULL, 0x0, 0x0, NULL, ov5_021DAEC0 },
+     { 0xffff, 0x6, sizeof(UnkStruct_ov5_021D879C), NULL, NULL, 0x0, 0x0, NULL, ov5_021DAD38 },
+     { 0xffff, 0x7, sizeof(UnkStruct_ov5_021DB04C), NULL, NULL, 0x0, 0x0, NULL, ov5_021DB04C },
++    // PSP: ov5_021DA748 (thunderstorm lightning) uses this work as s64[8] off ARM; sized for ints it overran the
++    // allocation by 24 bytes into the next field heap block.
++    #ifdef SDK_BUILD_ARM
+     { 0xffff, 0x4, (sizeof(int) * 10), NULL, NULL, 0x0, 0x0, NULL, ov5_021DA748 },
++    #else
++    { 0xffff, 0x4, (sizeof(s64) * 10), NULL, NULL, 0x0, 0x0, NULL, ov5_021DA748 },
++    #endif
+     { 0xffff, 0xffff, sizeof(UnkStruct_ov5_021D84D4), NULL, NULL, 0x0, 0x0, NULL, ov5_021D84D4 },
+     { 0xffff, 0xffff, sizeof(UnkStruct_ov5_021D84D4), NULL, NULL, 0x0, 0x0, NULL, ov5_021D8638 },
+     { 0xffff, 0x2, (sizeof(int) * 10), NULL, NULL, 0x0, 0x0, NULL, ov5_021D97E8 },
+@@ -1551,7 +1557,9 @@ static void ov5_021D6EC8(UnkStruct_ov5_021D6FA8 *param0, int param1)
+ {
+     GF_ASSERT(param0->unk_08 == NULL);
+     GF_ASSERT(param1 > 0);
+-    GF_ASSERT(param1 <= (sizeof(s32) * 10));
++    // PSP: the work buffer is s64[10] off ARM and the snow and sandstorm particles ask for s64-sized work, which the
++    // s32-sized check rejected (Snowpoint City, Route 228). Check against the buffer itself.
++    GF_ASSERT(param1 <= sizeof(param0->unk_0C));
+ 
+     param0->unk_08 = param0->unk_0C;
+ }
+@@ -1559,7 +1567,7 @@ static void ov5_021D6EC8(UnkStruct_ov5_021D6FA8 *param0, int param1)
+ static void ov5_021D6EF0(UnkStruct_ov5_021D6FA8 *param0)
+ {
+     param0->unk_08 = NULL;
+-    memset(param0->unk_0C, 0, (sizeof(s32) * 10));
++    memset(param0->unk_0C, 0, sizeof(param0->unk_0C));
+ }
+ 
+ static UnkStruct_ov5_021D6FA8 *ov5_021D6F00(UnkStruct_ov5_021DB4B8 *param0, int param1)
+@@ -4534,7 +4542,13 @@ static void ov5_021DA5A0(UnkStruct_ov5_021DB4B8 *param0, int param1)
+     UnkStruct_ov5_021D6FA8 *v2;
+     UnkStruct_ov5_021D9984 *v3;
+     int v4;
++    // PSP: ov5_021DA6BC reads this work as s64 off ARM (the slot is s64[10]); written as s32 it read back a NULL
++    // pointer and crashed in the ash fall around Stark Mountain and Route 227. Write it the way it is read.
++    #ifdef SDK_BUILD_ARM
+     s32 *v5;
++    #else
++    s64 *v5;
++    #endif
+ 
+     v3 = param0->unk_B98;
+ 
+@@ -4543,13 +4557,21 @@ static void ov5_021DA5A0(UnkStruct_ov5_021DB4B8 *param0, int param1)
+     }
+ 
+     for (v0 = 0; v0 < param1; v0++) {
++        #ifdef SDK_BUILD_ARM
+         v2 = ov5_021D6F00(param0, sizeof(s32) * 8);
++        #else
++        v2 = ov5_021D6F00(param0, sizeof(s64) * 8);
++        #endif
+ 
+         if (v2 == NULL) {
+             break;
+         }
+ 
++        #ifdef SDK_BUILD_ARM
+         v5 = (s32 *)v2->unk_08;
++        #else
++        v5 = (s64 *)v2->unk_08;
++        #endif
+         v4 = MTRNG_Next() % 4;
+ 
+         Sprite_SetAnimFrame(v2->unk_04, v4);
+@@ -4566,8 +4588,13 @@ static void ov5_021DA5A0(UnkStruct_ov5_021DB4B8 *param0, int param1)
+         }
+ 
+         v5[3] = 1 + (MTRNG_Next() % 1);
++        #ifdef SDK_BUILD_ARM
+         v5[0] = (s32)&v3->unk_B4[1];
+         v5[6] = (s32)&v3->unk_B4[5];
++        #else
++        v5[0] = (s64)&v3->unk_B4[1];
++        v5[6] = (s64)&v3->unk_B4[5];
++        #endif
+         v5[7] = 10 + (MTRNG_Next() % 20);
+ 
+         {
+@@ -4612,7 +4639,7 @@ static void ov5_021DA6BC(UnkStruct_ov5_021D6FA8 *param0)
+     v2.y >>= FX32_SHIFT;
+ 
+     if (*(
+-        #ifdef SDK_BUILD_ARMs
++        #ifdef SDK_BUILD_ARM
+         (s32 *)v1[6]
+         #else
+         (s64 *)v1[6]
+diff --git a/src/applications/frontier/battle_castle/opponent_app.c b/src/applications/frontier/battle_castle/opponent_app.c
+index ca01d45d..9ab06e59 100644
+--- a/src/applications/frontier/battle_castle/opponent_app.c
++++ b/src/applications/frontier/battle_castle/opponent_app.c
+@@ -1722,7 +1722,8 @@ static void InitMonOptionsMenu(BattleCastleOpponentApp *app)
+     app->listMenuStrList = StringList_New(NELEMS(sMonMenuEntries), HEAP_ID_BATTLE_CASTLE_APP);
+ 
+     for (int i = 0; i < NELEMS(sMonMenuEntries); i++) {
+-        StringList_AddFromMessageBank(app->listMenuStrList, app->msgLoader, sMonMenuEntries[i][0], sMonMenuEntries[i][1]);
++        // PSP: u32 table, u64 list index off ARM; sign-extend so MENU_CANCEL still matches (A on Cancel did nothing).
++        StringList_AddFromMessageBank(app->listMenuStrList, app->msgLoader, sMonMenuEntries[i][0], (u64)(s64)(s32)sMonMenuEntries[i][1]);
+     }
+ 
+     ListMenuTemplate template = sDefaultListMenuTemplate;
+@@ -1781,7 +1782,8 @@ static void InitSummaryMenu(BattleCastleOpponentApp *app)
+     app->listMenuStrList = StringList_New(NELEMS(sSummaryMenuEntries), HEAP_ID_BATTLE_CASTLE_APP);
+ 
+     for (int i = 0; i < (NELEMS(sSummaryMenuEntries)); i++) {
+-        StringList_AddFromMessageBank(app->listMenuStrList, app->msgLoader, sSummaryMenuEntries[i][0], sSummaryMenuEntries[i][1]);
++        // PSP: u32 table, u64 list index off ARM; sign-extend so MENU_CANCEL still matches (A on Cancel did nothing).
++        StringList_AddFromMessageBank(app->listMenuStrList, app->msgLoader, sSummaryMenuEntries[i][0], (u64)(s64)(s32)sSummaryMenuEntries[i][1]);
+     }
+ 
+     ListMenuTemplate template = sDefaultListMenuTemplate;
+diff --git a/src/applications/frontier/battle_castle/self_app.c b/src/applications/frontier/battle_castle/self_app.c
+index c9d6b988..957a84b6 100644
+--- a/src/applications/frontier/battle_castle/self_app.c
++++ b/src/applications/frontier/battle_castle/self_app.c
+@@ -2311,7 +2311,8 @@ static void InitHealMenu(BattleCastleSelfApp *app)
+     app->strList = StringList_New(NELEMS(sHealMenuEntries), HEAP_ID_BATTLE_CASTLE_APP);
+ 
+     for (int i = 0; i < NELEMS(sHealMenuEntries); i++) {
+-        StringList_AddFromMessageBank(app->strList, app->msgLoader, sHealMenuEntries[i][1], sHealMenuEntries[i][2]);
++        // PSP: u32 table, u64 list index off ARM; sign-extend so MENU_CANCEL still matches (A on Cancel did nothing).
++        StringList_AddFromMessageBank(app->strList, app->msgLoader, sHealMenuEntries[i][1], (u64)(s64)(s32)sHealMenuEntries[i][2]);
+     }
+ 
+     app->listTemplate = sDefaultListTemplate;
+@@ -2418,7 +2419,8 @@ static void InitRentalMenu(BattleCastleSelfApp *app)
+     app->strList = StringList_New(NELEMS(sRentalMenuEntries), HEAP_ID_BATTLE_CASTLE_APP);
+ 
+     for (int i = 0; i < NELEMS(sRentalMenuEntries); i++) {
+-        StringList_AddFromMessageBank(app->strList, app->msgLoader, sRentalMenuEntries[i][1], sRentalMenuEntries[i][2]);
++        // PSP: u32 table, u64 list index off ARM; sign-extend so MENU_CANCEL still matches (A on Cancel did nothing).
++        StringList_AddFromMessageBank(app->strList, app->msgLoader, sRentalMenuEntries[i][1], (u64)(s64)(s32)sRentalMenuEntries[i][2]);
+     }
+ 
+     app->listTemplate = sDefaultListTemplate;
+@@ -2535,7 +2537,8 @@ static void InitMonOptionsMenu(BattleCastleSelfApp *app)
+     app->strList = StringList_New(5, HEAP_ID_BATTLE_CASTLE_APP);
+ 
+     for (int i = 0; i < 5; i++) {
+-        StringList_AddFromMessageBank(app->strList, app->msgLoader, sMonMenuEntries[i][0], sMonMenuEntries[i][1]);
++        // PSP: u32 table, u64 list index off ARM; sign-extend so MENU_CANCEL still matches (A on Cancel did nothing).
++        StringList_AddFromMessageBank(app->strList, app->msgLoader, sMonMenuEntries[i][0], (u64)(s64)(s32)sMonMenuEntries[i][1]);
+     }
+ 
+     app->listTemplate = sDefaultListTemplate;
+diff --git a/src/overlay007/battle_regulation_menu.c b/src/overlay007/battle_regulation_menu.c
+index 454194c7..6c96d928 100644
+--- a/src/overlay007/battle_regulation_menu.c
++++ b/src/overlay007/battle_regulation_menu.c
+@@ -229,7 +229,8 @@ static void ShowListMenuConfirm(BattleRegulationMenu *menu)
+     Window_DrawStandardFrame(&menu->windowConfirm, 1, BASE_TILE_STANDARD_WINDOW_FRAME, 11);
+ 
+     for (int i = 0; i < count; i++) {
+-        StringList_AddFromMessageBank(menu->strListConfirm, menu->msgLoader, menuEntry->bankEntry, menuEntry->index);
++        // PSP: u32 index, u64 list index off ARM; sign-extend so MENU_CANCEL still matches (A on Cancel took the default).
++        StringList_AddFromMessageBank(menu->strListConfirm, menu->msgLoader, menuEntry->bankEntry, (u64)(s64)(s32)menuEntry->index);
+         menuEntry++;
+     }
+ 
+diff --git a/src/underground/vendors.c b/src/underground/vendors.c
+index f046e00d..01f26627 100644
+--- a/src/underground/vendors.c
++++ b/src/underground/vendors.c
+@@ -772,7 +772,9 @@ static void UndergroundVendors_ShopMenuTask(SysTask *sysTask, void *data)
+         break;
+     case SHOP_MENU_STATE_PAY_MENU:
+         if (!UndergroundTextPrinter_IsPrinterActive(UndergroundMan_GetMiscTextPrinter())) {
+-            input = UndergroundItemListMenu_ProcessInput(menu->itemListMenu);
++            // PSP: this returns u32 and input is u64 off ARM; sign-extend so MENU_CANCEL / MENU_NOTHING_CHOSEN still match
++            // (zero-extended, an idle frame bought or sold item 0xFFFFFFFF).
++            input = (u64)(s64)(s32)UndergroundItemListMenu_ProcessInput(menu->itemListMenu);
+             ListMenu_GetListAndCursorPos(menu->itemListMenu->listMenu, &listPos, &cursorPos);
+             UndergroundMan_StoreCursorAndListPos(UNDERGROUND_MENU_KEY_PAY_WITH_SPHERES, cursorPos, listPos);
+ 
+@@ -859,7 +861,9 @@ static void UndergroundVendors_ShopMenuTask(SysTask *sysTask, void *data)
+         menu->state = SHOP_MENU_STATE_SELL_MENU;
+         break;
+     case SHOP_MENU_STATE_SELL_MENU:
+-        input = UndergroundItemListMenu_ProcessInput(menu->itemListMenu);
++        // PSP: this returns u32 and input is u64 off ARM; sign-extend so MENU_CANCEL / MENU_NOTHING_CHOSEN still match
++        // (zero-extended, an idle frame bought or sold item 0xFFFFFFFF).
++        input = (u64)(s64)(s32)UndergroundItemListMenu_ProcessInput(menu->itemListMenu);
+         ListMenu_GetListAndCursorPos(menu->itemListMenu->listMenu, &listPos, &cursorPos);
+         UndergroundMan_StoreCursorAndListPos(UNDERGROUND_MENU_KEY_SELL_GOODS + menu->vendorType, cursorPos, listPos);
  
