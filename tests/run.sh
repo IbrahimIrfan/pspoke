@@ -185,6 +185,10 @@ plat_tests(){
   # wrote s64[8] past the block.
   PLAT_CHECKS=("log:[DIAG] warp to map 371")
   plat_case weather-thunder 13500 newgame-warp.h "" WARP_TO=371,517,846 FORCE_WEATHER=4
+  # Spear Pillar: Cyrus summons Dialga and Palkia, then Giratina (reported on hardware after the Mars/Jupiter battle).
+  # The scene overflowed the 3D vertex chunk and turned on display capture, each of which exited the game.
+  PLAT_CHECKS=("log:[DIAG] run script 4" "log:[OVERLAY] load id=100")
+  plat_case spear-pillar 20000 spear-pillar.h "" WARP_TO=220,31,29,0 GIVE_MON=445:80 RUN_SCRIPT=4
   # MENU_CANCEL zero-extended through u32s (NOTES.md 3.16): Cancel in each of these menus used to crash or misfire.
   PLAT_CHECKS=("log:[DIAG] warp to map 45")
   plat_case bag-dial-cancel 12000 bag-dial-cancel.h "" WARP_TO=45,302,775 GIVE_ITEM=93:1
@@ -227,7 +231,7 @@ plat_tests(){
 
 ### main #####################################################################################################
 if [ "$LIST" = 1 ]; then cat <<'EOF'
-platinum:   boot (quick) quit-combo fast-forward weather-snow weather-sand weather-ash weather-thunder bag-dial-cancel ug-trap-cancel ug-shops pc2f-confirm-cancel oreburgh-belts floaroma-gate underground sing-double move-relearner
+platinum:   boot (quick) quit-combo fast-forward weather-snow weather-sand weather-ash weather-thunder spear-pillar bag-dial-cancel ug-trap-cancel ug-shops pc2f-confirm-cancel oreburgh-belts floaroma-gate underground sing-double move-relearner
             start-menu-exit fly (need --platinum-save)
 soulsilver: smoke (quick) pc catch easychat pokedex apricorn vs-recorder trainer-card options options-confirm options-quit
             options-b options-scene options-nochange options-after geonet gym-pryce ice-mahogany move-reminder dowsing frontier-factory frontier-tower frontier-hall frontier-castle frontier-arcade feature-mail feature-mailbox feature-ball-capsule feature-photo-album feature-hall-of-fame feature-photo-studio feature-pal-pad feature-safari-areas feature-safari-objects rocket-radio-tower
