@@ -11,7 +11,11 @@ extern "C" void PSPNativeGUTextureFence();
 #include "g3_vtx.h"
 static GuVertex vertices[6144] __attribute__((aligned(16)));
 GuVertex *g3ChunkPtr=vertices;unsigned g3ChunkLeft=6144;
-extern "C" void G3SIM_ChunkAlloc(){printf("[NATIVE-RENDER] vertex overflow\n");sceKernelExitGame();std::abort();}
+/* A batch larger than the chunk (Platinum's Spear Pillar summoning sends more than 6144 vertices with no state change)
+   is drawn in pieces. The chunk holds whole triangles (GU_TRIANGLES, 6144 = 3 * 2048), so a full chunk can be flushed
+   as it is; a display list being recorded across the flush is simply not cached (ResetVertices marks it broken). */
+extern "C" void G3SIM_FlushArray();
+extern "C" void G3SIM_ChunkAlloc(){G3SIM_FlushArray();}
 static bool rawMode=false;static unsigned rawMatrixGen;static ScePspFMatrix4 rawClip;
 /* Display-list geometry cache support (frontend.cpp). While a list is being recorded the
    vertices it appends are the last g3RecCount entries of the chunk; any flush in between
@@ -20,7 +24,10 @@ unsigned g3RecCount=0;static bool recActive=false,recBroken=false;
 static void ResetVertices(){if(recActive&&g3RecCount)recBroken=true;g3ChunkPtr=vertices;g3ChunkLeft=6144;}
 extern "C" void G3ListRecordBegin(){recActive=true;recBroken=false;g3RecCount=0;}
 extern "C" int G3ListRecordEnd(unsigned*count,const GuVertex**verts){recActive=false;*count=g3RecCount;*verts=g3ChunkPtr-g3RecCount;return !recBroken;}
-extern "C" void G3ListReplay(const GuVertex*v,unsigned n){if(n>g3ChunkLeft)G3SIM_ChunkAlloc();memcpy(g3ChunkPtr,v,n*sizeof(GuVertex));g3ChunkPtr+=n;g3ChunkLeft-=n;}
+static void DrawVertices(const GuVertex*v,unsigned count,bool copy);
+extern "C" void G3ListReplay(const GuVertex*v,unsigned n){
+ if(n>g3ChunkLeft){G3SIM_FlushArray();if(n>6144){DrawVertices(v,n,false);return;}}   /* a list larger than the chunk is drawn from the cache */
+ memcpy(g3ChunkPtr,v,n*sizeof(GuVertex));g3ChunkPtr+=n;g3ChunkLeft-=n;}
 /* Direct draw from cache memory (16-byte aligned, written back once when stored): pending
    chunk vertices are flushed first so GE order is unchanged; the same texture/cull state
    applies as would have at the later flush (state changes always flush before applying). */
@@ -52,7 +59,7 @@ PFNGLCULLFACEPROC glad_glCullFace=GuCull;PFNGLDEPTHFUNCPROC glad_glDepthFunc=GuD
 static unsigned channel(float f) { if(f<0)f=0;if(f>1)f=1;return unsigned(f*255.0f+0.5f); }
 extern "C" void G3SIM_AddVtx(G3SIM_Vertex_t* v) {
  unsigned count=(unsigned)(g3ChunkPtr-vertices);
- if(count==6144) {printf("[NATIVE-RENDER] vertex overflow\n");sceKernelExitGame();return;}
+ if(count==6144) G3SIM_FlushArray();   /* full chunk: draw it and continue (see G3SIM_ChunkAlloc) */
 
 
 

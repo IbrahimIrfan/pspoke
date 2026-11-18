@@ -3,7 +3,7 @@
 struct GuVertex {float u,v;unsigned color;float x,y,z;};
 extern "C" {
 extern GuVertex *g3ChunkPtr;extern unsigned g3ChunkLeft;extern unsigned g3RecCount;
-void G3SIM_ChunkAlloc(void) __attribute__((noreturn));
+void G3SIM_ChunkAlloc(void);   /* flushes a full chunk */
 }
 static inline void G3SIM_AppendVtx(float u,float v,unsigned color,float x,float y,float z){
  if(!g3ChunkLeft)G3SIM_ChunkAlloc();

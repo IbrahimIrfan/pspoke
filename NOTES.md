@@ -253,6 +253,16 @@ day; they are written down so nobody rediscovers them. Paths refer to `port/` un
   compile flag, on purpose: one hardware-tested binary for every mode, and the memory layout (see §5) does not change
   per option.
 
+- **Vertex chunk and display capture (2026-11-18, Platinum's Spear Pillar summoning).** The 3D backend batches
+  vertices in a 6144-entry chunk and used to exit the game when one batch (no state change) exceeded it; a full chunk
+  is now drawn and reused (it always holds whole triangles), and a cached list larger than the chunk is drawn straight
+  from the cache. The same scene uses the DS motion-blur setup: display mode 2 (show VRAM bank C) with DISPCAPCNT
+  capturing a blend of the composed screen and the previous frame back into bank C. melonDS's soft compositor
+  implements capture, so `render-gu2d.cpp` now hands it the register, takes the software path for the main engine on
+  capture frames, clears the enable bit afterwards (the game re-arms it each VBlank) and stamps the bank dirty for the
+  texture cache. Main-memory display FIFO (mode 3) is still refused. SoulSilver's renderer keeps its older behaviour
+  (capture skipped, no afterimage).
+
 ## 5. Audio
 
 - The DS sound engine (sequencer, channels) runs fully on the CPU; output goes through `sceSasCore`, the PSP's own

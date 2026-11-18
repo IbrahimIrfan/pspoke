@@ -101,6 +101,7 @@ static unsigned reg32(unsigned off){return *(volatile u32*)(PSPNative_GfxRegiste
 static const u32 VRAM_3D=0x110000;
 static const u32 VRAM_ENGINE[2]={0x158000,0x188000};   // 256x192x4 each, stride 256
 
+extern "C" void PSPNativeVramDirty(const void*,u32) __attribute__((weak));   // texture-cache write tracking (Platinum)
 static void bindRegisters(GPU2D::Unit&u,unsigned base){
  u.Write32(0,reg32(base));
  for(unsigned off=8;off<=0x54;off+=2){
@@ -641,15 +642,22 @@ static int Present(bool waitForVblank){
 #endif
  unsigned t0=sceKernelGetSystemTimeLow();
  unsigned power=reg16(0x304),a=reg32(0);
- if((reg32(0x64)&0x80000000u)||((a>>16)&3)==3){printf("[NATIVE-RENDER] unsupported display capture/FIFO\n");return -2;}
- mapMemory();engineA.Enabled=(power&2)!=0;engineB.Enabled=(power&512)!=0;bindRegisters(engineA,0);bindRegisters(engineB,0x1000);
+ /* Display capture (DISPCAPCNT bit 31): Platinum's motion blur (the Spear Pillar summoning, some encounter effects)
+    shows VRAM directly and captures a blend of the composed screen and the previous frame back into it every frame.
+    The software compositor implements capture, so on a capture frame the main engine takes that path. */
+ const u32 capcnt=reg32(0x64);const bool capture=(capcnt&0x80000000u)!=0;
+ if(((a>>16)&3)==3){printf("[NATIVE-RENDER] unsupported main-memory display FIFO\n");return -2;}
+ mapMemory();engineA.Enabled=(power&2)!=0;engineB.Enabled=(power&512)!=0;bindRegisters(engineA,0);bindRegisters(engineB,0x1000);engineA.Write32(0x64,capcnt);
  FrameStart(engineA);FrameStart(engineB);AdvanceAtlasFrame();
  bindUs=sceKernelGetSystemTimeLow()-t0;unsigned t1=sceKernelGetSystemTimeLow();
  bool ge[2];const void*texsrc[2];int texfmt[2];
  GPU2D::Unit*units[2]={&engineA,&engineB};
  // software engines first (they may need the 3D readback and run on the CPU)
- for(int e=0;e<2;e++){GPU2D::Unit&u=*units[e];ge[e]=u.Enabled&&EngineSupported(u);
-  if(!ge[e]){RenderEngineSoft(u,e==0&&(u.DispCnt&8)&&((u.DispCnt>>16)&3)==1);statFallback[e]++;texsrc[e]=raw[e];texfmt[e]=GU_PSM_8888;}
+ for(int e=0;e<2;e++){GPU2D::Unit&u=*units[e];ge[e]=u.Enabled&&EngineSupported(u)&&!(e==0&&capture);
+  if(!ge[e]){RenderEngineSoft(u,(e==0&&(u.DispCnt&8)&&((u.DispCnt>>16)&3)==1)||(e==0&&capture));statFallback[e]++;
+   if(e==0&&capture){   // the hardware clears the enable bit when the frame has been captured; the bank's contents changed
+    *(volatile u32*)(PSPNative_GfxRegisters+0x64)=capcnt&~0x80000000u;
+    if(PSPNativeVramDirty)PSPNativeVramDirty(s_HW_LCDC_VRAM+((capcnt>>16)&3)*0x20000,0x20000);}texsrc[e]=raw[e];texfmt[e]=GU_PSM_8888;}
   else{statGe[e]++;texsrc[e]=(u8*)sceGeEdramGetAddr()+VRAM_ENGINE[e];texfmt[e]=GU_PSM_8888;}}
 #ifdef OPT_GE_ASYNC
  const bool useAsync=asyncOn&&!waitForVblank&&!(PSPNativeOskIsActive&&PSPNativeOskIsActive());

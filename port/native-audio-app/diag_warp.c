@@ -12,7 +12,7 @@
  * slot and ALL_BADGES=1 grants the eight badges, e.g. to test Fly (move 19) from the party menu. GIVE_MON=<species>:<level>
  * adds a Pokemon to the party first, so a fresh new-game save can walk into trainers and wild battles.
  * FORCE_WEATHER=<id> makes every map's weather lookup return that OVERWORLD_WEATHER_* value (thunderstorms and other
- * date-dependent weathers on demand). */
+ * date-dependent weathers on demand). RUN_SCRIPT=<id> starts a map script after the warp (see below). */
 #include <nitro.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -146,6 +146,20 @@ BOOL __wrap_FieldTask_Run(FieldSystem *fieldSystem)
 #endif
         MapObjectMan_PauseAllMovement(fieldSystem->mapObjMan);
         FieldSystem_CreateTask(fieldSystem, FieldTask_MapChangeToUnderground, ctx);
+    }
+#endif
+#ifdef RUN_SCRIPT
+    /* TEST ONLY: RUN_SCRIPT=<id> starts that map script (ScriptEntry position + 1) once the warp has settled, for
+     * events that are normally reached through a battle (e.g. 4 on Spear Pillar: Cyrus's summoning cutscene). */
+    {
+        extern void ScriptManager_Set(FieldSystem *fieldSystem, u16 scriptID, void *object);
+        static int settle, ran;
+        if (done && !ran && !FieldSystem_IsRunningTask(fieldSystem) && ++settle == 120) {
+            ran = 1;
+            printf("[DIAG] run script %d\n", RUN_SCRIPT);
+            PSPNativeMemLog("[DIAG] run script %d", RUN_SCRIPT);
+            ScriptManager_Set(fieldSystem, RUN_SCRIPT, NULL);
+        }
     }
 #endif
     return __real_FieldTask_Run(fieldSystem);

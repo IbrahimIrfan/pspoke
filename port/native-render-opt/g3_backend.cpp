@@ -19,8 +19,9 @@ PFNGLENABLEPROC glad_glEnable=GuEnable;PFNGLDISABLEPROC glad_glDisable=GuDisable
 PFNGLCULLFACEPROC glad_glCullFace=GuCull;PFNGLDEPTHFUNCPROC glad_glDepthFunc=GuDepth;
 }
 static unsigned channel(float f) { if(f<0)f=0;if(f>1)f=1;return unsigned(f*255.0f+0.5f); }
+extern "C" void G3SIM_FlushArray();
 extern "C" void G3SIM_AddVtx(G3SIM_Vertex_t* v) {
- if(count==6144) {printf("[NATIVE-RENDER] vertex overflow\n");sceKernelExitGame();return;}
+ if(count==6144) G3SIM_FlushArray();   /* full chunk: draw it and continue (see G3SIM_ChunkAlloc) */
 
 
 

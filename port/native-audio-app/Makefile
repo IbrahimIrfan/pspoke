@@ -44,6 +44,10 @@ endif
 ifneq ($(GIVE_MON),)
 CFLAGS += -DGIVE_MON=\"$(GIVE_MON)\"
 endif
+# TEST ONLY: RUN_SCRIPT=<id> (with WARP_TO) starts that map script after the warp, see diag_warp.c.
+ifneq ($(RUN_SCRIPT),)
+CFLAGS += -DRUN_SCRIPT=$(RUN_SCRIPT)
+endif
 # TEST ONLY: FORCE_WEATHER=<id> (with WARP_TO) forces every map's weather, see diag_warp.c.
 ifneq ($(FORCE_WEATHER),)
 CFLAGS += -DFORCE_WEATHER=$(FORCE_WEATHER)
